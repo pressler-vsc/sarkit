@@ -1,0 +1,9 @@
+<DwellTimeArray>
+    <Identifier>FAKE_ARRAY</Identifier>
+    <ElementFormat>COD=F4;DT=F4;</ElementFormat>
+    <X0>1.0</X0>
+    <Y0>2.0</Y0>
+    <XSS>3.0</XSS>
+    <YSS>4.0</YSS>
+    <NODATA>FFFF</NODATA>
+</DwellTimeArray>

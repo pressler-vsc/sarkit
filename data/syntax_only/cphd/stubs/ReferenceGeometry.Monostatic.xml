@@ -1,0 +1,22 @@
+<Monostatic>
+    <ARPPos>
+        <X>7228728.557469463</X>
+        <Y>255412.1358540885</Y>
+        <Z>1450829.6595842484</Z>
+    </ARPPos>
+    <ARPVel>
+        <X>340.0816683698231</X>
+        <Y>-7332.833245191265</Y>
+        <Z>-403.589514541315</Z>
+    </ARPVel>
+    <SideOfTrack>L</SideOfTrack>
+    <SlantRange>1701072.6198223345</SlantRange>
+    <GroundRange>1282240.272109871</GroundRange>
+    <DopplerConeAngle>80.01149733418877</DopplerConeAngle>
+    <GrazeAngle>30.002148755182244</GrazeAngle>
+    <IncidenceAngle>59.99785124481775</IncidenceAngle>
+    <AzimuthAngle>9.984361845235355</AzimuthAngle>
+    <TwistAngle>8.970708323523684</TwistAngle>
+    <SlopeAngle>31.19451807159041</SlopeAngle>
+    <LayoverAngle>352.4634376297167</LayoverAngle>
+</Monostatic>

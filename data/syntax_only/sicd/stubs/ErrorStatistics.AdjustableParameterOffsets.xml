@@ -1,0 +1,24 @@
+<AdjustableParameterOffsets>
+    <ARPPosSCPCOA>
+        <X>0.1</X>
+        <Y>0.2</Y>
+        <Z>0.3</Z>
+    </ARPPosSCPCOA>
+    <ARPVel>
+        <X>0.4</X>
+        <Y>0.5</Y>
+        <Z>0.6</Z>
+    </ARPVel>
+    <TxTimeSCPCOA>0.7</TxTimeSCPCOA>
+    <RcvTimeSCPCOA>0.8</RcvTimeSCPCOA>
+    <APOError size1="8" size2="8">
+        <Entry index1="1" index2="1">0.11</Entry>
+        <Entry index1="4" index2="4">0.44</Entry>
+        <Entry index1="8" index2="8">0.88</Entry>
+    </APOError>
+    <CompositeSCP>
+        <Rg>0.111</Rg>
+        <Az>0.222</Az>
+        <RgAz>0.333</RgAz>
+    </CompositeSCP>
+</AdjustableParameterOffsets>

@@ -1,0 +1,31 @@
+<PFA>
+    <FPN>
+        <X>1</X>
+        <Y>0</Y>
+        <Z>0</Z>
+    </FPN>
+    <IPN>
+        <X>0.85540832579135895</X>
+        <Y>0.067973204303252321</Y>
+        <Z>-0.51347467325894713</Z>
+    </IPN>
+    <PolarAngRefTime>1.6800674762530463</PolarAngRefTime>
+    <PolarAngPoly order1="9">
+        <Coef exponent1="1">0.004245118151048095</Coef>
+        <Coef exponent1="9">-1.1931290667377136e-18</Coef>
+    </PolarAngPoly>
+    <SpatialFreqSFPoly order1="8">
+        <Coef exponent1="0">0.99999143699142279</Coef>
+        <Coef exponent1="8">-1395.0901983623608</Coef>
+    </SpatialFreqSFPoly>
+    <Krg1>66.268165205464854</Krg1>
+    <Krg2>67.156149288980856</Krg2>
+    <Kaz1>-0.44524655663963569</Kaz1>
+    <Kaz2>0.44524655663963569</Kaz2>
+    <STDeskew>
+        <Applied>false</Applied>
+        <STDSPhasePoly order1="0" order2="0">
+            <Coef exponent1="0" exponent2="0">0.1234</Coef>
+        </STDSPhasePoly>
+    </STDeskew>
+</PFA>

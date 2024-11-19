@@ -1,0 +1,15 @@
+<Unmodeled>
+    <Xrow>0.1</Xrow>
+    <Ycol>0.2</Ycol>
+    <XrowYcol>0.3</XrowYcol>
+    <UnmodeledDecorr>
+        <Xrow>
+            <CorrCoefZero>0.4</CorrCoefZero>
+            <DecorrRate>0.5</DecorrRate>
+        </Xrow>
+        <Ycol>
+            <CorrCoefZero>0.6</CorrCoefZero>
+            <DecorrRate>0.7</DecorrRate>
+        </Ycol>
+    </UnmodeledDecorr>
+</Unmodeled>

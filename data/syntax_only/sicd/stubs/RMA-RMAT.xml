@@ -1,0 +1,17 @@
+<RMA>
+    <RMAlgoType>CSA</RMAlgoType>
+    <ImageType>RMAT</ImageType>
+    <RMAT>
+        <PosRef>
+            <X>1.1</X>
+            <Y>1.2</Y>
+            <Z>1.3</Z>
+        </PosRef>
+        <VelRef>
+            <X>2.1</X>
+            <Y>2.2</Y>
+            <Z>2.3</Z>
+        </VelRef>
+        <DopConeAngRef>3.0</DopConeAngRef>
+    </RMAT>
+</RMA>

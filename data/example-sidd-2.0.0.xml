@@ -1,0 +1,244 @@
+<SIDD xmlns="urn:SIDD:2.0.0" xmlns:sicommon="urn:SICommon:1.0" xmlns:sfa="urn:SFA:1.2.0" xmlns:ism="urn:us:gov:ic:ism:13">
+  <ProductCreation>
+    <ProcessorInformation>
+      <Application>sarpy 1.3.60.a0.dev2</Application>
+      <ProcessingDateTime>2024-10-10T21:59:22.508357Z</ProcessingDateTime>
+      <Site>Unknown</Site>
+    </ProcessorInformation>
+    <Classification ism:DESVersion="13" ism:resourceElement="true" ism:createDate="2024-10-10" ism:compliesWith="USGov" ism:ISMCATCESVersion="201903" ism:classification="U" ism:ownerProducer="USA"/>
+    <ProductName>Detected Image</ProductName>
+    <ProductClass>Detected Image</ProductClass>
+  </ProductCreation>
+  <Display>
+    <PixelType>MONO8I</PixelType>
+    <NumBands>1</NumBands>
+    <NonInteractiveProcessing band="1">
+      <ProductGenerationOptions>
+        <DataRemapping>
+          <LUTName>DENSITY</LUTName>
+          <Predefined>
+            <DatabaseName>DENSITY</DatabaseName>
+          </Predefined>
+        </DataRemapping>
+      </ProductGenerationOptions>
+      <RRDS>
+        <DownsamplingMethod>DECIMATE</DownsamplingMethod>
+      </RRDS>
+    </NonInteractiveProcessing>
+    <InteractiveProcessing band="1">
+      <GeometricTransform>
+        <Scaling>
+          <AntiAlias>
+            <FilterName>AntiAlias</FilterName>
+            <FilterBank>
+              <Predefined>
+                <DatabaseName>BILINEAR</DatabaseName>
+              </Predefined>
+            </FilterBank>
+            <Operation>CONVOLUTION</Operation>
+          </AntiAlias>
+          <Interpolation>
+            <FilterName>Interpolation</FilterName>
+            <FilterBank>
+              <Predefined>
+                <DatabaseName>BILINEAR</DatabaseName>
+              </Predefined>
+            </FilterBank>
+            <Operation>CORRELATION</Operation>
+          </Interpolation>
+        </Scaling>
+        <Orientation>
+          <ShadowDirection>ARBITRARY</ShadowDirection>
+        </Orientation>
+      </GeometricTransform>
+      <SharpnessEnhancement>
+        <ModularTransferFunctionEnhancement>
+          <FilterName>ModularTransferFunctionEnhancement</FilterName>
+          <FilterBank>
+            <Predefined>
+              <DatabaseName>BILINEAR</DatabaseName>
+            </Predefined>
+          </FilterBank>
+          <Operation>CONVOLUTION</Operation>
+        </ModularTransferFunctionEnhancement>
+      </SharpnessEnhancement>
+      <DynamicRangeAdjustment>
+        <AlgorithmType>NONE</AlgorithmType>
+        <BandStatsSource>1</BandStatsSource>
+      </DynamicRangeAdjustment>
+    </InteractiveProcessing>
+  </Display>
+  <GeoData>
+    <EarthModel>WGS_84</EarthModel>
+    <ImageCorners>
+      <ICP index="1:FRFC">
+        <sicommon:Lat>0.0052413577224316608</sicommon:Lat>
+        <sicommon:Lon>-0.0036411118549023705</sicommon:Lon>
+      </ICP>
+      <ICP index="2:FRLC">
+        <sicommon:Lat>0.0036704921102764091</sicommon:Lat>
+        <sicommon:Lon>0.0052080707048067307</sicommon:Lon>
+      </ICP>
+      <ICP index="3:LRLC">
+        <sicommon:Lat>-0.0052492603425413299</sicommon:Lat>
+        <sicommon:Lon>0.0036458065616364944</sicommon:Lon>
+      </ICP>
+      <ICP index="4:LRFC">
+        <sicommon:Lat>-0.0036783947304584474</sicommon:Lat>
+        <sicommon:Lon>-0.0052033759980923758</sicommon:Lon>
+      </ICP>
+    </ImageCorners>
+    <ValidData size="4">
+      <Vertex index="1">
+        <sicommon:Lat>0.0052413577224316608</sicommon:Lat>
+        <sicommon:Lon>-0.0036411118549023705</sicommon:Lon>
+      </Vertex>
+      <Vertex index="2">
+        <sicommon:Lat>0.0036704921102764091</sicommon:Lat>
+        <sicommon:Lon>0.0052080707048067307</sicommon:Lon>
+      </Vertex>
+      <Vertex index="3">
+        <sicommon:Lat>-0.0052492603425413299</sicommon:Lat>
+        <sicommon:Lon>0.0036458065616364944</sicommon:Lon>
+      </Vertex>
+      <Vertex index="4">
+        <sicommon:Lat>-0.0036783947304584474</sicommon:Lat>
+        <sicommon:Lon>-0.0052033759980923758</sicommon:Lon>
+      </Vertex>
+    </ValidData>
+  </GeoData>
+  <Measurement>
+    <PlaneProjection>
+      <ReferencePoint>
+        <sicommon:ECEF>
+          <sicommon:X>6378137</sicommon:X>
+          <sicommon:Y>0</sicommon:Y>
+          <sicommon:Z>0</sicommon:Z>
+        </sicommon:ECEF>
+        <sicommon:Point>
+          <sicommon:Row>650</sicommon:Row>
+          <sicommon:Col>750</sicommon:Col>
+        </sicommon:Point>
+      </ReferencePoint>
+      <SampleSpacing>
+        <sicommon:Row>0.76980043496519579</sicommon:Row>
+        <sicommon:Col>0.66641108974957253</sicommon:Col>
+      </SampleSpacing>
+      <TimeCOAPoly order1="0" order2="0">
+        <sicommon:Coef exponent1="0" exponent2="0">1.6800674762530383</sicommon:Coef>
+      </TimeCOAPoly>
+      <ProductPlane>
+        <RowUnitVector>
+          <sicommon:X>0</sicommon:X>
+          <sicommon:Y>-0.17364817766693033</sicommon:Y>
+          <sicommon:Z>-0.98480775301220813</sicommon:Z>
+        </RowUnitVector>
+        <ColUnitVector>
+          <sicommon:X>0</sicommon:X>
+          <sicommon:Y>0.98480775301220813</sicommon:Y>
+          <sicommon:Z>-0.17364817766693033</sicommon:Z>
+        </ColUnitVector>
+      </ProductPlane>
+    </PlaneProjection>
+    <PixelFootprint>
+      <sicommon:Row>1301</sicommon:Row>
+      <sicommon:Col>1501</sicommon:Col>
+    </PixelFootprint>
+    <ARPPoly>
+      <sicommon:X order1="5">
+        <sicommon:Coef exponent1="0">7228127.912444866</sicommon:Coef>
+        <sicommon:Coef exponent1="1">352.532429987565</sicommon:Coef>
+        <sicommon:Coef exponent1="2">-3.5891719134975157</sicommon:Coef>
+        <sicommon:Coef exponent1="3">-5.7694198643316104e-05</sicommon:Coef>
+        <sicommon:Coef exponent1="4">2.769996859330377e-07</sicommon:Coef>
+        <sicommon:Coef exponent1="5">2.159263613457254e-09</sicommon:Coef>
+      </sicommon:X>
+      <sicommon:Y order1="5">
+        <sicommon:Coef exponent1="0">268129.9174454262</sicommon:Coef>
+        <sicommon:Coef exponent1="1">-7332.382387963439</sicommon:Coef>
+        <sicommon:Coef exponent1="2">-0.13313219332893028</sicommon:Coef>
+        <sicommon:Coef exponent1="3">0.0012135963117010783</sicommon:Coef>
+        <sicommon:Coef exponent1="4">1.0196690368353028e-08</sicommon:Coef>
+        <sicommon:Coef exponent1="5">1.3607911396273635e-11</sicommon:Coef>
+      </sicommon:Y>
+      <sicommon:Z order1="5">
+        <sicommon:Coef exponent1="0">1451527.482424154</sicommon:Coef>
+        <sicommon:Coef exponent1="1">-401.0899037264022</sicommon:Coef>
+        <sicommon:Coef exponent1="2">-0.7207643942822565</sicommon:Coef>
+        <sicommon:Coef exponent1="3">6.65110874474807e-05</sicommon:Coef>
+        <sicommon:Coef exponent1="4">5.669099055985678e-08</sicommon:Coef>
+        <sicommon:Coef exponent1="5">3.2123861103114586e-10</sicommon:Coef>
+      </sicommon:Z>
+    </ARPPoly>
+    <ValidData size="4">
+      <Vertex index="1">
+        <sicommon:Row>0</sicommon:Row>
+        <sicommon:Col>0</sicommon:Col>
+      </Vertex>
+      <Vertex index="2">
+        <sicommon:Row>0</sicommon:Row>
+        <sicommon:Col>1501</sicommon:Col>
+      </Vertex>
+      <Vertex index="3">
+        <sicommon:Row>1301</sicommon:Row>
+        <sicommon:Col>1501</sicommon:Col>
+      </Vertex>
+      <Vertex index="4">
+        <sicommon:Row>1301</sicommon:Row>
+        <sicommon:Col>0</sicommon:Col>
+      </Vertex>
+    </ValidData>
+  </Measurement>
+  <ExploitationFeatures>
+    <Collection identifier="SyntheticCore">
+      <Information>
+        <SensorName>Synthetic</SensorName>
+        <RadarMode>
+          <sicommon:ModeType>SPOTLIGHT</sicommon:ModeType>
+        </RadarMode>
+        <CollectionDateTime>2022-12-05T18:41:24.051402Z</CollectionDateTime>
+        <CollectionDuration>3.4668291025146964</CollectionDuration>
+        <Resolution>
+          <sicommon:Range>0.99763658689334989</sicommon:Range>
+          <sicommon:Azimuth>0.99682577226024405</sicommon:Azimuth>
+        </Resolution>
+        <Polarization>
+          <TxPolarization>V</TxPolarization>
+          <RcvPolarization>RHC</RcvPolarization>
+        </Polarization>
+      </Information>
+      <Geometry>
+        <Azimuth>9.9994779614198173</Azimuth>
+        <Slope>31.195125856239255</Slope>
+        <Squint>76.590205509300006</Squint>
+        <Graze>30.000080950049007</Graze>
+        <Tilt>8.9805970546123799</Tilt>
+        <DopplerConeAngle>80.000333057346595</DopplerConeAngle>
+      </Geometry>
+      <Phenomenology>
+        <Shadow>
+          <sicommon:Angle>0.0005220385801805148</sicommon:Angle>
+          <sicommon:Magnitude>1.7320451562031676</sicommon:Magnitude>
+        </Shadow>
+        <Layover>
+          <sicommon:Angle>-162.45909403041333</sicommon:Angle>
+          <sicommon:Magnitude>0.60550526142149763</sicommon:Magnitude>
+        </Layover>
+        <MultiPath>-175.48141915233586</MultiPath>
+        <GroundTrack>-76.850298101271562</GroundTrack>
+      </Phenomenology>
+    </Collection>
+    <Product>
+      <Resolution>
+        <sicommon:Row>1.1519732730323955</sicommon:Row>
+        <sicommon:Col>1.0132951358130444</sicommon:Col>
+      </Resolution>
+      <Ellipticity>1.1368585837610667</Ellipticity>
+      <Polarization>
+        <TxPolarizationProc>V</TxPolarizationProc>
+        <RcvPolarizationProc>RHC</RcvPolarizationProc>
+      </Polarization>
+      <North>-170</North>
+    </Product>
+  </ExploitationFeatures>
+</SIDD>

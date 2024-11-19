@@ -1,0 +1,17 @@
+<RcvAntenna>
+    <RcvACX>
+        <Offset>36</Offset>
+        <Size>3</Size>
+        <Format>X=F8;Y=F8;Z=F8;</Format>
+    </RcvACX>
+    <RcvACY>
+        <Offset>39</Offset>
+        <Size>3</Size>
+        <Format>X=F8;Y=F8;Z=F8;</Format>
+    </RcvACY>
+    <RcvEB>
+        <Offset>42</Offset>
+        <Size>2</Size>
+        <Format>DCX=F8;DCY=F8;</Format>
+    </RcvEB>
+</RcvAntenna>

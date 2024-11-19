@@ -1,0 +1,632 @@
+"""
+===============
+XML transcoding
+===============
+
+The parsed XML element tree is a fundamental component of SARPy interfaces for the NGA
+SAR standards that use XML as their primary metadata container.
+:py:mod:`sarpy.standards.xml` contains classes and functions that make it easier to interact
+with element trees using more convenient datatypes.
+"""
+
+import abc
+import datetime
+import re
+from collections.abc import Sequence
+from typing import Any
+
+import lxml.etree
+import numpy as np
+import numpy.typing as npt
+
+
+class Type:
+    """Base class for transcoders which provide methods for parsing, setting, and making XML elements."""
+
+    def parse_elem(self, elem):
+        """Returns the XML element ``elem``'s text."""
+        return elem.text
+
+    def set_elem(self, elem, val):
+        """Set ``elem.text`` to the string version of ``val``."""
+        elem.text = str(val)
+
+    def make_elem(self, tag, val):
+        """Create a new XML element."""
+        elem = lxml.etree.Element(tag)
+        self.set_elem(elem, val)
+        return elem
+
+
+class TxtType(Type):
+    """
+    Transcoder for text (TXT) XML parameter types.
+
+    """
+
+    def parse_elem(self, elem) -> str:
+        """Returns a string constructed from ``elem.text``."""
+        return "" if elem.text is None else elem.text
+
+    def set_elem(self, elem, val: str) -> None:
+        """Set ``elem.text`` to ``val``."""
+        elem.text = val or None
+
+
+class BoolType(Type):
+    """
+    Transcoder for boolean (BOOL) XML parameter types.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> bool:
+        """Returns a Boolean value constructed from the string ``elem.text``."""
+        val_collapsed = elem.text.strip()
+        if val_collapsed in ("0", "false"):
+            return False
+        if val_collapsed in ("1", "true"):
+            return True
+        raise ValueError(f"{val_collapsed} is not in xs:boolean's lexical space")
+
+    def set_elem(self, elem: lxml.etree.Element, val: bool) -> None:
+        """Set ``elem.text`` to a string representation of the boolean ``val``."""
+        elem.text = str(val).lower()
+
+
+class IntType(Type):
+    """
+    Transcoder for integer (INT) XML parameter types.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> int:
+        """Returns an integer object constructed from the string ``elem.text``."""
+        return int(elem.text)
+
+
+class DblType(Type):
+    """
+    Transcoder for double-precision floating point (DBL) XML parameter types.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> float:
+        """Returns a floating point number constructed from the string ``elem.text``."""
+        return float(elem.text)
+
+
+class HexType(Type):
+    """
+    Transcoder for HEX XML parameter types.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> bytes:
+        """Returns a byte string constructed from the string ``elem.text``."""
+        return bytes.fromhex(elem.text)
+
+    def set_elem(self, elem: lxml.etree.Element, val: bytes) -> None:
+        """Set ``elem.text`` to a hex string representation of the byte string ``val``."""
+        elem.text = val.hex().upper()
+
+
+class XdtType(Type):
+    """
+    Transcoder for XML dateTime (XDT) XML parameter types.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> datetime.datetime:
+        """Returns a `datetime` constructed from the string ``elem.text``."""
+        return datetime.datetime.fromisoformat(elem.text)
+
+    def set_elem(self, elem: lxml.etree.Element, val: datetime.datetime) -> None:
+        """Set ``elem.text`` to a string representation of the date and time from ``val``.
+
+        If ``val`` is naive, the timezone is assumed to be UTC.
+
+        """
+        is_aware = val.tzinfo is not None and val.tzinfo.utcoffset(None) is not None
+        dt = val.astimezone(datetime.timezone.utc) if is_aware else val
+        elem.text = dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+class PolyType(Type):
+    """
+    Transcoder for N-variate polynomial (POLY, 2D_POLY, etc.) XML parameter types.
+
+    Parameters
+    ----------
+    nvar : int, optional
+        Number of variables in polynomial.
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, nvar: int = 1, child_ns: str = "") -> None:
+        self.nvar = nvar
+        self.child_ns = child_ns
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array of coefficients describing the polynomial encoded in ``elem``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to parse
+
+        Returns
+        -------
+        coefs : ndarray
+            ``nvar``-dimensional array of coefficients ordered so that the coefficient of
+            the term of multi-exponent n_1, n_2, ..., n_nvar is contained in ``val[n_1, n_2, ..., n_nvar]``.
+
+        """
+        coef_by_exponents = {
+            tuple(
+                int(coef.get(f"exponent{x}")) for x in range(1, self.nvar + 1)
+            ): float(coef.text)
+            for coef in elem
+        }
+        coefs = np.zeros(np.max(list(coef_by_exponents), axis=0) + 1, np.float64)
+        for exponents, coef in coef_by_exponents.items():
+            coefs[*exponents] = coef
+        return coefs
+
+    def set_elem(self, elem: lxml.etree.Element, val: npt.ArrayLike) -> None:
+        """Set ``elem`` node using the polynomial coefficients from ``val``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : array_like
+            ``nvar``-dimensional array of coefficients ordered so that the coefficient of
+            the term of multi-exponent n_1, n_2, ..., n_nvar is contained in ``val[n_1, n_2, ..., n_nvar]``.
+
+        """
+        coefs = np.asarray(val)
+        if coefs.ndim != self.nvar:
+            raise ValueError(f"Coefficient array must have ndim={self.nvar}")
+        elem[:] = []
+        elem_ns = self.child_ns if self.child_ns else lxml.etree.QName(elem).namespace
+        ns = f"{{{elem_ns}}}" if elem_ns else ""
+        for dim, ncoef in enumerate(coefs.shape):
+            elem.set(f"order{dim+1}", str(ncoef - 1))
+        for coord, coef in np.ndenumerate(coefs):
+            attribs = {f"exponent{d + 1}": str(c) for d, c in enumerate(coord)}
+            lxml.etree.SubElement(elem, ns + "Coef", attrib=attribs).text = str(coef)
+
+
+class XyzPolyType(Type):
+    """
+    Transcoder for XYZ_POLY XML parameter types containing triplets of 1D polynomials.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        self.child_ns = child_ns
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array of coefficients describing the polynomials encoded in ``elem``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to parse
+
+        Returns
+        -------
+        coefs : (N, 3) ndarray
+            Array of coefficients ordered so that the coefficients for terms of degree
+            n are contained in ``val[n]``. Dimension two enumerates the X, Y, and Z
+            polynomials.
+
+        """
+        xyz = [PolyType(1).parse_elem(elem.find(f"{{*}}{d}")) for d in "XYZ"]
+        xyz_coefs = np.zeros_like(xyz[0], shape=(max(len(d) for d in xyz), len(xyz)))
+        for dim, coefs in enumerate(xyz):
+            xyz_coefs[: len(coefs), dim] = coefs
+        return xyz_coefs
+
+    def set_elem(self, elem: lxml.etree.Element, val: npt.ArrayLike) -> None:
+        """Set ``elem`` node using the polynomial coefficients from ``val``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : (N, 3) array_like
+            Array of coefficients ordered so that the coefficients for terms of degree
+            n are contained in ``val[n]``. Dimension two enumerates the X, Y, and Z
+            polynomials.
+
+        """
+        coefs = np.asarray(val)
+        if coefs.shape[1] != 3:
+            raise ValueError(f"{coefs.shape[1]=} must be 3")
+        elem[:] = []
+        elem_ns = self.child_ns if self.child_ns else lxml.etree.QName(elem).namespace
+        ns = f"{{{elem_ns}}}" if elem_ns else ""
+        for index, tag in enumerate("XYZ"):
+            subelem = lxml.etree.SubElement(elem, ns + tag)
+            PolyType(1).set_elem(subelem, coefs[:, index])
+
+
+class SequenceType(abc.ABC, Type):
+    """
+    Abstract base class for XML types containing a defined sequence of subelements.
+
+    Parameters
+    ----------
+    subelements : dict of str: Type
+        Mapping of subelement tags to transcoder type
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, subelements: dict[str, Type], child_ns: str = "") -> None:
+        self.subelements = subelements
+        self.child_ns = child_ns
+
+    @abc.abstractmethod
+    def parse_elem(self, elem: lxml.etree.Element) -> Any:
+        pass
+
+    @abc.abstractmethod
+    def set_elem(self, elem: lxml.etree.Element, val: Any) -> None:
+        pass
+
+    def parse_subelements(self, elem: lxml.etree.Element) -> dict[str, Any]:
+        """Returns an array containing the sub-elements encoded in ``elem``."""
+        return {
+            e_name: e_type.parse_elem(elem.find(f"{{*}}{e_name}"))
+            for e_name, e_type in self.subelements.items()
+        }
+
+    def set_subelements(self, elem: lxml.etree.Element, val: dict[str, Any]) -> None:
+        """Set ``elem`` node subelements using ``val``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : dict
+            Mapping of subelement tags to subelement values
+
+        """
+        if self.subelements.keys() != val.keys():
+            raise ValueError(f"{(val.keys())=} must match {self.subelements.keys()=}")
+        elem[:] = []
+        elem_ns = self.child_ns if self.child_ns else lxml.etree.QName(elem).namespace
+        ns = f"{{{elem_ns}}}" if elem_ns else ""
+        for e_name, e_type in self.subelements.items():
+            subelem = lxml.etree.SubElement(elem, ns + e_name)
+            e_type.set_elem(subelem, val[e_name])
+
+
+class ArrayType(SequenceType):
+    """
+    Base transcoder class for XML parameter types whose subelements can be treated as an array.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array containing the sub-elements encoded in ``elem``."""
+        return np.array(list(super().parse_subelements(elem).values()))
+
+    def set_elem(self, elem: lxml.etree.Element, val: Sequence[Any]) -> None:
+        """Set ``elem`` node using ``val``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : array_like
+            Sequence of element values in ``subelements`` order
+
+        """
+        if len(self.subelements) != len(val):
+            raise ValueError(
+                f"{len(self.subelements)=} does not match expected {len(val)=}"
+            )
+        super().set_subelements(
+            elem, dict((k, v) for k, v in zip(self.subelements, val, strict=True))
+        )
+
+
+class XyType(ArrayType):
+    """
+    Transcoder for XML parameter types containing scalar X and Y components.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        super().__init__(
+            subelements={c: DblType() for c in ("X", "Y")}, child_ns=child_ns
+        )
+
+
+class XyzType(ArrayType):
+    """
+    Transcoder for XML parameter types containing scalar X, Y, and Z components.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        super().__init__(
+            subelements={c: DblType() for c in ("X", "Y", "Z")}, child_ns=child_ns
+        )
+
+
+class LatLonType(ArrayType):
+    """
+    Transcoder for XML parameter types containing scalar Lat and Lon components.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        super().__init__(
+            subelements={c: DblType() for c in ("Lat", "Lon")}, child_ns=child_ns
+        )
+
+
+class LatLonHaeType(ArrayType):
+    """
+    Transcoder for XML parameter types containing scalar Lat, Lon, and HAE components.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        super().__init__(
+            subelements={c: DblType() for c in ("Lat", "Lon", "HAE")}, child_ns=child_ns
+        )
+
+
+class RowColType(ArrayType):
+    """
+    Transcoder for XML parameter types containing scalar Row and Col components.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        super().__init__(
+            subelements={c: IntType() for c in ("Row", "Col")}, child_ns=child_ns
+        )
+
+
+class LineSampType(ArrayType):
+    """
+    Transcoder for XML parameter types containing scalar Line and Sample components.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        super().__init__(
+            subelements={c: DblType() for c in ("Line", "Sample")}, child_ns=child_ns
+        )
+
+
+class CmplxType(SequenceType):
+    """
+    Transcoder for double-precision floating point complex (CMPLX) XML parameter types.
+
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(self, child_ns: str = "") -> None:
+        super().__init__(
+            subelements={c: DblType() for c in ("Real", "Imag")}, child_ns=child_ns
+        )
+
+    def parse_elem(self, elem: lxml.etree.Element) -> complex:
+        """Returns the complex number encoded in ``elem``."""
+        return complex(*super().parse_subelements(elem).values())
+
+    def set_elem(self, elem: lxml.etree.Element, val: complex) -> None:
+        """Set ``elem`` node to the complex number ``val``."""
+        super().set_subelements(elem, {"Real": val.real, "Imag": val.imag})
+
+
+class ListType(Type):
+    """
+    ListType(sub_tag, sub_type, *, include_size_attr=True, index_start=1)
+
+    Transcoder for XML parameter types containing an ordered list of subelements with a common tag.
+
+    Parameters
+    ----------
+    sub_tag : str
+        Tag of subelement (excluding namespace)
+    sub_type : Type
+        Transcoder type of subelements
+    include_size_attr : bool, optional
+        If True, the size attribute is included. Otherwise it is not. Default is True.
+    index_start : int, optional
+        Starting index. Default is 1.
+    child_ns : str, optional
+        Namespace to use for child elements.  Parent namespace used if unspecified.
+
+    """
+
+    def __init__(
+        self,
+        sub_tag: str,
+        sub_type: Type,
+        *,
+        include_size_attr: bool = True,
+        index_start: int = 1,
+        child_ns: str = "",
+    ) -> None:
+        self.sub_tag = sub_tag
+        self.sub_type = sub_type
+        self.include_size_attr = include_size_attr
+        self.index_start = index_start
+        self.child_ns = child_ns
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array containing the sub-elements encoded in ``elem``."""
+        return np.array(
+            [
+                self.sub_type.parse_elem(x)
+                for x in sorted(elem, key=lambda x: int(x.get("index")))
+            ]
+        )
+
+    def set_elem(self, elem: lxml.etree.Element, val: Sequence[Any]) -> None:
+        """Set ``elem`` node using ``val``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : array_like
+            Sequence of element values in ``subelements`` order
+
+        """
+        elem[:] = []
+        elem_ns = self.child_ns if self.child_ns else lxml.etree.QName(elem).namespace
+        ns = f"{{{elem_ns}}}" if elem_ns else ""
+        if self.include_size_attr:
+            elem.set("size", str(len(val)))
+        for index, sub_val in enumerate(val):
+            subelem = lxml.etree.SubElement(elem, ns + self.sub_tag)
+            self.sub_type.set_elem(subelem, sub_val)
+            subelem.set("index", str(index + self.index_start))
+
+
+class ParameterType(Type):
+    """
+    Transcoder for TXT XML parameter types with a required "name" attribute.
+
+    """
+
+    def parse_elem(self, elem) -> tuple[str, str]:
+        """Returns a tuple containing (``elem["name"]``, ``elem.text``)."""
+        name = elem.get("name")
+        val = TxtType().parse_elem(elem)
+        return (name, val)
+
+    def set_elem(self, elem, val: tuple[str, str]) -> None:
+        """Set ``elem``'s name and value from a tuple of strings: (``name``, ``text``)"""
+        elem.set("name", val[0])
+        TxtType().set_elem(elem, val[1])
+
+
+class NotTranscodableError(Exception):
+    pass
+
+
+class XmlHelper:
+    """
+    Base Class for generic XmlHelpers, which provide methods for transcoding data
+    between XML and more convenient Python objects.
+
+    Transcoders are known to a helper by names constructed from a simplified element
+    path, without namespaces or position indices.
+
+    For example, the transcoder for an element with the structural, absolute path:
+
+        ``{ns}level0/{not-ns}level1[24]``
+
+    would have the following transcoder name:
+
+        ``level0/level1``
+
+    Parameters
+    ----------
+    element_tree : lxml.etree.ElementTree
+        An XML element tree containing the data being operated on.
+
+    """
+
+    _transcoders_: dict[str, Type] = {}
+
+    def __init__(self, element_tree):
+        self.element_tree = element_tree
+
+    def _get_simple_path(self, elem):
+        element_path = self.element_tree.getelementpath(elem)
+        return re.sub(r"\{.*?\}|\[.*?\]", "", element_path)
+
+    def get_transcoder_name(self, elem):
+        """Returns the transcoder name associated with ``elem``."""
+        simple_path = self._get_simple_path(elem)
+        if simple_path not in self._transcoders_:
+            raise NotTranscodableError(f"{simple_path} is not transcodable")
+        return simple_path
+
+    def _get_transcoder(self, elem):
+        return self._transcoders_[self.get_transcoder_name(elem)]
+
+    def load_elem(self, elem):
+        """Decode ``elem`` (an XML element) to a Python object."""
+        return self._get_transcoder(elem).parse_elem(elem)
+
+    def load(self, pattern):
+        """
+        Find and load the first subelement matching ``pattern`` in ``element_tree``.
+
+        Returns the decoded Python object or `None`.
+
+        """
+        elem = self.element_tree.find(pattern)
+        if elem is None:
+            return
+        return self.load_elem(elem)
+
+    def set_elem(self, elem, val):
+        """Encode ``val`` (a Python object) into the XML element ``elem``."""
+        self._get_transcoder(elem).set_elem(elem, val)
+
+    def set(self, pattern, val):
+        """
+        Find and set the first subelement matching ``pattern`` in ``element_tree`` using
+        ``val``.
+
+        """
+        elem = self.element_tree.find(pattern)
+        if elem is None:
+            raise ValueError(f"{pattern=} did not match any elements")
+        self.set_elem(elem, val)

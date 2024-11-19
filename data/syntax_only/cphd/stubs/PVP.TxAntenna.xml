@@ -1,0 +1,17 @@
+<TxAntenna>
+    <TxACX>
+        <Offset>16</Offset>
+        <Size>3</Size>
+        <Format>X=F8;Y=F8;Z=F8;</Format>
+    </TxACX>
+    <TxACY>
+        <Offset>19</Offset>
+        <Size>3</Size>
+        <Format>X=F8;Y=F8;Z=F8;</Format>
+    </TxACY>
+    <TxEB>
+        <Offset>22</Offset>
+        <Size>2</Size>
+        <Format>DCX=F8;DCY=F8;</Format>
+    </TxEB>
+</TxAntenna>

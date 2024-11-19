@@ -1,0 +1,88 @@
+<ErrorStatistics>
+    <BistaticCompositeSCP>
+        <RAvg>1.1</RAvg>
+        <RdotAvg>2.2</RdotAvg>
+        <RAvgRdotAvg>0.33</RAvgRdotAvg>
+    </BistaticCompositeSCP>
+    <BistaticComponents>
+        <PosVelErr>
+            <TxFrame>RIC_ECI</TxFrame>
+            <TxPVCov size1="6" size2="6">
+                <Entry index1="2" index2="1">0.21</Entry>
+            </TxPVCov>
+            <RcvFrame>RIC_ECF</RcvFrame>
+            <RcvPVCov size1="6" size2="6">
+                <Entry index1="5" index2="6">0.56</Entry>
+            </RcvPVCov>
+            <TxRcvPVXCov size1="6" size2="6">
+                <Entry index1="4" index2="3">0.43</Entry>
+            </TxRcvPVXCov>
+        </PosVelErr>
+        <RadarSensor>
+            <TxRcvTimeFreq size1="4" size2="4">
+                <Entry index1="1" index2="4">0.14</Entry>
+            </TxRcvTimeFreq>
+            <TxRcvTimeFreqDecorr>
+                <TxTimeDecorr>
+                    <CorrCoefZero>0.1</CorrCoefZero>
+                    <DecorrRate>0.11</DecorrRate>
+                </TxTimeDecorr>
+                <TxClockFreqDecorr>
+                    <CorrCoefZero>0.2</CorrCoefZero>
+                    <DecorrRate>0.22</DecorrRate>
+                </TxClockFreqDecorr>
+                <RcvTimeDecorr>
+                    <CorrCoefZero>0.3</CorrCoefZero>
+                    <DecorrRate>0.33</DecorrRate>
+                </RcvTimeDecorr>
+                <RcvClockFreqDecorr>
+                    <CorrCoefZero>0.4</CorrCoefZero>
+                    <DecorrRate>0.44</DecorrRate>
+                </RcvClockFreqDecorr>
+            </TxRcvTimeFreqDecorr>
+        </RadarSensor>
+        <AtmosphericError>
+            <TxSCP>0.123</TxSCP>
+            <RcvSCP>0.456</RcvSCP>
+            <TxRcvCC>0.789</TxRcvCC>
+        </AtmosphericError>
+    </BistaticComponents>
+    <BistaticAdjustableParameterOffsets>
+        <TxPlatform>
+            <APCPosSCPCOA>
+                <X>0.1</X>
+                <Y>0.2</Y>
+                <Z>0.3</Z>
+            </APCPosSCPCOA>
+            <APCVel>
+                <X>0.4</X>
+                <Y>0.5</Y>
+                <Z>0.6</Z>
+            </APCVel>
+            <TimeSCPCOA>0.7</TimeSCPCOA>
+            <ClockFreqSF>0.8</ClockFreqSF>
+        </TxPlatform>
+        <RcvPlatform>
+            <APCPosSCPCOA>
+                <X>0.11</X>
+                <Y>0.22</Y>
+                <Z>0.33</Z>
+            </APCPosSCPCOA>
+            <APCVel>
+                <X>0.44</X>
+                <Y>0.55</Y>
+                <Z>0.66</Z>
+            </APCVel>
+            <TimeSCPCOA>0.77</TimeSCPCOA>
+            <ClockFreqSF>0.88</ClockFreqSF>
+        </RcvPlatform>
+        <APOError size1="16" size2="16">
+            <Entry index1="3" index2="15">3.15</Entry>
+        </APOError>
+        <BistaticCompositeSCP>
+            <RAvg>0.01</RAvg>
+            <RdotAvg>0.02</RdotAvg>
+            <RAvgRdotAvg>0.03</RAvgRdotAvg>
+        </BistaticCompositeSCP>
+    </BistaticAdjustableParameterOffsets>
+</ErrorStatistics>

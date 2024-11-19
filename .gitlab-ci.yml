@@ -1,0 +1,23 @@
+stages:
+  - build
+
+default:
+  image: python:3.11
+  before_script:
+  - pip install -U pdm
+  - export PDM_CHECK_UPDATE=false
+
+current_env:
+  stage: build
+  script:
+  - pdm lock -dG :all
+  - pdm install --frozen-lockfile -dG test
+  - pdm run nox
+  - pdm run nox -s docs
+
+min_env:
+  stage: build
+  script:
+  - pdm lock -dG :all --strategy direct_minimal_versions
+  - pdm install --frozen-lockfile -dG test
+  - pdm run nox -s test

@@ -1,0 +1,1262 @@
+<ns2:CPHD xmlns:ns2="http://api.nsgreg.nga.mil/schema/cphd/1.1.0">
+    <ns2:CollectionID>
+        <ns2:CollectorName>SyntheticCollector</ns2:CollectorName>
+        <ns2:IlluminatorName>DifferentThanCollector</ns2:IlluminatorName>
+        <ns2:CoreName>SyntheticCore</ns2:CoreName>
+        <ns2:CollectType>BISTATIC</ns2:CollectType>
+        <ns2:RadarMode>
+            <ns2:ModeType>SPOTLIGHT</ns2:ModeType>
+            <ns2:ModeID>Syntax-only Mode</ns2:ModeID>
+        </ns2:RadarMode>
+        <ns2:Classification>UNCLASSIFIED</ns2:Classification>
+        <ns2:ReleaseInfo>UNRESTRICTED</ns2:ReleaseInfo>
+        <ns2:CountryCode>SYNTAX-ONLY0</ns2:CountryCode>
+        <ns2:Parameter name="foo">1.23</ns2:Parameter>
+        <ns2:Parameter name="bar">4.56</ns2:Parameter>
+    </ns2:CollectionID>
+    <ns2:Global>
+        <ns2:DomainType>FX</ns2:DomainType>
+        <ns2:SGN>-1</ns2:SGN>
+        <ns2:Timeline>
+            <ns2:CollectionStart>2023-10-02T21:51:58.927654Z</ns2:CollectionStart>
+            <ns2:RcvCollectionStart>2023-10-02T21:51:58.927654Z</ns2:RcvCollectionStart>
+            <ns2:TxTime1>0.0</ns2:TxTime1>
+            <ns2:TxTime2>2.539289679962638</ns2:TxTime2>
+        </ns2:Timeline>
+        <ns2:FxBand>
+            <ns2:FxMin>9831251195.313574</ns2:FxMin>
+            <ns2:FxMax>10168748804.686424</ns2:FxMax>
+        </ns2:FxBand>
+        <ns2:TOASwath>
+            <ns2:TOAMin>-6.1892989277891546e-06</ns2:TOAMin>
+            <ns2:TOAMax>6.1892989277891546e-06</ns2:TOAMax>
+        </ns2:TOASwath>
+        <ns2:TropoParameters>
+            <ns2:N0>320.3</ns2:N0>
+            <ns2:RefHeight>ZERO</ns2:RefHeight>
+        </ns2:TropoParameters>
+        <ns2:IonoParameters>
+            <ns2:TECV>0.0</ns2:TECV>
+            <ns2:F2Height>0.0</ns2:F2Height>
+        </ns2:IonoParameters>
+    </ns2:Global>
+    <ns2:SceneCoordinates>
+        <ns2:EarthModel>WGS_84</ns2:EarthModel>
+        <ns2:IARP>
+            <ns2:ECF>
+                <ns2:X>6378137.0</ns2:X>
+                <ns2:Y>0.0</ns2:Y>
+                <ns2:Z>0.0</ns2:Z>
+            </ns2:ECF>
+            <ns2:LLH>
+                <ns2:Lat>0.0</ns2:Lat>
+                <ns2:Lon>0.0</ns2:Lon>
+                <ns2:HAE>0.0</ns2:HAE>
+            </ns2:LLH>
+        </ns2:IARP>
+        <ns2:ReferenceSurface>
+            <ns2:HAE>
+                <ns2:uIAXLL>
+                    <ns2:Lat>0.1</ns2:Lat>
+                    <ns2:Lon>0.2</ns2:Lon>
+                </ns2:uIAXLL>
+                <ns2:uIAYLL>
+                    <ns2:Lat>0.3</ns2:Lat>
+                    <ns2:Lon>0.4</ns2:Lon>
+                </ns2:uIAYLL>
+            </ns2:HAE>
+        </ns2:ReferenceSurface>
+        <ns2:ImageArea>
+            <ns2:X1Y1>
+                <ns2:X>-1500.0</ns2:X>
+                <ns2:Y>-1500.0</ns2:Y>
+            </ns2:X1Y1>
+            <ns2:X2Y2>
+                <ns2:X>1500.0</ns2:X>
+                <ns2:Y>1500.0</ns2:Y>
+            </ns2:X2Y2>
+            <ns2:Polygon size="4">
+                <ns2:Vertex index="1">
+                    <ns2:X>-1500.0</ns2:X>
+                    <ns2:Y>-1500.0</ns2:Y>
+                </ns2:Vertex>
+                <ns2:Vertex index="2">
+                    <ns2:X>-1500.0</ns2:X>
+                    <ns2:Y>1500.0</ns2:Y>
+                </ns2:Vertex>
+                <ns2:Vertex index="3">
+                    <ns2:X>1500.0</ns2:X>
+                    <ns2:Y>1500.0</ns2:Y>
+                </ns2:Vertex>
+                <ns2:Vertex index="4">
+                    <ns2:X>1500.0</ns2:X>
+                    <ns2:Y>-1500.0</ns2:Y>
+                </ns2:Vertex>
+            </ns2:Polygon>
+        </ns2:ImageArea>
+        <ns2:ImageAreaCornerPoints>
+            <ns2:IACP index="1">
+                <ns2:Lat>0.013565541522053958</ns2:Lat>
+                <ns2:Lon>-0.01347472901336879</ns2:Lon>
+            </ns2:IACP>
+            <ns2:IACP index="2">
+                <ns2:Lat>0.013565541522053961</ns2:Lat>
+                <ns2:Lon>0.013474729013368785</ns2:Lon>
+            </ns2:IACP>
+            <ns2:IACP index="3">
+                <ns2:Lat>-0.013565541522053958</ns2:Lat>
+                <ns2:Lon>0.01347472901336879</ns2:Lon>
+            </ns2:IACP>
+            <ns2:IACP index="4">
+                <ns2:Lat>-0.013565541522053961</ns2:Lat>
+                <ns2:Lon>-0.013474729013368785</ns2:Lon>
+            </ns2:IACP>
+        </ns2:ImageAreaCornerPoints>
+        <ns2:ExtendedArea>
+            <ns2:X1Y1>
+                <ns2:X>-1500.0</ns2:X>
+                <ns2:Y>-1500.0</ns2:Y>
+            </ns2:X1Y1>
+            <ns2:X2Y2>
+                <ns2:X>1500.0</ns2:X>
+                <ns2:Y>1500.0</ns2:Y>
+            </ns2:X2Y2>
+            <ns2:Polygon size="4">
+                <ns2:Vertex index="1">
+                    <ns2:X>-1500.0</ns2:X>
+                    <ns2:Y>-1500.0</ns2:Y>
+                </ns2:Vertex>
+                <ns2:Vertex index="2">
+                    <ns2:X>-1500.0</ns2:X>
+                    <ns2:Y>1500.0</ns2:Y>
+                </ns2:Vertex>
+                <ns2:Vertex index="3">
+                    <ns2:X>1500.0</ns2:X>
+                    <ns2:Y>1500.0</ns2:Y>
+                </ns2:Vertex>
+                <ns2:Vertex index="4">
+                    <ns2:X>1500.0</ns2:X>
+                    <ns2:Y>-1500.0</ns2:Y>
+                </ns2:Vertex>
+            </ns2:Polygon>
+        </ns2:ExtendedArea>
+        <ns2:ImageGrid>
+            <ns2:Identifier>FAKE_GRID</ns2:Identifier>
+            <ns2:IARPLocation>
+                <ns2:Line>3486.0</ns2:Line>
+                <ns2:Sample>1125.0</ns2:Sample>
+            </ns2:IARPLocation>
+            <ns2:IAXExtent>
+                <ns2:LineSpacing>0.43033155140602114</ns2:LineSpacing>
+                <ns2:FirstLine>0</ns2:FirstLine>
+                <ns2:NumLines>6973</ns2:NumLines>
+            </ns2:IAXExtent>
+            <ns2:IAYExtent>
+                <ns2:SampleSpacing>1.3334613092121825</ns2:SampleSpacing>
+                <ns2:FirstSample>0</ns2:FirstSample>
+                <ns2:NumSamples>2251</ns2:NumSamples>
+            </ns2:IAYExtent>
+            <ns2:SegmentList>
+                <ns2:NumSegments>2</ns2:NumSegments>
+                <ns2:Segment>
+                    <ns2:Identifier>FAKE_SEGMENT0</ns2:Identifier>
+                    <ns2:StartLine>1</ns2:StartLine>
+                    <ns2:StartSample>1</ns2:StartSample>
+                    <ns2:EndLine>2</ns2:EndLine>
+                    <ns2:EndSample>2</ns2:EndSample>
+                    <ns2:SegmentPolygon size="4">
+                        <ns2:SV index="1">
+                            <ns2:Line>0</ns2:Line>
+                            <ns2:Sample>0</ns2:Sample>
+                        </ns2:SV>
+                        <ns2:SV index="2">
+                            <ns2:Line>1</ns2:Line>
+                            <ns2:Sample>1</ns2:Sample>
+                        </ns2:SV>
+                        <ns2:SV index="3">
+                            <ns2:Line>2</ns2:Line>
+                            <ns2:Sample>2</ns2:Sample>
+                        </ns2:SV>
+                        <ns2:SV index="4">
+                            <ns2:Line>3</ns2:Line>
+                            <ns2:Sample>3</ns2:Sample>
+                        </ns2:SV>
+                    </ns2:SegmentPolygon>
+                </ns2:Segment>
+                <ns2:Segment>
+                    <ns2:Identifier>FAKE_SEGMENT1</ns2:Identifier>
+                    <ns2:StartLine>1</ns2:StartLine>
+                    <ns2:StartSample>1</ns2:StartSample>
+                    <ns2:EndLine>2</ns2:EndLine>
+                    <ns2:EndSample>2</ns2:EndSample>
+                </ns2:Segment>
+            </ns2:SegmentList>
+        </ns2:ImageGrid>
+    </ns2:SceneCoordinates>
+    <ns2:Data>
+        <ns2:SignalArrayFormat>CF8</ns2:SignalArrayFormat>
+        <ns2:NumBytesPVP>352</ns2:NumBytesPVP>
+        <ns2:NumCPHDChannels>1</ns2:NumCPHDChannels>
+        <ns2:SignalCompressionID>1</ns2:SignalCompressionID>
+        <ns2:Channel>
+            <ns2:Identifier>1</ns2:Identifier>
+            <ns2:NumVectors>3268</ns2:NumVectors>
+            <ns2:NumSamples>5223</ns2:NumSamples>
+            <ns2:SignalArrayByteOffset>0</ns2:SignalArrayByteOffset>
+            <ns2:PVPArrayByteOffset>0</ns2:PVPArrayByteOffset>
+            <ns2:CompressedSignalSize>10</ns2:CompressedSignalSize>
+        </ns2:Channel>
+        <ns2:NumSupportArrays>4</ns2:NumSupportArrays>
+        <ns2:SupportArray>
+            <ns2:Identifier>transmit_array</ns2:Identifier>
+            <ns2:NumRows>21</ns2:NumRows>
+            <ns2:NumCols>21</ns2:NumCols>
+            <ns2:BytesPerElement>8</ns2:BytesPerElement>
+            <ns2:ArrayByteOffset>0</ns2:ArrayByteOffset>
+        </ns2:SupportArray>
+        <ns2:SupportArray>
+            <ns2:Identifier>transmit_element</ns2:Identifier>
+            <ns2:NumRows>2</ns2:NumRows>
+            <ns2:NumCols>2</ns2:NumCols>
+            <ns2:BytesPerElement>8</ns2:BytesPerElement>
+            <ns2:ArrayByteOffset>3528</ns2:ArrayByteOffset>
+        </ns2:SupportArray>
+        <ns2:SupportArray>
+            <ns2:Identifier>receive_array</ns2:Identifier>
+            <ns2:NumRows>21</ns2:NumRows>
+            <ns2:NumCols>21</ns2:NumCols>
+            <ns2:BytesPerElement>8</ns2:BytesPerElement>
+            <ns2:ArrayByteOffset>3560</ns2:ArrayByteOffset>
+        </ns2:SupportArray>
+        <ns2:SupportArray>
+            <ns2:Identifier>receive_element</ns2:Identifier>
+            <ns2:NumRows>2</ns2:NumRows>
+            <ns2:NumCols>2</ns2:NumCols>
+            <ns2:BytesPerElement>8</ns2:BytesPerElement>
+            <ns2:ArrayByteOffset>7088</ns2:ArrayByteOffset>
+        </ns2:SupportArray>
+    </ns2:Data>
+    <ns2:Channel>
+        <ns2:RefChId>1</ns2:RefChId>
+        <ns2:FXFixedCPHD>true</ns2:FXFixedCPHD>
+        <ns2:TOAFixedCPHD>true</ns2:TOAFixedCPHD>
+        <ns2:SRPFixedCPHD>true</ns2:SRPFixedCPHD>
+        <ns2:Parameters>
+            <ns2:Identifier>1</ns2:Identifier>
+            <ns2:RefVectorIndex>1634</ns2:RefVectorIndex>
+            <ns2:FXFixed>true</ns2:FXFixed>
+            <ns2:TOAFixed>true</ns2:TOAFixed>
+            <ns2:SRPFixed>true</ns2:SRPFixed>
+            <ns2:SignalNormal>true</ns2:SignalNormal>
+            <ns2:Polarization>
+                <ns2:TxPol>S</ns2:TxPol>
+                <ns2:RcvPol>E</ns2:RcvPol>
+                <ns2:TxPolRef>
+                    <ns2:AmpH>0.0</ns2:AmpH>
+                    <ns2:AmpV>1.0</ns2:AmpV>
+                    <ns2:PhaseV>0.24</ns2:PhaseV>
+                </ns2:TxPolRef>
+                <ns2:RcvPolRef>
+                    <ns2:AmpH>0.0</ns2:AmpH>
+                    <ns2:AmpV>1.0</ns2:AmpV>
+                    <ns2:PhaseV>0.24</ns2:PhaseV>
+                </ns2:RcvPolRef>
+            </ns2:Polarization>
+            <ns2:FxC>10000000000.0</ns2:FxC>
+            <ns2:FxBW>337497609.3728504</ns2:FxBW>
+            <ns2:FxBWNoise>1.0</ns2:FxBWNoise>
+            <ns2:TOASaved>1.2378597855578309e-05</ns2:TOASaved>
+            <ns2:TOAExtended>
+                <ns2:TOAExtSaved>1.0</ns2:TOAExtSaved>
+                <ns2:LFMEclipse>
+                    <ns2:FxEarlyLow>1.0</ns2:FxEarlyLow>
+                    <ns2:FxEarlyHigh>2.0</ns2:FxEarlyHigh>
+                    <ns2:FxLateLow>3.0</ns2:FxLateLow>
+                    <ns2:FxLateHigh>4.0</ns2:FxLateHigh>
+                </ns2:LFMEclipse>
+            </ns2:TOAExtended>
+            <ns2:DwellTimes>
+                <ns2:CODId>1</ns2:CODId>
+                <ns2:DwellId>1</ns2:DwellId>
+                <ns2:DTAId>DTAIdentifier!</ns2:DTAId>
+                <ns2:UseDTA>false</ns2:UseDTA>
+            </ns2:DwellTimes>
+            <ns2:ImageArea>
+                <ns2:X1Y1>
+                    <ns2:X>-1500.0</ns2:X>
+                    <ns2:Y>-1500.0</ns2:Y>
+                </ns2:X1Y1>
+                <ns2:X2Y2>
+                    <ns2:X>1500.0</ns2:X>
+                    <ns2:Y>1500.0</ns2:Y>
+                </ns2:X2Y2>
+                <ns2:Polygon size="4">
+                    <ns2:Vertex index="1">
+                        <ns2:X>-1500.0</ns2:X>
+                        <ns2:Y>-1500.0</ns2:Y>
+                    </ns2:Vertex>
+                    <ns2:Vertex index="2">
+                        <ns2:X>-1500.0</ns2:X>
+                        <ns2:Y>1500.0</ns2:Y>
+                    </ns2:Vertex>
+                    <ns2:Vertex index="3">
+                        <ns2:X>1500.0</ns2:X>
+                        <ns2:Y>1500.0</ns2:Y>
+                    </ns2:Vertex>
+                    <ns2:Vertex index="4">
+                        <ns2:X>1500.0</ns2:X>
+                        <ns2:Y>-1500.0</ns2:Y>
+                    </ns2:Vertex>
+                </ns2:Polygon>
+            </ns2:ImageArea>
+            <ns2:Antenna>
+                <ns2:TxAPCId>transmit</ns2:TxAPCId>
+                <ns2:TxAPATId>transmit</ns2:TxAPATId>
+                <ns2:RcvAPCId>receive</ns2:RcvAPCId>
+                <ns2:RcvAPATId>receive</ns2:RcvAPATId>
+            </ns2:Antenna>
+            <ns2:TxRcv>
+                <ns2:TxWFId>txwf_id#1</ns2:TxWFId>
+                <ns2:RcvId>rcv_id#1</ns2:RcvId>
+            </ns2:TxRcv>
+            <ns2:TgtRefLevel>
+                <ns2:PTRef>1.0001673698425293</ns2:PTRef>
+            </ns2:TgtRefLevel>
+            <ns2:NoiseLevel>
+                <ns2:PNRef>1.0</ns2:PNRef>
+                <ns2:BNRef>1.0</ns2:BNRef>
+                <ns2:FxNoiseProfile>
+                    <ns2:Point>
+                        <ns2:Fx>1.0</ns2:Fx>
+                        <ns2:PN>2.0</ns2:PN>
+                    </ns2:Point>
+                    <ns2:Point>
+                        <ns2:Fx>3.0</ns2:Fx>
+                        <ns2:PN>.0</ns2:PN>
+                    </ns2:Point>
+                </ns2:FxNoiseProfile>
+            </ns2:NoiseLevel>
+        </ns2:Parameters>
+        <ns2:AddedParameters>
+            <ns2:Parameter name="FAKE_PARAM">1.23</ns2:Parameter>
+        </ns2:AddedParameters>
+    </ns2:Channel>
+    <ns2:PVP>
+        <ns2:TxTime>
+            <ns2:Offset>0</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:TxTime>
+        <ns2:TxPos>
+            <ns2:Offset>1</ns2:Offset>
+            <ns2:Size>3</ns2:Size>
+            <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+        </ns2:TxPos>
+        <ns2:TxVel>
+            <ns2:Offset>4</ns2:Offset>
+            <ns2:Size>3</ns2:Size>
+            <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+        </ns2:TxVel>
+        <ns2:RcvTime>
+            <ns2:Offset>24</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:RcvTime>
+        <ns2:RcvPos>
+            <ns2:Offset>25</ns2:Offset>
+            <ns2:Size>3</ns2:Size>
+            <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+        </ns2:RcvPos>
+        <ns2:RcvVel>
+            <ns2:Offset>28</ns2:Offset>
+            <ns2:Size>3</ns2:Size>
+            <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+        </ns2:RcvVel>
+        <ns2:SRPPos>
+            <ns2:Offset>7</ns2:Offset>
+            <ns2:Size>3</ns2:Size>
+            <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+        </ns2:SRPPos>
+        <ns2:AmpSF>
+            <ns2:Offset>44</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:AmpSF>
+        <ns2:aFDOP>
+            <ns2:Offset>32</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:aFDOP>
+        <ns2:aFRR1>
+            <ns2:Offset>33</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:aFRR1>
+        <ns2:aFRR2>
+            <ns2:Offset>34</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:aFRR2>
+        <ns2:FX1>
+            <ns2:Offset>12</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:FX1>
+        <ns2:FX2>
+            <ns2:Offset>13</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:FX2>
+        <ns2:FXN1>
+            <ns2:Offset>45</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:FXN1>
+        <ns2:FXN2>
+            <ns2:Offset>46</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:FXN2>
+        <ns2:TOA1>
+            <ns2:Offset>10</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:TOA1>
+        <ns2:TOA2>
+            <ns2:Offset>11</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:TOA2>
+        <ns2:TOAE1>
+            <ns2:Offset>47</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:TOAE1>
+        <ns2:TOAE2>
+            <ns2:Offset>48</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:TOAE2>
+        <ns2:TDTropoSRP>
+            <ns2:Offset>31</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:TDTropoSRP>
+        <ns2:TDIonoSRP>
+            <ns2:Offset>50</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:TDIonoSRP>
+        <ns2:SC0>
+            <ns2:Offset>14</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:SC0>
+        <ns2:SCSS>
+            <ns2:Offset>15</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:SCSS>
+        <ns2:SIGNAL>
+            <ns2:Offset>35</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>I8</ns2:Format>
+        </ns2:SIGNAL>
+        <ns2:TxAntenna>
+            <ns2:TxACX>
+                <ns2:Offset>16</ns2:Offset>
+                <ns2:Size>3</ns2:Size>
+                <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+            </ns2:TxACX>
+            <ns2:TxACY>
+                <ns2:Offset>19</ns2:Offset>
+                <ns2:Size>3</ns2:Size>
+                <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+            </ns2:TxACY>
+            <ns2:TxEB>
+                <ns2:Offset>22</ns2:Offset>
+                <ns2:Size>2</ns2:Size>
+                <ns2:Format>DCX=F8;DCY=F8;</ns2:Format>
+            </ns2:TxEB>
+        </ns2:TxAntenna>
+        <ns2:RcvAntenna>
+            <ns2:RcvACX>
+                <ns2:Offset>36</ns2:Offset>
+                <ns2:Size>3</ns2:Size>
+                <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+            </ns2:RcvACX>
+            <ns2:RcvACY>
+                <ns2:Offset>39</ns2:Offset>
+                <ns2:Size>3</ns2:Size>
+                <ns2:Format>X=F8;Y=F8;Z=F8;</ns2:Format>
+            </ns2:RcvACY>
+            <ns2:RcvEB>
+                <ns2:Offset>42</ns2:Offset>
+                <ns2:Size>2</ns2:Size>
+                <ns2:Format>DCX=F8;DCY=F8;</ns2:Format>
+            </ns2:RcvEB>
+        </ns2:RcvAntenna>
+        <ns2:AddedPVP>
+            <ns2:Name>ADDED_PVP</ns2:Name>
+            <ns2:Offset>49</ns2:Offset>
+            <ns2:Size>1</ns2:Size>
+            <ns2:Format>F8</ns2:Format>
+        </ns2:AddedPVP>
+    </ns2:PVP>
+    <ns2:SupportArray>
+        <ns2:IAZArray>
+            <ns2:Identifier>FAKE_ARRAY</ns2:Identifier>
+            <ns2:ElementFormat>IAZ=F4;</ns2:ElementFormat>
+            <ns2:X0>1.0</ns2:X0>
+            <ns2:Y0>2.0</ns2:Y0>
+            <ns2:XSS>3.0</ns2:XSS>
+            <ns2:YSS>4.0</ns2:YSS>
+            <ns2:NODATA>FFFF</ns2:NODATA>
+        </ns2:IAZArray>
+        <ns2:AntGainPhase>
+            <ns2:Identifier>transmit_array</ns2:Identifier>
+            <ns2:ElementFormat>Gain=F4;Phase=F4;</ns2:ElementFormat>
+            <ns2:X0>-0.0028991325967421258</ns2:X0>
+            <ns2:Y0>-0.0028991325967421258</ns2:Y0>
+            <ns2:XSS>0.0002899132596742125</ns2:XSS>
+            <ns2:YSS>0.0002899132596742125</ns2:YSS>
+            <ns2:NODATA>FFFF</ns2:NODATA>
+        </ns2:AntGainPhase>
+        <ns2:AntGainPhase>
+            <ns2:Identifier>transmit_element</ns2:Identifier>
+            <ns2:ElementFormat>Gain=F4;Phase=F4;</ns2:ElementFormat>
+            <ns2:X0>-1.0</ns2:X0>
+            <ns2:Y0>-1.0</ns2:Y0>
+            <ns2:XSS>2.0</ns2:XSS>
+            <ns2:YSS>2.0</ns2:YSS>
+            <ns2:NODATA>FFFF</ns2:NODATA>
+        </ns2:AntGainPhase>
+        <ns2:AntGainPhase>
+            <ns2:Identifier>receive_array</ns2:Identifier>
+            <ns2:ElementFormat>Gain=F4;Phase=F4;</ns2:ElementFormat>
+            <ns2:X0>-0.0028991325967421258</ns2:X0>
+            <ns2:Y0>-0.0028991325967421258</ns2:Y0>
+            <ns2:XSS>0.0002899132596742125</ns2:XSS>
+            <ns2:YSS>0.0002899132596742125</ns2:YSS>
+            <ns2:NODATA>FFFF</ns2:NODATA>
+        </ns2:AntGainPhase>
+        <ns2:AntGainPhase>
+            <ns2:Identifier>receive_element</ns2:Identifier>
+            <ns2:ElementFormat>Gain=F4;Phase=F4;</ns2:ElementFormat>
+            <ns2:X0>-1.0</ns2:X0>
+            <ns2:Y0>-1.0</ns2:Y0>
+            <ns2:XSS>2.0</ns2:XSS>
+            <ns2:YSS>2.0</ns2:YSS>
+            <ns2:NODATA>FFFF</ns2:NODATA>
+        </ns2:AntGainPhase>
+        <ns2:DwellTimeArray>
+            <ns2:Identifier>FAKE_ARRAY</ns2:Identifier>
+            <ns2:ElementFormat>COD=F4;DT=F4;</ns2:ElementFormat>
+            <ns2:X0>1.0</ns2:X0>
+            <ns2:Y0>2.0</ns2:Y0>
+            <ns2:XSS>3.0</ns2:XSS>
+            <ns2:YSS>4.0</ns2:YSS>
+            <ns2:NODATA>FFFF</ns2:NODATA>
+        </ns2:DwellTimeArray>
+        <ns2:AddedSupportArray>
+            <ns2:Identifier>FAKE_ARRAY</ns2:Identifier>
+            <ns2:ElementFormat>U8</ns2:ElementFormat>
+            <ns2:X0>1.0</ns2:X0>
+            <ns2:Y0>2.0</ns2:Y0>
+            <ns2:XSS>3.0</ns2:XSS>
+            <ns2:YSS>4.0</ns2:YSS>
+            <ns2:NODATA>FFFF</ns2:NODATA>
+            <ns2:XUnits>m</ns2:XUnits>
+            <ns2:YUnits>m</ns2:YUnits>
+            <ns2:ZUnits>m</ns2:ZUnits>
+            <ns2:Parameter name="FAKE_PARAM">nope</ns2:Parameter>
+        </ns2:AddedSupportArray>
+    </ns2:SupportArray>
+    <ns2:Dwell>
+        <ns2:NumCODTimes>1</ns2:NumCODTimes>
+        <ns2:CODTime>
+            <ns2:Identifier>1</ns2:Identifier>
+            <ns2:CODTimePoly order1="0" order2="0">
+                <ns2:Coef exponent1="0" exponent2="0">1.2196821398562747</ns2:Coef>
+            </ns2:CODTimePoly>
+        </ns2:CODTime>
+        <ns2:NumDwellTimes>1</ns2:NumDwellTimes>
+        <ns2:DwellTime>
+            <ns2:Identifier>1</ns2:Identifier>
+            <ns2:DwellTimePoly order1="0" order2="0">
+                <ns2:Coef exponent1="0" exponent2="0">2.2393655093269462</ns2:Coef>
+            </ns2:DwellTimePoly>
+        </ns2:DwellTime>
+    </ns2:Dwell>
+    <ns2:ReferenceGeometry>
+        <ns2:SRP>
+            <ns2:ECF>
+                <ns2:X>6378137.0</ns2:X>
+                <ns2:Y>0.0</ns2:Y>
+                <ns2:Z>0.0</ns2:Z>
+            </ns2:ECF>
+            <ns2:IAC>
+                <ns2:X>0.0</ns2:X>
+                <ns2:Y>0.0</ns2:Y>
+                <ns2:Z>0.0</ns2:Z>
+            </ns2:IAC>
+        </ns2:SRP>
+        <ns2:ReferenceTime>0.9425879416269674</ns2:ReferenceTime>
+        <ns2:SRPCODTime>0.8863722900782136</ns2:SRPCODTime>
+        <ns2:SRPDwellTime>1.5727452910305109</ns2:SRPDwellTime>
+        <ns2:Bistatic>
+            <ns2:AzimuthAngle>0.01545519223305399</ns2:AzimuthAngle>
+            <ns2:AzimuthAngleRate>0.2780541267268227</ns2:AzimuthAngleRate>
+            <ns2:BistaticAngle>75.52301778233533</ns2:BistaticAngle>
+            <ns2:BistaticAngleRate>-0.03400114354504082</ns2:BistaticAngleRate>
+            <ns2:GrazeAngle>39.23471592301871</ns2:GrazeAngle>
+            <ns2:TwistAngle>-11.294118112199126</ns2:TwistAngle>
+            <ns2:SlopeAngle>40.57441456008199</ns2:SlopeAngle>
+            <ns2:LayoverAngle>17.539089555023445</ns2:LayoverAngle>
+            <ns2:TxPlatform>
+                <ns2:Time>1.2700334671132385</ns2:Time>
+                <ns2:Pos>
+                    <ns2:X>7229029.773013709</ns2:X>
+                    <ns2:Y>-1041791.0194318754</ns2:Y>
+                    <ns2:Z>1042300.3141986527</ns2:Z>
+                </ns2:Pos>
+                <ns2:Vel>
+                    <ns2:X>340.2359257619936</ns2:X>
+                    <ns2:Y>6238.052661769933</ns2:Y>
+                    <ns2:Z>3875.174451852077</ns2:Z>
+                </ns2:Vel>
+                <ns2:SideOfTrack>R</ns2:SideOfTrack>
+                <ns2:SlantRange>1701686.511762515</ns2:SlantRange>
+                <ns2:GroundRange>1282641.4349423328</ns2:GroundRange>
+                <ns2:DopplerConeAngle>80.01028795081064</ns2:DopplerConeAngle>
+                <ns2:GrazeAngle>30.00192518355612</ns2:GrazeAngle>
+                <ns2:IncidenceAngle>59.998074816443875</ns2:IncidenceAngle>
+                <ns2:AzimuthAngle>315.0140015169262</ns2:AzimuthAngle>
+            </ns2:TxPlatform>
+            <ns2:RcvPlatform>
+                <ns2:Time>1.2813858812833343</ns2:Time>
+                <ns2:Pos>
+                    <ns2:X>7229033.63505031</ns2:X>
+                    <ns2:Y>1042344.3067173194</ns2:Y>
+                    <ns2:Z>1041720.2024077879</ns2:Z>
+                </ns2:Pos>
+                <ns2:Vel>
+                    <ns2:X>340.1544374250699</ns2:X>
+                    <ns2:Y>3875.1627022998127</ns2:Y>
+                    <ns2:Z>-6238.064404651072</ns2:Z>
+                </ns2:Vel>
+                <ns2:SideOfTrack>R</ns2:SideOfTrack>
+                <ns2:SlantRange>1701672.0357902318</ns2:SlantRange>
+                <ns2:GroundRange>1282624.7192583017</ns2:GroundRange>
+                <ns2:DopplerConeAngle>80.01261911650298</ns2:DopplerConeAngle>
+                <ns2:GrazeAngle>30.002356768074872</ns2:GrazeAngle>
+                <ns2:IncidenceAngle>59.997643231925124</ns2:IncidenceAngle>
+                <ns2:AzimuthAngle>45.01715807821043</ns2:AzimuthAngle>
+            </ns2:RcvPlatform>
+        </ns2:Bistatic>
+    </ns2:ReferenceGeometry>
+    <ns2:Antenna>
+        <ns2:NumACFs>2</ns2:NumACFs>
+        <ns2:NumAPCs>2</ns2:NumAPCs>
+        <ns2:NumAntPats>2</ns2:NumAntPats>
+        <ns2:AntCoordFrame>
+            <ns2:Identifier>transmit</ns2:Identifier>
+            <ns2:XAxisPoly>
+                <ns2:X order1="5">
+                    <ns2:Coef exponent1="0">0.1385797228721903</ns2:Coef>
+                    <ns2:Coef exponent1="1">-0.002760945178520682</ns2:Coef>
+                    <ns2:Coef exponent1="2">-2.6203366249547734e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">1.4485678722368534e-08</ns2:Coef>
+                    <ns2:Coef exponent1="4">4.876927786251232e-11</ns2:Coef>
+                    <ns2:Coef exponent1="5">-1.1376979196412772e-13</ns2:Coef>
+                </ns2:X>
+                <ns2:Y order1="5">
+                    <ns2:Coef exponent1="0">0.7506670547090979</ns2:Coef>
+                    <ns2:Coef exponent1="1">0.002439091450415394</ns2:Coef>
+                    <ns2:Coef exponent1="2">-5.082427564355023e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">-2.8097256219038232e-08</ns2:Coef>
+                    <ns2:Coef exponent1="4">1.9002256433101935e-11</ns2:Coef>
+                    <ns2:Coef exponent1="5">3.6828276318198224e-13</ns2:Coef>
+                </ns2:Y>
+                <ns2:Z order1="5">
+                    <ns2:Coef exponent1="0">0.6459834621590832</ns2:Coef>
+                    <ns2:Coef exponent1="1">-0.0022420613876123915</ns2:Coef>
+                    <ns2:Coef exponent1="2">-7.927564976264752e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">1.0018936627184642e-08</ns2:Coef>
+                    <ns2:Coef exponent1="4">9.62944465867411e-11</ns2:Coef>
+                    <ns2:Coef exponent1="5">2.0815204363838186e-14</ns2:Coef>
+                </ns2:Z>
+            </ns2:XAxisPoly>
+            <ns2:YAxisPoly>
+                <ns2:X order1="5">
+                    <ns2:Coef exponent1="0">0.8552805091032545</ns2:Coef>
+                    <ns2:Coef exponent1="1">0.00010376114141890252</ns2:Coef>
+                    <ns2:Coef exponent1="2">-1.0609071111614952e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">-1.207112657984025e-10</ns2:Coef>
+                    <ns2:Coef exponent1="4">6.538241092703245e-13</ns2:Coef>
+                    <ns2:Coef exponent1="5">-5.76536979126892e-16</ns2:Coef>
+                </ns2:X>
+                <ns2:Y order1="5">
+                    <ns2:Coef exponent1="0">0.23813408977855877</ns2:Coef>
+                    <ns2:Coef exponent1="1">0.0005620596491955484</ns2:Coef>
+                    <ns2:Coef exponent1="2">7.653455689187554e-07</ns2:Coef>
+                    <ns2:Coef exponent1="3">-6.62799773310883e-10</ns2:Coef>
+                    <ns2:Coef exponent1="4">-1.2207571830256701e-12</ns2:Coef>
+                    <ns2:Coef exponent1="5">4.229217799962556e-16</ns2:Coef>
+                </ns2:Y>
+                <ns2:Z order1="5">
+                    <ns2:Coef exponent1="0">-0.4602036571273811</ns2:Coef>
+                    <ns2:Coef exponent1="1">0.000483678131134207</ns2:Coef>
+                    <ns2:Coef exponent1="2">-9.665445237464232e-07</ns2:Coef>
+                    <ns2:Coef exponent1="3">-8.87617267201027e-10</ns2:Coef>
+                    <ns2:Coef exponent1="4">1.688275707351889e-12</ns2:Coef>
+                    <ns2:Coef exponent1="5">5.84714577712134e-16</ns2:Coef>
+                </ns2:Z>
+            </ns2:YAxisPoly>
+            <ns2:UseACFPVP>false</ns2:UseACFPVP>
+        </ns2:AntCoordFrame>
+        <ns2:AntCoordFrame>
+            <ns2:Identifier>receive</ns2:Identifier>
+            <ns2:XAxisPoly>
+                <ns2:X order1="5">
+                    <ns2:Coef exponent1="0">0.13857972287219025</ns2:Coef>
+                    <ns2:Coef exponent1="1">-0.00276094517852056</ns2:Coef>
+                    <ns2:Coef exponent1="2">-2.620336625243285e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">1.4485678988875624e-08</ns2:Coef>
+                    <ns2:Coef exponent1="4">4.8769161197407225e-11</ns2:Coef>
+                    <ns2:Coef exponent1="5">-1.1375096936147393e-13</ns2:Coef>
+                </ns2:X>
+                <ns2:Y order1="5">
+                    <ns2:Coef exponent1="0">0.6459834621590832</ns2:Coef>
+                    <ns2:Coef exponent1="1">-0.002242061387614175</ns2:Coef>
+                    <ns2:Coef exponent1="2">-7.927564972177376e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">1.0018932954832954e-08</ns2:Coef>
+                    <ns2:Coef exponent1="4">9.629586368326803e-11</ns2:Coef>
+                    <ns2:Coef exponent1="5">2.0618376108071688e-14</ns2:Coef>
+                </ns2:Y>
+                <ns2:Z order1="5">
+                    <ns2:Coef exponent1="0">-0.7506670547090983</ns2:Coef>
+                    <ns2:Coef exponent1="1">-0.0024390914504133017</ns2:Coef>
+                    <ns2:Coef exponent1="2">5.082427558756091e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">2.8097261855089025e-08</ns2:Coef>
+                    <ns2:Coef exponent1="4">-1.9004683908030164e-11</ns2:Coef>
+                    <ns2:Coef exponent1="5">-3.679090656234575e-13</ns2:Coef>
+                </ns2:Z>
+            </ns2:XAxisPoly>
+            <ns2:YAxisPoly>
+                <ns2:X order1="5">
+                    <ns2:Coef exponent1="0">0.8552805091032539</ns2:Coef>
+                    <ns2:Coef exponent1="1">0.00010376114142167065</ns2:Coef>
+                    <ns2:Coef exponent1="2">-1.0609071180596748e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3">-1.207043400114697e-10</ns2:Coef>
+                    <ns2:Coef exponent1="4">6.507868530371908e-13</ns2:Coef>
+                    <ns2:Coef exponent1="5">-9.743797322315395e-17</ns2:Coef>
+                </ns2:X>
+                <ns2:Y order1="5">
+                    <ns2:Coef exponent1="0">-0.4602036571273811</ns2:Coef>
+                    <ns2:Coef exponent1="1">0.00048367813113425924</ns2:Coef>
+                    <ns2:Coef exponent1="2">-9.665445239876957e-07</ns2:Coef>
+                    <ns2:Coef exponent1="3">-8.876169832814811e-10</ns2:Coef>
+                    <ns2:Coef exponent1="4">1.6881432972254367e-12</ns2:Coef>
+                    <ns2:Coef exponent1="5">6.050807582195414e-16</ns2:Coef>
+                </ns2:Y>
+                <ns2:Z order1="5">
+                    <ns2:Coef exponent1="0">-0.23813408977855874</ns2:Coef>
+                    <ns2:Coef exponent1="1">-0.0005620596491953135</ns2:Coef>
+                    <ns2:Coef exponent1="2">-7.653455692406227e-07</ns2:Coef>
+                    <ns2:Coef exponent1="3">6.627999246022303e-10</ns2:Coef>
+                    <ns2:Coef exponent1="4">1.2207431985624998e-12</ns2:Coef>
+                    <ns2:Coef exponent1="5">-4.2550048742723904e-16</ns2:Coef>
+                </ns2:Z>
+            </ns2:YAxisPoly>
+        </ns2:AntCoordFrame>
+        <ns2:AntPhaseCenter>
+            <ns2:Identifier>transmit</ns2:Identifier>
+            <ns2:ACFId>transmit</ns2:ACFId>
+            <ns2:APCXYZ>
+                <ns2:X>0.0</ns2:X>
+                <ns2:Y>0.0</ns2:Y>
+                <ns2:Z>0.0</ns2:Z>
+            </ns2:APCXYZ>
+        </ns2:AntPhaseCenter>
+        <ns2:AntPhaseCenter>
+            <ns2:Identifier>receive</ns2:Identifier>
+            <ns2:ACFId>receive</ns2:ACFId>
+            <ns2:APCXYZ>
+                <ns2:X>0.0</ns2:X>
+                <ns2:Y>0.0</ns2:Y>
+                <ns2:Z>0.0</ns2:Z>
+            </ns2:APCXYZ>
+        </ns2:AntPhaseCenter>
+        <ns2:AntPattern>
+            <ns2:Identifier>transmit</ns2:Identifier>
+            <ns2:FreqZero>10000000000.0</ns2:FreqZero>
+            <ns2:GainZero>1.0</ns2:GainZero>
+            <ns2:EBFreqShift>false</ns2:EBFreqShift>
+            <ns2:EBFreqShiftSF>
+                <ns2:DCXSF>0.1</ns2:DCXSF>
+                <ns2:DCYSF>0.2</ns2:DCYSF>
+            </ns2:EBFreqShiftSF>
+            <ns2:MLFreqDilation>false</ns2:MLFreqDilation>
+            <ns2:MLFreqDilationSF>
+                <ns2:DCXSF>0.1</ns2:DCXSF>
+                <ns2:DCYSF>0.2</ns2:DCYSF>
+            </ns2:MLFreqDilationSF>
+            <ns2:GainBSPoly order1="0">
+                <ns2:Coef exponent1="0">0.0</ns2:Coef>
+            </ns2:GainBSPoly>
+            <ns2:AntPolRef>
+                <ns2:AmpX>0.0</ns2:AmpX>
+                <ns2:AmpY>1.0</ns2:AmpY>
+                <ns2:PhaseY>-0.24</ns2:PhaseY>
+            </ns2:AntPolRef>
+            <ns2:EB>
+                <ns2:DCXPoly order1="0">
+                    <ns2:Coef exponent1="0">0.0</ns2:Coef>
+                </ns2:DCXPoly>
+                <ns2:DCYPoly order1="0">
+                    <ns2:Coef exponent1="0">0.0</ns2:Coef>
+                </ns2:DCYPoly>
+                <ns2:UseEBPVP>false</ns2:UseEBPVP>
+            </ns2:EB>
+            <ns2:Array>
+                <ns2:GainPoly order1="8" order2="8">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="1">1.830851508157883e-12</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="2">-1814485.8372625443</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="3">-2.208286609514295e-06</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="4">-67647577942.01662</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="5">1.1886185612774636</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="6">-1463292882577055.0</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="7">-140393.14526142203</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="8">-1.0883947565151394e+21</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="0">1.830851508157883e-12</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="0">-1814485.8372625443</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="0">-2.208286609514295e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="0">-67647577942.01662</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="0">1.1886185612774636</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="0">-1463292882577055.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="0">-140393.14526142203</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="0">-1.0883947565151394e+21</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="8">0.0</ns2:Coef>
+                </ns2:GainPoly>
+                <ns2:PhasePoly order1="0" order2="0">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                </ns2:PhasePoly>
+                <ns2:AntGPId>array_id</ns2:AntGPId>
+            </ns2:Array>
+            <ns2:Element>
+                <ns2:GainPoly order1="0" order2="0">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                </ns2:GainPoly>
+                <ns2:PhasePoly order1="0" order2="0">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                </ns2:PhasePoly>
+                <ns2:AntGPId>elem_id</ns2:AntGPId>
+            </ns2:Element>
+            <ns2:GainPhaseArray>
+                <ns2:Freq>10000000000.0</ns2:Freq>
+                <ns2:ArrayId>transmit_array</ns2:ArrayId>
+                <ns2:ElementId>transmit_element</ns2:ElementId>
+            </ns2:GainPhaseArray>
+        </ns2:AntPattern>
+        <ns2:AntPattern>
+            <ns2:Identifier>receive</ns2:Identifier>
+            <ns2:FreqZero>10000000000.0</ns2:FreqZero>
+            <ns2:MLFreqDilation>false</ns2:MLFreqDilation>
+            <ns2:GainBSPoly order1="0">
+                <ns2:Coef exponent1="0">0.0</ns2:Coef>
+            </ns2:GainBSPoly>
+            <ns2:EB>
+                <ns2:DCXPoly order1="0">
+                    <ns2:Coef exponent1="0">0.0</ns2:Coef>
+                </ns2:DCXPoly>
+                <ns2:DCYPoly order1="0">
+                    <ns2:Coef exponent1="0">0.0</ns2:Coef>
+                </ns2:DCYPoly>
+            </ns2:EB>
+            <ns2:Array>
+                <ns2:GainPoly order1="8" order2="8">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="1">1.830851508157883e-12</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="2">-1814485.8372625443</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="3">-2.208286609514295e-06</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="4">-67647577942.01662</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="5">1.1886185612774636</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="6">-1463292882577055.0</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="7">-140393.14526142203</ns2:Coef>
+                    <ns2:Coef exponent1="0" exponent2="8">-1.0883947565151394e+21</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="0">1.830851508157883e-12</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="1" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="0">-1814485.8372625443</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="2" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="0">-2.208286609514295e-06</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="3" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="0">-67647577942.01662</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="4" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="0">1.1886185612774636</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="5" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="0">-1463292882577055.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="6" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="0">-140393.14526142203</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="7" exponent2="8">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="0">-1.0883947565151394e+21</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="1">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="2">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="3">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="4">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="5">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="6">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="7">0.0</ns2:Coef>
+                    <ns2:Coef exponent1="8" exponent2="8">0.0</ns2:Coef>
+                </ns2:GainPoly>
+                <ns2:PhasePoly order1="0" order2="0">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                </ns2:PhasePoly>
+            </ns2:Array>
+            <ns2:Element>
+                <ns2:GainPoly order1="0" order2="0">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                </ns2:GainPoly>
+                <ns2:PhasePoly order1="0" order2="0">
+                    <ns2:Coef exponent1="0" exponent2="0">0.0</ns2:Coef>
+                </ns2:PhasePoly>
+            </ns2:Element>
+            <ns2:GainPhaseArray>
+                <ns2:Freq>10000000000.0</ns2:Freq>
+                <ns2:ArrayId>receive_array</ns2:ArrayId>
+                <ns2:ElementId>receive_element</ns2:ElementId>
+            </ns2:GainPhaseArray>
+        </ns2:AntPattern>
+    </ns2:Antenna>
+    <ns2:TxRcv>
+        <ns2:NumTxWFs>1</ns2:NumTxWFs>
+        <ns2:TxWFParameters>
+            <ns2:Identifier>txwf_id#1</ns2:Identifier>
+            <ns2:PulseLength>1.3499904374914016e-05</ns2:PulseLength>
+            <ns2:RFBandwidth>337497609.3728504</ns2:RFBandwidth>
+            <ns2:FreqCenter>10000000000.0</ns2:FreqCenter>
+            <ns2:LFMRate>25000000000000.0</ns2:LFMRate>
+            <ns2:Polarization>V</ns2:Polarization>
+            <ns2:Power>0.0</ns2:Power>
+        </ns2:TxWFParameters>
+        <ns2:NumRcvs>1</ns2:NumRcvs>
+        <ns2:RcvParameters>
+            <ns2:Identifier>rcv_id#1</ns2:Identifier>
+            <ns2:WindowLength>2.5878502230492327e-05</ns2:WindowLength>
+            <ns2:SampleRate>371357935.6673492</ns2:SampleRate>
+            <ns2:IFFilterBW>340411441.0284035</ns2:IFFilterBW>
+            <ns2:FreqCenter>10154732473.19473</ns2:FreqCenter>
+            <ns2:LFMRate>25000000000000.0</ns2:LFMRate>
+            <ns2:Polarization>V</ns2:Polarization>
+            <ns2:PathGain>1.0</ns2:PathGain>
+        </ns2:RcvParameters>
+    </ns2:TxRcv>
+    <ns2:ErrorParameters>
+        <ns2:Bistatic>
+            <ns2:TxPlatform>
+                <ns2:PosVelErr>
+                    <ns2:Frame>ECF</ns2:Frame>
+                    <ns2:P1>0.0</ns2:P1>
+                    <ns2:P2>0.1</ns2:P2>
+                    <ns2:P3>0.2</ns2:P3>
+                    <ns2:V1>0.3</ns2:V1>
+                    <ns2:V2>0.4</ns2:V2>
+                    <ns2:V3>0.5</ns2:V3>
+                    <ns2:CorrCoefs>
+                        <ns2:P1P2>0.0</ns2:P1P2>
+                        <ns2:P1P3>0.1</ns2:P1P3>
+                        <ns2:P1V1>0.2</ns2:P1V1>
+                        <ns2:P1V2>0.3</ns2:P1V2>
+                        <ns2:P1V3>0.4</ns2:P1V3>
+                        <ns2:P2P3>0.5</ns2:P2P3>
+                        <ns2:P2V1>0.6</ns2:P2V1>
+                        <ns2:P2V2>0.7</ns2:P2V2>
+                        <ns2:P2V3>0.8</ns2:P2V3>
+                        <ns2:P3V1>0.9</ns2:P3V1>
+                        <ns2:P3V2>0.8</ns2:P3V2>
+                        <ns2:P3V3>0.7</ns2:P3V3>
+                        <ns2:V1V2>0.6</ns2:V1V2>
+                        <ns2:V1V3>0.5</ns2:V1V3>
+                        <ns2:V2V3>0.4</ns2:V2V3>
+                    </ns2:CorrCoefs>
+                    <ns2:PositionDecorr>
+                        <ns2:CorrCoefZero>0.0</ns2:CorrCoefZero>
+                        <ns2:DecorrRate>0.1</ns2:DecorrRate>
+                    </ns2:PositionDecorr>
+                </ns2:PosVelErr>
+                <ns2:RadarSensor>
+                    <ns2:DelayBias>0.123</ns2:DelayBias>
+                    <ns2:ClockFreqSF>0.1</ns2:ClockFreqSF>
+                    <ns2:CollectionStartTime>0.2</ns2:CollectionStartTime>
+                </ns2:RadarSensor>
+            </ns2:TxPlatform>
+            <ns2:RcvPlatform>
+                <ns2:PosVelErr>
+                    <ns2:Frame>ECF</ns2:Frame>
+                    <ns2:P1>0.0</ns2:P1>
+                    <ns2:P2>0.1</ns2:P2>
+                    <ns2:P3>0.2</ns2:P3>
+                    <ns2:V1>0.3</ns2:V1>
+                    <ns2:V2>0.4</ns2:V2>
+                    <ns2:V3>0.5</ns2:V3>
+                    <ns2:CorrCoefs>
+                        <ns2:P1P2>0.0</ns2:P1P2>
+                        <ns2:P1P3>0.1</ns2:P1P3>
+                        <ns2:P1V1>0.2</ns2:P1V1>
+                        <ns2:P1V2>0.3</ns2:P1V2>
+                        <ns2:P1V3>0.4</ns2:P1V3>
+                        <ns2:P2P3>0.5</ns2:P2P3>
+                        <ns2:P2V1>0.6</ns2:P2V1>
+                        <ns2:P2V2>0.7</ns2:P2V2>
+                        <ns2:P2V3>0.8</ns2:P2V3>
+                        <ns2:P3V1>0.9</ns2:P3V1>
+                        <ns2:P3V2>0.8</ns2:P3V2>
+                        <ns2:P3V3>0.7</ns2:P3V3>
+                        <ns2:V1V2>0.6</ns2:V1V2>
+                        <ns2:V1V3>0.5</ns2:V1V3>
+                        <ns2:V2V3>0.4</ns2:V2V3>
+                    </ns2:CorrCoefs>
+                    <ns2:PositionDecorr>
+                        <ns2:CorrCoefZero>0.0</ns2:CorrCoefZero>
+                        <ns2:DecorrRate>0.1</ns2:DecorrRate>
+                    </ns2:PositionDecorr>
+                </ns2:PosVelErr>
+                <ns2:RadarSensor>
+                    <ns2:DelayBias>0.123</ns2:DelayBias>
+                    <ns2:ClockFreqSF>0.1</ns2:ClockFreqSF>
+                    <ns2:CollectionStartTime>0.2</ns2:CollectionStartTime>
+                </ns2:RadarSensor>
+            </ns2:RcvPlatform>
+            <ns2:AddedParameters>
+                <ns2:Parameter name="FAKE_PARAM">none</ns2:Parameter>
+            </ns2:AddedParameters>
+        </ns2:Bistatic>
+    </ns2:ErrorParameters>
+    <ns2:ProductInfo>
+        <ns2:Profile>none</ns2:Profile>
+        <ns2:CreationInfo>
+            <ns2:Application>Valkyrie Systems Sage | sar_common_kit 1.11.7.2</ns2:Application>
+            <ns2:DateTime>2023-10-02T21:51:59.295969Z</ns2:DateTime>
+            <ns2:Site>none</ns2:Site>
+            <ns2:Parameter name="FAKE_PARAM">none</ns2:Parameter>
+        </ns2:CreationInfo>
+        <ns2:Parameter name="FAKE_PARAM">none</ns2:Parameter>
+    </ns2:ProductInfo>
+    <ns2:GeoInfo name="synthetic_targets">
+        <ns2:GeoInfo name="target0">
+            <ns2:Desc name="ecef">[6378137.0, -1500.0000000000002, 1499.9999999999998]</ns2:Desc>
+        </ns2:GeoInfo>
+        <ns2:GeoInfo name="target1">
+            <ns2:Desc name="ecef">[6378137.0, -1.3597399555105185e-13, 1500.0]</ns2:Desc>
+        </ns2:GeoInfo>
+        <ns2:GeoInfo name="root">
+            <ns2:Desc name="test0">Description 0</ns2:Desc>
+            <ns2:Point>
+                <ns2:Lat>0.0044531503533953975</ns2:Lat>
+                <ns2:Lon>0.00077995406025051814</ns2:Lon>
+            </ns2:Point>
+            <ns2:Line size="2">
+                <ns2:Endpoint index="1">
+                    <ns2:Lat>0.0046494529921086835</ns2:Lat>
+                    <ns2:Lon>-0.00032588076026081428</ns2:Lon>
+                </ns2:Endpoint>
+                <ns2:Endpoint index="2">
+                    <ns2:Lat>0.0044531503533953975</ns2:Lat>
+                    <ns2:Lon>0.00077995406025051814</ns2:Lon>
+                </ns2:Endpoint>
+            </ns2:Line>
+            <ns2:Line size="3">
+                <ns2:Endpoint index="1">
+                    <ns2:Lat>0.0046494529921086835</ns2:Lat>
+                    <ns2:Lon>-0.00032588076026081428</ns2:Lon>
+                </ns2:Endpoint>
+                <ns2:Endpoint index="2">
+                    <ns2:Lat>0.0044531503533953975</ns2:Lat>
+                    <ns2:Lon>0.00077995406025051814</ns2:Lon>
+                </ns2:Endpoint>
+                <ns2:Endpoint index="3">
+                    <ns2:Lat>0.004845755628902701</ns2:Lat>
+                    <ns2:Lon>-0.0014317155805202205</ns2:Lon>
+                </ns2:Endpoint>
+            </ns2:Line>
+            <ns2:Polygon size="3">
+                <ns2:Vertex index="1">
+                    <ns2:Lat>0.005238360895824838</ns2:Lat>
+                    <ns2:Lon>-0.0036433852169764111</ns2:Lon>
+                </ns2:Vertex>
+                <ns2:Vertex index="2">
+                    <ns2:Lat>0.0050420582635510016</ns2:Lat>
+                    <ns2:Lon>-0.0025375503997010318</ns2:Lon>
+                </ns2:Vertex>
+                <ns2:Vertex index="3">
+                    <ns2:Lat>0.004845755628902701</ns2:Lat>
+                    <ns2:Lon>-0.0014317155805202205</ns2:Lon>
+                </ns2:Vertex>
+            </ns2:Polygon>
+            <ns2:GeoInfo name="nested">
+                <ns2:Desc name="test1">Nested Description</ns2:Desc>
+                <ns2:Point>
+                    <ns2:Lat>0.0044531503533953975</ns2:Lat>
+                    <ns2:Lon>0.00077995406025051814</ns2:Lon>
+                </ns2:Point>
+                <ns2:GeoInfo name="nested_nested">
+                    <ns2:Desc name="test2">Double nested Description</ns2:Desc>
+                    <ns2:Polygon size="3">
+                        <ns2:Vertex index="1">
+                            <ns2:Lat>0.005238360895824838</ns2:Lat>
+                            <ns2:Lon>-0.0036433852169764111</ns2:Lon>
+                        </ns2:Vertex>
+                        <ns2:Vertex index="2">
+                            <ns2:Lat>0.0050420582635510016</ns2:Lat>
+                            <ns2:Lon>-0.0025375503997010318</ns2:Lon>
+                        </ns2:Vertex>
+                        <ns2:Vertex index="3">
+                            <ns2:Lat>0.004845755628902701</ns2:Lat>
+                            <ns2:Lon>-0.0014317155805202205</ns2:Lon>
+                        </ns2:Vertex>
+                    </ns2:Polygon>
+                </ns2:GeoInfo>
+            </ns2:GeoInfo>
+        </ns2:GeoInfo>
+    </ns2:GeoInfo>
+    <ns2:MatchInfo>
+        <ns2:NumMatchTypes>2</ns2:NumMatchTypes>
+        <ns2:MatchType index="1">
+            <ns2:TypeID>COHERENT</ns2:TypeID>
+            <ns2:CurrentIndex>1</ns2:CurrentIndex>
+            <ns2:NumMatchCollections>0</ns2:NumMatchCollections>
+        </ns2:MatchType>
+        <ns2:MatchType index="2">
+            <ns2:TypeID>STEREO</ns2:TypeID>
+            <ns2:CurrentIndex>2</ns2:CurrentIndex>
+            <ns2:NumMatchCollections>3</ns2:NumMatchCollections>
+            <ns2:MatchCollection index="1">
+                <ns2:CoreName>SyntaxCore1</ns2:CoreName>
+                <ns2:MatchIndex>11</ns2:MatchIndex>
+                <ns2:Parameter name="matchparam0">match parameter 0</ns2:Parameter>
+                <ns2:Parameter name="matchparam1">match parameter 1</ns2:Parameter>
+            </ns2:MatchCollection>
+            <ns2:MatchCollection index="2">
+                <ns2:CoreName>SyntaxCore2</ns2:CoreName>
+                <ns2:MatchIndex>22</ns2:MatchIndex>
+            </ns2:MatchCollection>
+            <ns2:MatchCollection index="3">
+                <ns2:CoreName>SyntaxCore3</ns2:CoreName>
+                <ns2:MatchIndex>33</ns2:MatchIndex>
+            </ns2:MatchCollection>
+        </ns2:MatchType>
+    </ns2:MatchInfo>
+</ns2:CPHD>

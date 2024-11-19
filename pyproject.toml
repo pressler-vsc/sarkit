@@ -1,0 +1,112 @@
+[project]
+name = "sarpy"
+description = "Suite of SAR-related tools in Python."
+authors = [
+    {name = "National Geospatial-Intelligence Agency"},
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dynamic = ["version"]
+
+dependencies = [
+    "lxml>=5.1.0",
+    "numpy>=1.26.3",
+]
+
+[project.optional-dependencies]
+verification = [
+    "pytest>=8.0.0",
+    "shapely>=2.0.2",
+]
+processing = [
+    "numba>=0.59.1",
+]
+all = [
+    "sarpy[processing,verification]"
+]
+dev-lint = [
+    "ruff>=0.3.0",
+    "mypy>=1.8.0",
+]
+dev-test = [
+    "pytest>=7.4.4",
+]
+dev = [
+    "sarpy[dev-test,dev-lint]",
+]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.version]
+source = "scm"
+write_to = "sarpy/_version.py"
+write_template = "__version__ = '{}'"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+test = [
+    "nox>=2024.3.2",
+]
+doc = [
+    "sphinx>=7.2.6",
+    "numpydoc>=1.7.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinxcontrib-autoprogram>=0.1.9",
+    "sarpy[all]"
+]
+
+[tool.ruff.lint]
+select = [
+    "E4",  # pycodestyle Import
+    "E7",  # pycodestyle Statement
+    "E9",  # pycodestyle Runtime
+    "F",   # pyflakes
+    "I",  # isort
+    "N",  # pep8-naming
+    "NPY",  # NumPy-specific
+    "ISC", # flake8-implicit-str-concat
+    "RUF022", # unsorted-dunder-all
+]
+preview = true
+
+[[tool.mypy.overrides]]
+module = [
+    "lxml.*",
+    "numba.*",
+    "shapely.*",
+    "_pytest.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "sarpy.standards.general.base",
+    "sarpy.standards.general.data_segment",
+    "sarpy.standards.general.format_function",
+    "sarpy.standards.general.nitf",
+    "sarpy.standards.general.nitf_elements.base",
+    "sarpy.standards.general.nitf_elements.des",
+    "sarpy.standards.general.nitf_elements.graphics",
+    "sarpy.standards.general.nitf_elements.image",
+    "sarpy.standards.general.nitf_elements.nitf_head",
+    "sarpy.standards.general.nitf_elements.res",
+    "sarpy.standards.general.nitf_elements.security",
+    "sarpy.standards.general.nitf_elements.text",
+    "sarpy.standards.general.slice_parsing"
+]
+ignore_errors = true

@@ -1,0 +1,18 @@
+<RMA>
+    <RMAlgoType>CSA</RMAlgoType>
+    <ImageType>INCA</ImageType>
+    <INCA>
+        <TimeCAPoly order1="1">
+            <Coef exponent1="1">1.1</Coef>
+        </TimeCAPoly>
+        <R_CA_SCP>2.2</R_CA_SCP>
+        <FreqZero>3.3</FreqZero>
+        <DRateSFPoly order1="0" order2="0">
+            <Coef exponent1="0" exponent2="0">4.4</Coef>
+        </DRateSFPoly>
+        <DopCentroidPoly order1="5" order2="5">
+            <Coef exponent1="5" exponent2="5">5.5</Coef>
+        </DopCentroidPoly>
+        <DopCentroidCOA>false</DopCentroidCOA>
+    </INCA>
+</RMA>

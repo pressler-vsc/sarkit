@@ -1,0 +1,6 @@
+<RgAzComp>
+    <AzSF>1.234</AzSF>
+    <KazPoly order1="1">
+        <Coef exponent1="1">5.678</Coef>
+    </KazPoly>
+</RgAzComp>

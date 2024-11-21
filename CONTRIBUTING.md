@@ -1,6 +1,6 @@
-# Contributing to SARPy
+# Contributing to SARkit
 
-SARPy is a Python package that is intended to simplify working with the NGA SAR
+SARkit is a Python package that is intended to simplify working with the NGA SAR
 standards: Compensated Phase History Data (CPHD), Sensor Independent Complex
 Data (SICD), and Sensor Independent Derived Data (SIDD).
 
@@ -14,16 +14,16 @@ The package has three subpackages with different roles.
 
 ### Setup
 
-#### Clone the sarpy2\_prototype repository
+#### Clone the repository
 
 ```bash
-git clone git@github.com:ngageoint/sarpy2_prototype.git
-cd sarpy2_prototype
+git clone git@github.com:ValkyrieSystems/sarkit.git
+cd sarkit
 ```
 
-#### Create and activate an environment for SARPy
+#### Create and activate an environment
 
-The default and supported way to create an environment for SARPy is creating
+The default and supported way to create an environment is creating
 a python virtual environment.
 
 ```bash
@@ -37,14 +37,14 @@ environments.
 
 #### Package installation
 
-Once a SARPy environment is created and activated, you can install the packages
+Once an environment is created and activated, you can install the packages
 into your environment with pip from the package root.
 
 ```bash
 python -m pip install .
 ```
 
-Installing without packaging extras will only ensure that sarpy.standards
+Installing without packaging extras will only ensure that sarkit.standards
 is fully supported.  Other packages will have reduced functionality.
 
 The packaging extras are listed below:
@@ -79,7 +79,7 @@ python -m pip install --editable .[all,dev]
 
 ### Running tests
 
-In the development environment, SARPy unit tests can be run with pytest.
+In the development environment, unit tests can be run with pytest.
 
 ```bash
 pytest tests
@@ -121,7 +121,7 @@ be done with the following:
 
 ```bash
 ruff check
-mypy sarpy
+mypy sarkit
 ```
 
 If the linting does not pass cleanly, the following commands can be used to
@@ -138,7 +138,7 @@ We use the usual GitHub pull-request flow, which may be familiar to
 you if you've contributed to other projects on GitHub.  For the mechanics,
 see [GitHub's documentation](https://help.github.com/articles/using-pull-requests/).
 
-Anyone interested in SARPy may review your code.  One of the SARPy core
+Anyone interested in SARkit may review your code.  One of the core
 developers will merge your pull request when they think it's ready.
 
 If your change will be a significant amount of work

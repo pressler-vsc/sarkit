@@ -2,9 +2,9 @@ import unittest
 
 import numpy
 
-from sarpy.standards.general.base import BaseReader, BaseWriter
-from sarpy.standards.general.data_segment import NumpyArraySegment
-from sarpy.standards.general.format_function import ComplexFormatFunction
+from sarkit.standards.general.base import BaseReader, BaseWriter
+from sarkit.standards.general.data_segment import NumpyArraySegment
+from sarkit.standards.general.format_function import ComplexFormatFunction
 
 
 class TestBaseReader(unittest.TestCase):

@@ -2,7 +2,7 @@ import itertools
 
 import pytest
 
-import sarpy.verification.consistency as con
+import sarkit.verification.consistency as con
 
 
 class DummyConsistency(con.ConsistencyChecker):

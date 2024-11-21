@@ -4,8 +4,8 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarpy.standards.cphd.io as cphd_io
-import sarpy.standards.cphd.xml as cphd_xml
+import sarkit.standards.cphd.io as cphd_io
+import sarkit.standards.cphd.xml as cphd_xml
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 

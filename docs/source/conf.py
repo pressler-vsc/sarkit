@@ -1,4 +1,4 @@
-from sarpy import _version
+from sarkit import _version
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -8,7 +8,7 @@ from sarpy import _version
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "sarpy"
+project = "sarkit"
 copyright = "2024, National Geospatial-Intelligence Agency"
 author = "National Geospatial-Intelligence Agency"
 

@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 from lxml import etree
 
-import sarpy.standards.sicd.io as sicd_io
-import sarpy.standards.xml
-from sarpy.verification.sicd_consistency import SicdConsistency, main
+import sarkit.standards.sicd.io as sicd_io
+import sarkit.standards.xml
+from sarkit.verification.sicd_consistency import SicdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -83,7 +83,7 @@ def test_smoketest(xml_file):
 
 
 def test_main_schema_override():
-    good_schema = sarpy.standards.sicd.io.VERSION_INFO["urn:SICD:1.2.1"]["schema"]
+    good_schema = sarkit.standards.sicd.io.VERSION_INFO["urn:SICD:1.2.1"]["schema"]
     with pytest.raises(
         RuntimeError, match="--version must be specified if using --schema"
     ):
@@ -546,7 +546,7 @@ def test_rgazcomp_polys(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
             em.AzSF("0.0"),
-            sarpy.standards.xml.PolyType(1).make_elem("KazPoly", np.zeros(4)),
+            sarkit.standards.xml.PolyType(1).make_elem("KazPoly", np.zeros(4)),
         )
     )
     sicd_con.check("check_rgazcomp_polys")
@@ -566,7 +566,7 @@ def test_pfa_polys(sicd_con, em, poly_to_invalidate):
     sicd_con.sicdroot.find("./{*}PFA").append(
         em.STDeskew(
             em.Applied("true"),
-            sarpy.standards.xml.PolyType(2).make_elem(
+            sarkit.standards.xml.PolyType(2).make_elem(
                 "STDSPhasePoly", np.zeros((2, 3))
             ),
         )
@@ -624,13 +624,13 @@ def sicd_con_bad_inca(sicd_con, em):
             em.RMAlgoType("RG_DOP"),
             em.ImageType("INCA"),
             em.INCA(
-                sarpy.standards.xml.PolyType(1).make_elem("TimeCAPoly", np.ones(4)),
+                sarkit.standards.xml.PolyType(1).make_elem("TimeCAPoly", np.ones(4)),
                 em.R_CA_SCP("10000.0"),
                 em.FreqZero("0.0"),
-                sarpy.standards.xml.PolyType(2).make_elem(
+                sarkit.standards.xml.PolyType(2).make_elem(
                     "DRateSFPoly", np.ones((4, 3))
                 ),
-                sarpy.standards.xml.PolyType(2).make_elem(
+                sarkit.standards.xml.PolyType(2).make_elem(
                     "DopCentroidPoly", np.ones((5, 4))
                 ),
                 em.DopCentroidCOA("false"),

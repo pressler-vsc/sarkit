@@ -1,5 +1,5 @@
 [project]
-name = "sarpy"
+name = "sarkit"
 description = "Suite of SAR-related tools in Python."
 authors = [
     {name = "National Geospatial-Intelligence Agency"},
@@ -33,7 +33,7 @@ processing = [
     "numba>=0.59.1",
 ]
 all = [
-    "sarpy[processing,verification]"
+    "sarkit[processing,verification]"
 ]
 dev-lint = [
     "ruff>=0.3.0",
@@ -43,7 +43,7 @@ dev-test = [
     "pytest>=7.4.4",
 ]
 dev = [
-    "sarpy[dev-test,dev-lint]",
+    "sarkit[dev-test,dev-lint]",
 ]
 
 [build-system]
@@ -52,7 +52,7 @@ build-backend = "pdm.backend"
 
 [tool.pdm.version]
 source = "scm"
-write_to = "sarpy/_version.py"
+write_to = "sarkit/_version.py"
 write_template = "__version__ = '{}'"
 
 [tool.pdm]
@@ -67,7 +67,7 @@ doc = [
     "numpydoc>=1.7.0",
     "sphinx-rtd-theme>=2.0.0",
     "sphinxcontrib-autoprogram>=0.1.9",
-    "sarpy[all]"
+    "sarkit[all]"
 ]
 
 [tool.ruff.lint]
@@ -95,18 +95,18 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "sarpy.standards.general.base",
-    "sarpy.standards.general.data_segment",
-    "sarpy.standards.general.format_function",
-    "sarpy.standards.general.nitf",
-    "sarpy.standards.general.nitf_elements.base",
-    "sarpy.standards.general.nitf_elements.des",
-    "sarpy.standards.general.nitf_elements.graphics",
-    "sarpy.standards.general.nitf_elements.image",
-    "sarpy.standards.general.nitf_elements.nitf_head",
-    "sarpy.standards.general.nitf_elements.res",
-    "sarpy.standards.general.nitf_elements.security",
-    "sarpy.standards.general.nitf_elements.text",
-    "sarpy.standards.general.slice_parsing"
+    "sarkit.standards.general.base",
+    "sarkit.standards.general.data_segment",
+    "sarkit.standards.general.format_function",
+    "sarkit.standards.general.nitf",
+    "sarkit.standards.general.nitf_elements.base",
+    "sarkit.standards.general.nitf_elements.des",
+    "sarkit.standards.general.nitf_elements.graphics",
+    "sarkit.standards.general.nitf_elements.image",
+    "sarkit.standards.general.nitf_elements.nitf_head",
+    "sarkit.standards.general.nitf_elements.res",
+    "sarkit.standards.general.nitf_elements.security",
+    "sarkit.standards.general.nitf_elements.text",
+    "sarkit.standards.general.slice_parsing"
 ]
 ignore_errors = true

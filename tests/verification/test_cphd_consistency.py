@@ -9,11 +9,11 @@ import shapely.affinity
 import shapely.geometry as shg
 from lxml import etree
 
-import sarpy.constants
-import sarpy.standards.cphd.io as cphd_io
-import sarpy.standards.cphd.xml as cphd_xml
-import sarpy.standards.xml
-from sarpy.verification.cphd_consistency import CphdConsistency, main
+import sarkit.constants
+import sarkit.standards.cphd.io as cphd_io
+import sarkit.standards.cphd.xml as cphd_xml
+import sarkit.standards.xml
+from sarkit.verification.cphd_consistency import CphdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -73,7 +73,7 @@ def example_cphd_file(tmp_path_factory):
 
     pvps["RcvTime"] = (
         pvps["TxTime"]
-        + 2.0 * xmlhelp.load(".//{*}SlantRange") / sarpy.constants.speed_of_light
+        + 2.0 * xmlhelp.load(".//{*}SlantRange") / sarkit.constants.speed_of_light
     )
     pvps["RcvPos"] = np.polynomial.polynomial.polyval(pvps["RcvTime"], arppoly).T
     pvps["RcvVel"] = np.polynomial.polynomial.polyval(
@@ -325,8 +325,8 @@ def test_check_extended_imagearea_x1y1_x2y2(cphd_con_from_file):
     ia_poly = shg.box(*ia_x1y1, *ia_x2y2)
     ia_poly_shrink = shapely.affinity.scale(ia_poly, 0.5, 0.5)
     ext_area_elem[:] = [
-        sarpy.standards.xml.XyType().make_elem("X1Y1", ia_poly_shrink.bounds[:2]),
-        sarpy.standards.xml.XyType().make_elem("X2Y2", ia_poly_shrink.bounds[2:]),
+        sarkit.standards.xml.XyType().make_elem("X1Y1", ia_poly_shrink.bounds[:2]),
+        sarkit.standards.xml.XyType().make_elem("X2Y2", ia_poly_shrink.bounds[2:]),
     ]
     new_con = CphdConsistency(cphd_con_from_file.cphdroot, pvps=cphd_con_from_file.pvps)
 
@@ -918,8 +918,8 @@ def test_channel_signalnormal(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarpy.standards.xml.TxtType().make_elem("Identifier", "1"),
-                sarpy.standards.xml.BoolType().make_elem("SignalNormal", True),
+                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
+                sarkit.standards.xml.BoolType().make_elem("SignalNormal", True),
             ),
         )
     )
@@ -961,8 +961,8 @@ def test_fxbwnoise(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarpy.standards.xml.TxtType().make_elem("Identifier", "1"),
-                sarpy.standards.xml.DblType().make_elem("FxBWNoise", 0.0),
+                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
+                sarkit.standards.xml.DblType().make_elem("FxBWNoise", 0.0),
             ),
         )
     )
@@ -999,9 +999,9 @@ def test_toaextsaved(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarpy.standards.xml.TxtType().make_elem("Identifier", "1"),
+                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
                 em.TOAExtended(
-                    sarpy.standards.xml.DblType().make_elem("TOAExtSaved", 0.0)
+                    sarkit.standards.xml.DblType().make_elem("TOAExtSaved", 0.0)
                 ),
             ),
         )
@@ -1099,8 +1099,8 @@ def test_unique_identifiers(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarpy.standards.xml.TxtType().make_elem("Identifier", "1"),
-                sarpy.standards.xml.TxtType().make_elem("Identifier", "1"),
+                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
+                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
             ),
         )
     )

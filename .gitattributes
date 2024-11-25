@@ -1,5 +1,0 @@
-**/gitlfs/** filter=lfs diff=lfs merge=lfs -text
-**/gitlfs/**/*.md !filter !diff !merge text
-**/gitlfs/**/*.txt !filter !diff !merge text
-**/gitlfs/**/*.py !filter !diff !merge text
-**/gitlfs/**/*.json !filter !diff !merge text

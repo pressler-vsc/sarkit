@@ -1,6 +1,6 @@
 import pytest
 
-import sarpy.standards.general.nitf_elements.image
+import sarkit.standards.general.nitf_elements.image
 
 
 def __make_band_bytes(numbands):
@@ -23,7 +23,7 @@ def __make_band_bytes(numbands):
 
 def test_imagebands_minlength():
     assert (
-        sarpy.standards.general.nitf_elements.image.ImageBands.minimum_length()
+        sarkit.standards.general.nitf_elements.image.ImageBands.minimum_length()
         == len(__make_band_bytes(1))
     )
 
@@ -31,7 +31,7 @@ def test_imagebands_minlength():
 @pytest.mark.parametrize("num_bands", (1, 24))
 def test_imagebands(num_bands):
     band_bytes = __make_band_bytes(num_bands)
-    parsed_bands = sarpy.standards.general.nitf_elements.image.ImageBands.from_bytes(
+    parsed_bands = sarkit.standards.general.nitf_elements.image.ImageBands.from_bytes(
         band_bytes, 0
     )
     assert len(parsed_bands.values) == num_bands
@@ -41,14 +41,14 @@ def test_imagebands(num_bands):
 
 
 def test_imagebands_values_update():
-    parsed_bands = sarpy.standards.general.nitf_elements.image.ImageBands.from_bytes(
+    parsed_bands = sarkit.standards.general.nitf_elements.image.ImageBands.from_bytes(
         __make_band_bytes(1), 0
     )
     for nbands in range(1, 11):
         parsed_bands.values = [parsed_bands.values[0]] * nbands
         orig_bytes = parsed_bands.to_bytes()
         round_trip_bytes = (
-            sarpy.standards.general.nitf_elements.image.ImageBands.from_bytes(
+            sarkit.standards.general.nitf_elements.image.ImageBands.from_bytes(
                 orig_bytes, 0
             ).to_bytes()
         )

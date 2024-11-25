@@ -7,7 +7,7 @@ import tempfile
 
 import lxml.etree
 
-import sarpy.standards.sicd.io
+import sarkit.standards.sicd.io
 
 STUB_DIR = pathlib.Path(__file__).parent / "stubs"
 
@@ -181,7 +181,7 @@ def main(args=None):
             )
             mods(etree)
             lxml.etree.cleanup_namespaces(etree)
-            version_info = sarpy.standards.sicd.io.VERSION_INFO[
+            version_info = sarkit.standards.sicd.io.VERSION_INFO[
                 lxml.etree.QName(etree.getroot()).namespace
             ]
             schema = lxml.etree.XMLSchema(file=version_info["schema"])

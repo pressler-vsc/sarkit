@@ -4,15 +4,15 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarpy.standards.general.nitf
-import sarpy.standards.sicd.io
-import sarpy.standards.sicd.xml
+import sarkit.standards.general.nitf
+import sarkit.standards.sicd.io
+import sarkit.standards.sicd.xml
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def _random_image(sicd_xmltree):
-    xml_helper = sarpy.standards.sicd.xml.XmlHelper(sicd_xmltree)
+    xml_helper = sarkit.standards.sicd.xml.XmlHelper(sicd_xmltree)
     rows = xml_helper.load("./{*}ImageData/{*}NumRows")
     cols = xml_helper.load("./{*}ImageData/{*}NumCols")
     shape = (rows, cols)
@@ -39,11 +39,11 @@ def test_roundtrip(tmp_path, sicd_xml):
     basis_array = _random_image(basis_etree)
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(
-        file=sarpy.standards.sicd.io.VERSION_INFO[basis_version]["schema"]
+        file=sarkit.standards.sicd.io.VERSION_INFO[basis_version]["schema"]
     )
     schema.assertValid(basis_etree)
 
-    nitf_plan = sarpy.standards.sicd.io.SicdNitfPlan(
+    nitf_plan = sarkit.standards.sicd.io.SicdNitfPlan(
         sicd_xmltree=basis_etree,
         header_fields={
             "ostaid": "ostaid",
@@ -121,7 +121,7 @@ def test_roundtrip(tmp_path, sicd_xml):
             "desshabs": "desshabs",
         },
     )
-    with sarpy.standards.sicd.io.SicdNitfWriter(out_sicd, nitf_plan) as writer:
+    with sarkit.standards.sicd.io.SicdNitfWriter(out_sicd, nitf_plan) as writer:
         half_rows, half_cols = np.asarray(basis_array.shape) // 2
         writer.write_image(basis_array[:half_rows, :half_cols], start=(0, 0))
         writer.write_image(basis_array[:half_rows, half_cols:], start=(0, half_cols))
@@ -130,7 +130,7 @@ def test_roundtrip(tmp_path, sicd_xml):
         )
         writer.write_image(basis_array[half_rows:, :half_cols], start=(half_rows, 0))
 
-    with sarpy.standards.sicd.io.SicdNitfReader(out_sicd) as reader:
+    with sarkit.standards.sicd.io.SicdNitfReader(out_sicd) as reader:
         read_array = reader.read_image()
 
     schema.assertValid(reader.sicd_xmltree)
@@ -148,7 +148,7 @@ def test_file_objects(tmp_path):
     basis_etree = lxml.etree.parse(sicd_xml)
     basis_array = _random_image(basis_etree)
 
-    plan = sarpy.standards.sicd.io.SicdNitfPlan(
+    plan = sarkit.standards.sicd.io.SicdNitfPlan(
         sicd_xmltree=basis_etree,
         header_fields={"ostaid": "testing", "security": {"clas": "U"}},
         is_fields={
@@ -158,18 +158,18 @@ def test_file_objects(tmp_path):
         des_fields={"security": {"clas": "U"}},
     )
     out_with_path = tmp_path / "filename.sicd"
-    with sarpy.standards.sicd.io.SicdNitfWriter(out_with_path, plan) as writer:
+    with sarkit.standards.sicd.io.SicdNitfWriter(out_with_path, plan) as writer:
         writer.write_image(basis_array)
 
     out_with_obj = tmp_path / "file_obj.sicd"
     with out_with_obj.open("wb") as file:
-        with sarpy.standards.sicd.io.SicdNitfWriter(file, plan) as writer:
+        with sarkit.standards.sicd.io.SicdNitfWriter(file, plan) as writer:
             writer.write_image(basis_array)
 
     with out_with_path.open("rb") as file:
-        with sarpy.standards.sicd.io.SicdNitfReader(file) as path_reader:
+        with sarkit.standards.sicd.io.SicdNitfReader(file) as path_reader:
             array_from_path = path_reader.read_image()
-    with sarpy.standards.sicd.io.SicdNitfReader(out_with_obj) as obj_reader:
+    with sarkit.standards.sicd.io.SicdNitfReader(out_with_obj) as obj_reader:
         array_from_obj = obj_reader.read_image()
 
     assert lxml.etree.tostring(
@@ -185,7 +185,7 @@ def test_file_objects(tmp_path):
 
 
 def test_nitfheaderfields_from_header():
-    header = sarpy.standards.general.nitf.NITFHeader()
+    header = sarkit.standards.general.nitf.NITFHeader()
     header.OSTAID = "ostaid"
     header.FTITLE = "ftitle"
     # Data is unclassified.  These fields are filled for testing purposes only.
@@ -208,7 +208,7 @@ def test_nitfheaderfields_from_header():
     header.ONAME = "oname"
     header.OPHONE = "ophone"
 
-    fields = sarpy.standards.sicd.io.SicdNitfHeaderFields.from_header(header)
+    fields = sarkit.standards.sicd.io.SicdNitfHeaderFields.from_header(header)
     assert fields.ostaid == header.OSTAID
     assert fields.ftitle == header.FTITLE
     assert fields.security.clas == header.Security.CLAS
@@ -232,11 +232,11 @@ def test_nitfheaderfields_from_header():
 
 def test_nitfimagesegmentfields_from_header():
     comments = ["first", "second"]
-    header = sarpy.standards.general.nitf.ImageSegmentHeader(PVTYPE="INT")
+    header = sarkit.standards.general.nitf.ImageSegmentHeader(PVTYPE="INT")
     header.ISORCE = "isorce"
-    header.Comments = sarpy.standards.general.nitf_elements.image.ImageComments(
+    header.Comments = sarkit.standards.general.nitf_elements.image.ImageComments(
         [
-            sarpy.standards.general.nitf_elements.image.ImageComment(COMMENT=comment)
+            sarkit.standards.general.nitf_elements.image.ImageComment(COMMENT=comment)
             for comment in comments
         ]
     )
@@ -258,7 +258,7 @@ def test_nitfimagesegmentfields_from_header():
     header.Security.SRDT = ""
     header.Security.CTLN = "ctln_h"
 
-    fields = sarpy.standards.sicd.io.SicdNitfImageSegmentFields.from_header(header)
+    fields = sarkit.standards.sicd.io.SicdNitfImageSegmentFields.from_header(header)
     assert fields.isorce == header.ISORCE
     assert fields.icom == comments
     assert fields.security.clas == header.Security.CLAS
@@ -279,7 +279,7 @@ def test_nitfimagesegmentfields_from_header():
 
 
 def test_nitfdesegmentfields_from_header():
-    header = sarpy.standards.general.nitf.DataExtensionHeader(PVTYPE="INT")
+    header = sarkit.standards.general.nitf.DataExtensionHeader(PVTYPE="INT")
     header.UserHeader.DESSHRP = "desshrp"
     header.UserHeader.DESSHLI = "desshli"
     header.UserHeader.DESSHLIN = "desshlin"
@@ -302,7 +302,7 @@ def test_nitfdesegmentfields_from_header():
     header.Security.SRDT = ""
     header.Security.CTLN = "ctln_h"
 
-    fields = sarpy.standards.sicd.io.SicdNitfDESegmentFields.from_header(header)
+    fields = sarkit.standards.sicd.io.SicdNitfDESegmentFields.from_header(header)
     assert fields.desshrp == header.UserHeader.DESSHRP
     assert fields.desshli == header.UserHeader.DESSHLI
     assert fields.desshlin == header.UserHeader.DESSHLIN
@@ -329,13 +329,13 @@ def test_read_sicd_xml(tmp_path):
     basis_etree = lxml.etree.parse(sicd_xml)
     basis_array = _random_image(basis_etree)
 
-    direct_etree = sarpy.standards.sicd.io.read_sicd_xml(sicd_xml)
+    direct_etree = sarkit.standards.sicd.io.read_sicd_xml(sicd_xml)
     assert isinstance(direct_etree, lxml.etree._ElementTree)
     assert lxml.etree.tostring(basis_etree, method="c14n") == lxml.etree.tostring(
         direct_etree, method="c14n"
     )
 
-    plan = sarpy.standards.sicd.io.SicdNitfPlan(
+    plan = sarkit.standards.sicd.io.SicdNitfPlan(
         sicd_xmltree=basis_etree,
         header_fields={"ostaid": "testing", "security": {"clas": "U"}},
         is_fields={
@@ -345,10 +345,10 @@ def test_read_sicd_xml(tmp_path):
         des_fields={"security": {"clas": "U"}},
     )
     out_filename = tmp_path / "filename.sicd"
-    with sarpy.standards.sicd.io.SicdNitfWriter(out_filename, plan) as writer:
+    with sarkit.standards.sicd.io.SicdNitfWriter(out_filename, plan) as writer:
         writer.write_image(basis_array)
 
-    nitf_etree = sarpy.standards.sicd.io.read_sicd_xml(out_filename)
+    nitf_etree = sarkit.standards.sicd.io.read_sicd_xml(out_filename)
     assert isinstance(nitf_etree, lxml.etree._ElementTree)
     assert lxml.etree.tostring(basis_etree, method="c14n") == lxml.etree.tostring(
         nitf_etree, method="c14n"
@@ -356,9 +356,11 @@ def test_read_sicd_xml(tmp_path):
 
 
 def test_version_info():
-    actual_order = [x["version"] for x in sarpy.standards.sicd.io.VERSION_INFO.values()]
+    actual_order = [
+        x["version"] for x in sarkit.standards.sicd.io.VERSION_INFO.values()
+    ]
     expected_order = sorted(actual_order, key=lambda x: x.split("."))
     assert actual_order == expected_order
 
-    for urn, info in sarpy.standards.sicd.io.VERSION_INFO.items():
+    for urn, info in sarkit.standards.sicd.io.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn

@@ -4,15 +4,15 @@ import lxml
 import numpy as np
 import pytest
 
-import sarpy.standards.general.nitf
-import sarpy.standards.sidd.io as siddio
-import sarpy.standards.sidd.xml
+import sarkit.standards.general.nitf
+import sarkit.standards.sidd.io as siddio
+import sarkit.standards.sidd.xml
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def _random_image(sidd_xmltree):
-    xml_helper = sarpy.standards.sidd.xml.XmlHelper(sidd_xmltree)
+    xml_helper = sarkit.standards.sidd.xml.XmlHelper(sidd_xmltree)
     rows = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Row")
     cols = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Col")
     shape = (rows, cols)
@@ -172,7 +172,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     if force_segmentation:
         assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
     with out_sidd.open("rb") as file:
-        nitf_details = sarpy.standards.general.nitf.NITFDetails(file)
+        nitf_details = sarkit.standards.general.nitf.NITFDetails(file)
         assert num_expected_imseg == len(nitf_details.img_headers)
 
     with out_sidd.open("rb") as file:
@@ -205,7 +205,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 def test_segmentation():
     """From Figure 2.5-6 SIDD 1.0 Multiple Input Image - Multiple Product Images Requiring Segmentation"""
     sidd_xmltree = lxml.etree.parse(DATAPATH / "example-sidd-3.0.0.xml")
-    xml_helper = sarpy.standards.sidd.xml.XmlHelper(sidd_xmltree)
+    xml_helper = sarkit.standards.sidd.xml.XmlHelper(sidd_xmltree)
     assert xml_helper.load("./{*}Display/{*}PixelType") == "MONO8I"
 
     # Tweak SIDD size to force three image segments
@@ -216,7 +216,7 @@ def test_segmentation():
     num_rows = iloc_max * 2 + last_rows
     xml_helper.set("./{*}Measurement/{*}PixelFootprint/{*}Row", num_rows)
     xml_helper.set("./{*}Measurement/{*}PixelFootprint/{*}Col", num_cols)
-    fhdr_numi, fhdr_li, imhdrs = sarpy.standards.sidd.io.segmentation_algorithm(
+    fhdr_numi, fhdr_li, imhdrs = sarkit.standards.sidd.io.segmentation_algorithm(
         [sidd_xmltree, sidd_xmltree]
     )
 
@@ -281,9 +281,11 @@ def test_segmentation():
 
 
 def test_version_info():
-    actual_order = [x["version"] for x in sarpy.standards.sidd.io.VERSION_INFO.values()]
+    actual_order = [
+        x["version"] for x in sarkit.standards.sidd.io.VERSION_INFO.values()
+    ]
     expected_order = sorted(actual_order, key=lambda x: x.split("."))
     assert actual_order == expected_order
 
-    for urn, info in sarpy.standards.sidd.io.VERSION_INFO.items():
+    for urn, info in sarkit.standards.sidd.io.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn

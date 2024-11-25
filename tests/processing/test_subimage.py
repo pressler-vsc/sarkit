@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 from lxml import etree
 
-import sarpy.processing.subimage
-import sarpy.standards.sicd.xml as ss_xml
+import sarkit.processing.subimage
+import sarkit.standards.sicd.xml as ss_xml
 
 good_sicd_xml_path = (
     pathlib.Path(__file__).absolute().parent / "../../data" / "example-sicd-1.2.1.xml"
@@ -40,7 +40,7 @@ def test_subimage_smoke(complex_array, good_xml):
     first_col = 13
     num_rows = 11
     num_cols = 19
-    out_arr, out_xml = sarpy.processing.subimage.subimage(
+    out_arr, out_xml = sarkit.processing.subimage.subimage(
         complex_array, good_xml, first_row, first_col, num_rows, num_cols
     )
     xmlhelp_out = ss_xml.XmlHelper(out_xml)

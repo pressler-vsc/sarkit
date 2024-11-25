@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import sarpy.standards.geocoords
+import sarkit.standards.geocoords
 
 EQUATORIAL_RADIUS = 6378137
 POLAR_RADIUS = 6356752.314245179
@@ -22,12 +22,12 @@ TESTPOINTS = {
 
 
 def test_ecf_to_geodetic():
-    out = sarpy.standards.geocoords.ecf_to_geodetic(TESTPOINTS["ecf"])
+    out = sarkit.standards.geocoords.ecf_to_geodetic(TESTPOINTS["ecf"])
     assert out == pytest.approx(TESTPOINTS["llh"], abs=TOLERANCE)
 
 
 def test_geodetic_to_ecf():
-    out = sarpy.standards.geocoords.geodetic_to_ecf(TESTPOINTS["llh"])
+    out = sarkit.standards.geocoords.geodetic_to_ecf(TESTPOINTS["llh"])
     assert out == pytest.approx(TESTPOINTS["ecf"], abs=TOLERANCE)
 
 
@@ -39,9 +39,9 @@ def test_values_both_ways():
     rand_llh[..., 1] = 360 * (rng.random(shp) - 0.5)
     rand_llh[..., 2] = 1e5 * rng.random(shp)
 
-    rand_ecf = sarpy.standards.geocoords.geodetic_to_ecf(rand_llh)
-    rand_llh2 = sarpy.standards.geocoords.ecf_to_geodetic(rand_ecf)
-    rand_ecf2 = sarpy.standards.geocoords.geodetic_to_ecf(rand_llh2)
+    rand_ecf = sarkit.standards.geocoords.geodetic_to_ecf(rand_llh)
+    rand_llh2 = sarkit.standards.geocoords.ecf_to_geodetic(rand_ecf)
+    rand_ecf2 = sarkit.standards.geocoords.geodetic_to_ecf(rand_llh2)
 
     # llh match
     assert rand_llh == pytest.approx(rand_llh2, abs=TOLERANCE)
@@ -51,42 +51,42 @@ def test_values_both_ways():
 
 
 def test_up():
-    assert sarpy.standards.geocoords.up([0, 0, 0]) == pytest.approx(
+    assert sarkit.standards.geocoords.up([0, 0, 0]) == pytest.approx(
         [1, 0, 0], abs=1e-10
     )
-    assert sarpy.standards.geocoords.up([0, 90, 0]) == pytest.approx(
+    assert sarkit.standards.geocoords.up([0, 90, 0]) == pytest.approx(
         [0, 1, 0], abs=1e-10
     )
-    assert sarpy.standards.geocoords.up([90, 0, 0]) == pytest.approx(
+    assert sarkit.standards.geocoords.up([90, 0, 0]) == pytest.approx(
         [0, 0, 1], abs=1e-10
     )
-    assert sarpy.standards.geocoords.up([45, 45, 0]) == pytest.approx(
+    assert sarkit.standards.geocoords.up([45, 45, 0]) == pytest.approx(
         [0.5, 0.5, 1.0 / np.sqrt(2)], abs=1e-10
     )
 
 
 def test_north():
-    assert sarpy.standards.geocoords.north((0, 0, 0)) == pytest.approx(
+    assert sarkit.standards.geocoords.north((0, 0, 0)) == pytest.approx(
         [0, 0, 1], abs=1e-10
     )
-    assert sarpy.standards.geocoords.north((0, 90, 0)) == pytest.approx(
+    assert sarkit.standards.geocoords.north((0, 90, 0)) == pytest.approx(
         [0, 0, 1], abs=1e-10
     )
-    assert sarpy.standards.geocoords.north((45, 0, 0)) == pytest.approx(
+    assert sarkit.standards.geocoords.north((45, 0, 0)) == pytest.approx(
         [-np.sqrt(2) / 2.0, 0, np.sqrt(2) / 2.0], abs=1e-10
     )
 
 
 def test_east():
-    assert sarpy.standards.geocoords.east((0, 0, 0)) == pytest.approx(
+    assert sarkit.standards.geocoords.east((0, 0, 0)) == pytest.approx(
         [0, 1, 0], abs=1e-10
     )
-    assert sarpy.standards.geocoords.east((45, 0, 0)) == pytest.approx(
+    assert sarkit.standards.geocoords.east((45, 0, 0)) == pytest.approx(
         [0, 1, 0], abs=1e-10
     )
-    assert sarpy.standards.geocoords.east((0, 90, 0)) == pytest.approx(
+    assert sarkit.standards.geocoords.east((0, 90, 0)) == pytest.approx(
         [-1, 0, 0], abs=1e-10
     )
-    assert sarpy.standards.geocoords.east((45, 90, 0)) == pytest.approx(
+    assert sarkit.standards.geocoords.east((45, 90, 0)) == pytest.approx(
         [-1, 0, 0], abs=1e-10
     )

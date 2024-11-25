@@ -1,23 +1,23 @@
-.. _sarpy_api_reference:
+.. _api_reference:
 
-===================
-SARPy API Reference
-===================
+====================
+SARkit API Reference
+====================
 
 :Release: |version|
 :Date: |today|
 
-API reference for :mod:`sarpy`.
+API reference for :mod:`sarkit`.
 
-* `sarpy.constants`
-* `sarpy.processing`
-* `sarpy.standards`
-* `sarpy.verification`
+* `sarkit.constants`
+* `sarkit.processing`
+* `sarkit.standards`
+* `sarkit.verification`
 
 .. toctree::
    :hidden:
 
-    sarpy.constants <constants>
-    sarpy.processing <processing>
-    sarpy.standards <standards>
-    sarpy.verification <verification>
+    sarkit.constants <constants>
+    sarkit.processing <processing>
+    sarkit.standards <standards>
+    sarkit.verification <verification>

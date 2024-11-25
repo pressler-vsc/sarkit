@@ -49,7 +49,7 @@ def lint(session):
         "format",
         "--diff",
     )
-    session.run("mypy", pathlib.Path(__file__).parent / "sarpy")
+    session.run("mypy", pathlib.Path(__file__).parent / "sarkit")
 
 
 @nox.session

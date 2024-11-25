@@ -4,9 +4,9 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarpy.standards.geocoords
-import sarpy.standards.sicd
-import sarpy.standards.sicd.xml as ss_xml
+import sarkit.standards.geocoords
+import sarkit.standards.sicd
+import sarkit.standards.sicd.xml as ss_xml
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -31,7 +31,7 @@ def _assert_image_to_ground_projections(sicd_xml, method):
     )
 
     # Project SCP
-    projected_scp, delta_gp, success = sarpy.standards.sicd.image_to_ground_plane(
+    projected_scp, delta_gp, success = sarkit.standards.sicd.image_to_ground_plane(
         sicd_xmltree,
         [0, 0],
         scp,
@@ -48,7 +48,7 @@ def _assert_image_to_ground_projections(sicd_xml, method):
     im_coords = np.random.default_rng(12345).uniform(
         low=-24.0, high=24.0, size=(3, 4, 5, 2)
     )
-    plane_coords, delta_gp, success = sarpy.standards.sicd.image_to_ground_plane(
+    plane_coords, delta_gp, success = sarkit.standards.sicd.image_to_ground_plane(
         sicd_xmltree,
         im_coords,
         scp,
@@ -64,7 +64,7 @@ def _assert_image_to_ground_projections(sicd_xml, method):
     assert success
 
     # Project back to image
-    re_im_coords, delta_gp, success = sarpy.standards.sicd.scene_to_image(
+    re_im_coords, delta_gp, success = sarkit.standards.sicd.scene_to_image(
         sicd_xmltree,
         plane_coords,
     )
@@ -74,7 +74,7 @@ def _assert_image_to_ground_projections(sicd_xml, method):
     assert success
     assert im_coords == pytest.approx(re_im_coords, abs=1e-3)
 
-    re_im_coords, delta_gp, success = sarpy.standards.sicd.scene_to_image(
+    re_im_coords, delta_gp, success = sarkit.standards.sicd.scene_to_image(
         sicd_xmltree, plane_coords, delta_gp_s2i=1e-9
     )
     assert (delta_gp > 1e-9).any()
@@ -97,7 +97,7 @@ def test_image_to_constant_hae_surface(sicd_xml):
     # Project SCP
     scp_coords = np.array([0, 0])
     projected_scp, delta_hae_max, success = (
-        sarpy.standards.sicd.image_to_constant_hae_surface(
+        sarkit.standards.sicd.image_to_constant_hae_surface(
             sicd_xmltree,
             scp_coords,
             scp_hae,
@@ -113,7 +113,7 @@ def test_image_to_constant_hae_surface(sicd_xml):
         low=-24.0, high=24.0, size=(3, 4, 5, 2)
     )
     surf_coords, delta_hae_max, success = (
-        sarpy.standards.sicd.image_to_constant_hae_surface(
+        sarkit.standards.sicd.image_to_constant_hae_surface(
             sicd_xmltree,
             im_coords,
             scp_hae,
@@ -123,12 +123,12 @@ def test_image_to_constant_hae_surface(sicd_xml):
     assert delta_hae_max.shape == im_coords.shape[:-1]
 
     # Check that points are on the surface
-    surf_coords_llh = sarpy.standards.geocoords.ecf_to_geodetic(surf_coords)
+    surf_coords_llh = sarkit.standards.geocoords.ecf_to_geodetic(surf_coords)
     assert surf_coords_llh == pytest.approx(scp_hae, abs=1e-3)
     assert success
 
     # Project back to image
-    re_im_coords, delta_hae_max, success = sarpy.standards.sicd.scene_to_image(
+    re_im_coords, delta_hae_max, success = sarkit.standards.sicd.scene_to_image(
         sicd_xmltree,
         surf_coords,
     )

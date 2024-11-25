@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 from lxml import etree
 
-import sarpy.processing.pixel_type
-import sarpy.standards.sicd.io as ss_io
-import sarpy.standards.sicd.xml as ss_xml
+import sarkit.processing.pixel_type
+import sarkit.standards.sicd.io as ss_io
+import sarkit.standards.sicd.xml as ss_xml
 
 good_sicd_xml_path = (
     pathlib.Path(__file__).absolute().parent / "../../data" / "example-sicd-1.2.1.xml"
@@ -70,15 +70,15 @@ def _check_pixel_scaling(in1, xmlhelp1, in2, xmlhelp2):
 def test_bad_pixel_type(amp_phs):
     complex_array, good_xml = amp_phs
     with pytest.raises(TypeError):
-        sarpy.processing.pixel_type.as_re32f_im32f(
+        sarkit.processing.pixel_type.as_re32f_im32f(
             np.zeros(complex_array.shape, dtype=np.complex64), good_xml
         )
     with pytest.raises(TypeError):
-        sarpy.processing.pixel_type.as_re16i_im16i(
+        sarkit.processing.pixel_type.as_re16i_im16i(
             np.zeros(complex_array.shape, dtype=np.complex64), good_xml
         )
     with pytest.raises(TypeError):
-        sarpy.processing.pixel_type.as_amp8i_phs8i(
+        sarkit.processing.pixel_type.as_amp8i_phs8i(
             np.zeros(complex_array.shape, dtype=np.complex64), good_xml, np.arange(256)
         )
 
@@ -89,7 +89,7 @@ def test_pixel_type(amp_phs):
     amp_array_in = xmlhelp_in.load("./{*}ImageData/{*}AmpTable")[complex_array["amp"]]
 
     # AMP8I_PHS8I -> RE32F_IM32F
-    f32_arr, f32_xml = sarpy.processing.pixel_type.as_re32f_im32f(
+    f32_arr, f32_xml = sarkit.processing.pixel_type.as_re32f_im32f(
         complex_array, good_xml
     )
     xmlhelp_f32 = ss_xml.XmlHelper(f32_xml)
@@ -101,7 +101,7 @@ def test_pixel_type(amp_phs):
     no_lut_xml = copy.deepcopy(good_xml)
     lut_node = no_lut_xml.find("./{*}ImageData/{*}AmpTable")
     lut_node.getparent().remove(lut_node)
-    f32_arr_0, f32_xml_0 = sarpy.processing.pixel_type.as_re32f_im32f(
+    f32_arr_0, f32_xml_0 = sarkit.processing.pixel_type.as_re32f_im32f(
         complex_array, no_lut_xml
     )
     xmlhelp_f32_0 = ss_xml.XmlHelper(f32_xml_0)
@@ -112,7 +112,7 @@ def test_pixel_type(amp_phs):
     assert xmlhelp_f32_0.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
 
     # AMP8I_PHS8I -> RE16I_IM16I
-    i16_arr, i16_xml = sarpy.processing.pixel_type.as_re16i_im16i(
+    i16_arr, i16_xml = sarkit.processing.pixel_type.as_re16i_im16i(
         complex_array, good_xml
     )
     xmlhelp_i16 = ss_xml.XmlHelper(i16_xml)
@@ -121,14 +121,14 @@ def test_pixel_type(amp_phs):
     assert xmlhelp_i16.load("./{*}ImageData/{*}PixelType") == "RE16I_IM16I"
 
     # RE32F_IM32F -> RE16I_IM16I
-    i16_arr_2, i16_xml_2 = sarpy.processing.pixel_type.as_re16i_im16i(f32_arr, f32_xml)
+    i16_arr_2, i16_xml_2 = sarkit.processing.pixel_type.as_re16i_im16i(f32_arr, f32_xml)
     xmlhelp_i16_2 = ss_xml.XmlHelper(i16_xml_2)
     assert xmlhelp_i16_2.load("./{*}ImageData/{*}PixelType") == "RE16I_IM16I"
 
     _check_pixel_scaling(f32_arr, xmlhelp_f32, i16_arr_2, xmlhelp_i16_2)
 
     # RE32F_IM32F -> AMP8I_PHS8I
-    i8_arr, i8_xml = sarpy.processing.pixel_type.as_amp8i_phs8i(
+    i8_arr, i8_xml = sarkit.processing.pixel_type.as_amp8i_phs8i(
         f32_arr, f32_xml, xmlhelp_in.load("./{*}ImageData/{*}AmpTable")
     )
     xmlhelp_i8 = ss_xml.XmlHelper(i8_xml)
@@ -138,7 +138,7 @@ def test_pixel_type(amp_phs):
     _check_pixel_scaling(f32_arr, xmlhelp_f32, amp_array, xmlhelp_i8)
 
     # RE16I_IM16I -> RE32F_IM32F
-    f32_arr2, f32_xml2 = sarpy.processing.pixel_type.as_re32f_im32f(i16_arr, i16_xml)
+    f32_arr2, f32_xml2 = sarkit.processing.pixel_type.as_re32f_im32f(i16_arr, i16_xml)
     xmlhelp_f32_2 = ss_xml.XmlHelper(f32_xml2)
     assert xmlhelp_f32_2.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
 
@@ -146,7 +146,7 @@ def test_pixel_type(amp_phs):
 
     # RE16I_IM16I -> AMP8I_PHS8I
     amp_table = np.arange(256) / 255 * (2**15 - 1)
-    i8_arr_2, i8_xml_2 = sarpy.processing.pixel_type.as_amp8i_phs8i(
+    i8_arr_2, i8_xml_2 = sarkit.processing.pixel_type.as_amp8i_phs8i(
         i16_arr, i16_xml, amp_table
     )
     xmlhelp_i8_2 = ss_xml.XmlHelper(i8_xml_2)

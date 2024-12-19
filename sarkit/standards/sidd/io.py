@@ -433,6 +433,7 @@ class SiddNitfReader:
     """Read a SIDD NITF
 
     A SiddNitfReader object should be used as a context manager in a ``with`` statement.
+    Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
     ----------

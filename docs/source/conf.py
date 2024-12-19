@@ -18,6 +18,7 @@ author = "National Geospatial-Intelligence Agency"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.doctest",
     "sphinx.ext.duration",
     "sphinx.ext.intersphinx",
     "numpydoc",
@@ -40,7 +41,7 @@ suppress_warnings = [
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
-html_logo = "_static/SARPy_logo.png"
+html_logo = "_static/sarkit_logo.png"
 html_favicon = "_static/nga_favicon.ico"
 
 html_theme_options = {
@@ -50,6 +51,9 @@ html_theme_options = {
 autosummary_generate = True
 autodoc_typehints = "none"
 add_module_names = False
+
+# doctest
+doctest_test_doctest_blocks = ""  # don't test unmarked blocks
 
 # intersphinx
 intersphinx_mapping = {

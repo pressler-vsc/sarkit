@@ -1,0 +1,155 @@
+.. _user_guide:
+
+=================
+SARkit User Guide
+=================
+
+:Release: |version|
+:Date: |today|
+
+SARkit contains readers and writers for SAR standards files and functions for operating on them.
+This is an overview of basic SARkit functionality. For details, see the :doc:`reference/index`.
+
+Reading and writing files
+=========================
+SARkit provides reader/writer classes that are intended to be used as context managers and plan classes that are used to
+describe file contents and metadata prior to writing.
+
+======   =================================================     ===============================================    =================================================
+Format   Reader                                                Plan                                               Writer
+======   =================================================     ===============================================    =================================================
+CPHD     :py:class:`~sarkit.standards.cphd.CphdReader`         :py:class:`~sarkit.standards.cphd.CphdPlan`        :py:class:`~sarkit.standards.cphd.CphdWriter`
+SICD     :py:class:`~sarkit.standards.sicd.SicdNitfReader`     :py:class:`~sarkit.standards.sicd.SicdNitfPlan`    :py:class:`~sarkit.standards.sicd.SicdNitfWriter`
+SIDD     :py:class:`~sarkit.standards.sidd.SiddNitfReader`     :py:class:`~sarkit.standards.sidd.SiddNitfPlan`    :py:class:`~sarkit.standards.sidd.SiddNitfWriter`
+======   =================================================     ===============================================    =================================================
+
+
+Reading
+-------
+
+Readers are instantiated with a `file object` and file contents are accessed via format-specific attributes and methods.
+In general, only the container information is accessed upon instantiation; further file access is deferred until
+data access methods are called.
+This pattern makes it faster to read components out of large files and is especially valuable for metadata access which
+is often a small fraction of the size of a SAR data file.
+
+.. testsetup::
+
+   import pathlib
+   import tempfile
+
+   import lxml.etree
+   import numpy as np
+
+   import sarkit.standards.sicd.io as sarkit_sicd
+
+   tmpdir = tempfile.TemporaryDirectory()
+   tmppath = pathlib.Path(tmpdir.name)
+   example_sicd = tmppath / "example.sicd"
+   sec = {"security": {"clas": "U"}}
+   example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml")
+   sicd_plan = sarkit_sicd.SicdNitfPlan(
+      sicd_xmltree=example_sicd_xmltree,
+      header_fields={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
+      is_fields={"isorce": "this sensor"} | sec,
+      des_fields=sec,
+   )
+   with open(example_sicd, "wb") as f, sarkit_sicd.SicdNitfWriter(f, sicd_plan):
+      pass  # don't currently care about the pixels
+
+
+.. testcleanup::
+
+   tmpdir.cleanup()
+
+.. doctest::
+
+   >>> with open(example_sicd, "rb") as f:
+   ...   with sarkit_sicd.SicdNitfReader(f) as reader:
+   ...      pixels = reader.read_image()
+   ...      pixels.shape
+   (5727, 2362)
+
+   # Reader attributes, but not methods, can be safely accessed outside of the
+   # context manager's context
+
+   # Access specific NITF fields that are called out in the SAR standards
+   >>> reader.header_fields.ftitle
+   'SARkit example SICD FTITLE'
+
+   # XML metadata is returned as lxml.etree.ElementTree objects
+   >>> (reader.sicd_xmltree.findtext(".//{*}FullImage/{*}NumRows"),
+   ...  reader.sicd_xmltree.findtext(".//{*}FullImage/{*}NumCols"))
+   ('5727', '2362')
+
+
+Plans
+-----
+
+``Plan`` objects contain everything except the data.
+This includes XML instance(s) and container metadata (PDD-settable NITF fields, CPHD header fields, etc.).
+SARkit relies on plans because for many of the SAR standards it is more efficient to know up front what a file will
+contain before writing.
+
+Plans can be built from their components:
+
+.. doctest::
+
+   >>> plan_a = sarkit_sicd.SicdNitfPlan(
+   ...   sicd_xmltree=example_sicd_xmltree,
+   ...   header_fields={"ostaid": "my location", "security": {"clas": "U"}},
+   ...   is_fields={"isorce": "my sensor", "security": {"clas": "U"}},
+   ...   des_fields={"security": {"clas": "U"}},
+   ... )
+
+Plans are also available from readers:
+
+.. doctest::
+
+   >>> plan_b = reader.nitf_plan
+
+
+Writing
+-------
+
+Writers are instantiated with a `file object` and a ``Plan`` object.
+Similar to reading, instantiating a writer sets up the file while data is written using format-specific methods.
+
+.. warning:: Plans should not be modified after creation of a writer.
+
+.. doctest::
+
+   >>> written_sicd = tmppath / "written.sicd"
+   >>> with written_sicd.open("wb") as f:
+   ...   with sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
+   ...      writer.write_image(pixels)
+
+   >>> with written_sicd.open("rb") as f:
+   ...   f.read(9).decode()
+   'NITF02.10'
+
+SARkit sanity checks some aspects on write but it is up to the user to ensure consistency of the plan and data:
+
+.. doctest::
+
+   >>> bad_sicd = tmppath / "bad.sicd"
+   >>> with bad_sicd.open("wb") as f:
+   ...   with sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
+   ...      writer.write_image(pixels.view(np.uint8))
+   Traceback (most recent call last):
+   ValueError: Array dtype (uint8) does not match expected dtype (complex64) for PixelType=RE32F_IM32F
+
+SARkit provides :ref:`consistency checkers <consistency_checking>` that can be used to help create self-consistent SAR
+data.
+
+Operating on XML Metadata
+=========================
+
+TODO
+
+.. _consistency_checking:
+
+Consistency Checking
+====================
+
+TODO

@@ -27,6 +27,13 @@ def docs(session):
         "--write-all",
         *session.posargs,
     )
+    session.run(
+        "sphinx-build",
+        "-M",
+        "doctest",
+        "docs/source",
+        "docs/build",
+    )
 
 
 @nox.session

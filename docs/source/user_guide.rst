@@ -50,13 +50,13 @@ is often a small fraction of the size of a SAR data file.
    parser = lxml.etree.XMLParser(remove_blank_text=True)
    example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml", parser)
    sicd_plan = sarkit_sicd.SicdNitfPlan(
-      sicd_xmltree=example_sicd_xmltree,
-      header_fields={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
-      is_fields={"isorce": "this sensor"} | sec,
-      des_fields=sec,
+       sicd_xmltree=example_sicd_xmltree,
+       header_fields={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
+       is_fields={"isorce": "this sensor"} | sec,
+       des_fields=sec,
    )
    with open(example_sicd, "wb") as f, sarkit_sicd.SicdNitfWriter(f, sicd_plan):
-      pass  # don't currently care about the pixels
+       pass  # don't currently care about the pixels
 
 
 .. testcleanup::
@@ -65,10 +65,9 @@ is often a small fraction of the size of a SAR data file.
 
 .. doctest::
 
-   >>> with open(example_sicd, "rb") as f:
-   ...   with sarkit_sicd.SicdNitfReader(f) as reader:
-   ...      pixels = reader.read_image()
-   ...      pixels.shape
+   >>> with example_sicd.open("rb") as f, sarkit_sicd.SicdNitfReader(f) as reader:
+   ...     pixels = reader.read_image()
+   ...     pixels.shape
    (5727, 2362)
 
    # Reader attributes, but not methods, can be safely accessed outside of the
@@ -97,10 +96,10 @@ Plans can be built from their components:
 .. doctest::
 
    >>> plan_a = sarkit_sicd.SicdNitfPlan(
-   ...   sicd_xmltree=example_sicd_xmltree,
-   ...   header_fields={"ostaid": "my location", "security": {"clas": "U"}},
-   ...   is_fields={"isorce": "my sensor", "security": {"clas": "U"}},
-   ...   des_fields={"security": {"clas": "U"}},
+   ...     sicd_xmltree=example_sicd_xmltree,
+   ...     header_fields={"ostaid": "my location", "security": {"clas": "U"}},
+   ...     is_fields={"isorce": "my sensor", "security": {"clas": "U"}},
+   ...     des_fields={"security": {"clas": "U"}},
    ... )
 
 Plans are also available from readers:
@@ -121,12 +120,11 @@ Similar to reading, instantiating a writer sets up the file while data is writte
 .. doctest::
 
    >>> written_sicd = tmppath / "written.sicd"
-   >>> with written_sicd.open("wb") as f:
-   ...   with sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
-   ...      writer.write_image(pixels)
+   >>> with written_sicd.open("wb") as f, sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
+   ...     writer.write_image(pixels)
 
    >>> with written_sicd.open("rb") as f:
-   ...   f.read(9).decode()
+   ...     f.read(9).decode()
    'NITF02.10'
 
 SARkit sanity checks some aspects on write but it is up to the user to ensure consistency of the plan and data:
@@ -134,9 +132,8 @@ SARkit sanity checks some aspects on write but it is up to the user to ensure co
 .. doctest::
 
    >>> bad_sicd = tmppath / "bad.sicd"
-   >>> with bad_sicd.open("wb") as f:
-   ...   with sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
-   ...      writer.write_image(pixels.view(np.uint8))
+   >>> with bad_sicd.open("wb") as f, sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
+   ...     writer.write_image(pixels.view(np.uint8))
    Traceback (most recent call last):
    ValueError: Array dtype (uint8) does not match expected dtype (complex64) for PixelType=RE32F_IM32F
 

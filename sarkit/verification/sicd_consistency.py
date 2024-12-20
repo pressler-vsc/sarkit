@@ -691,6 +691,8 @@ class SicdConsistency(con.ConsistencyChecker):
                 algo := self.sicdroot.findtext("./{*}ImageFormation/{*}ImageFormAlgo")
             ) != "OTHER"
             with self.need("ImageFormationAlgo paired with appropriate block"):
+                if algo == "RGAZCOMP":
+                    algo = "RgAzComp"
                 assert self.sicdroot.find("./{*}" + algo) is not None
 
     def check_pfa_grid_type(self) -> None:
@@ -1255,7 +1257,6 @@ class SicdConsistency(con.ConsistencyChecker):
                     np.round(npp.polyval(iset["t_end"], iset["ipp_poly"]) - 1),
                 )
             isets.append(iset)
-
         isets.sort(key=lambda x: x["index"])
 
         t_starts = np.asarray([iset["t_start"] for iset in isets])

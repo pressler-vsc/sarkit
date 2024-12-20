@@ -556,6 +556,19 @@ def test_rgazcomp_polys(sicd_con, em):
     assert sicd_con.failures()
 
 
+def test_rgazcomp_ifa(sicd_con, em):
+    sicd_con.sicdroot.append(
+        em.RgAzComp(
+            em.AzSF("0.0"),
+            sarkit.standards.xml.PolyType(1).make_elem("KazPoly", np.zeros(4)),
+        )
+    )
+
+    sicd_con.sicdroot.find("./{*}ImageFormation/{*}ImageFormAlgo").text = "RGAZCOMP"
+    sicd_con.check("check_valid_ifa")
+    assert not sicd_con.failures()
+
+
 @pytest.mark.parametrize(
     "poly_to_invalidate",
     ("{*}PolarAngPoly", "{*}SpatialFreqSFPoly", "{*}STDeskew/{*}STDSPhasePoly"),

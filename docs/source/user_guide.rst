@@ -47,7 +47,8 @@ is often a small fraction of the size of a SAR data file.
    tmppath = pathlib.Path(tmpdir.name)
    example_sicd = tmppath / "example.sicd"
    sec = {"security": {"clas": "U"}}
-   example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml")
+   parser = lxml.etree.XMLParser(remove_blank_text=True)
+   example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml", parser)
    sicd_plan = sarkit_sicd.SicdNitfPlan(
       sicd_xmltree=example_sicd_xmltree,
       header_fields={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
@@ -142,10 +143,99 @@ SARkit sanity checks some aspects on write but it is up to the user to ensure co
 SARkit provides :ref:`consistency checkers <consistency_checking>` that can be used to help create self-consistent SAR
 data.
 
+
 Operating on XML Metadata
 =========================
+The parsed XML element tree is a key component in SARkit as XML is the primary metadata container for many SAR
+standards.
 
-TODO
+For simple operations, `xml.etree.ElementTree` and/or `lxml` are often sufficient:
+
+.. doctest::
+
+   >>> reader.sicd_xmltree.findtext(".//{*}ModeType")
+   'SPOTLIGHT'
+
+For complicated metadata, SARkit provides XML helper classes that can be used to transcode between XML and more
+convenient Python objects.
+
+======   ===============================================
+Format   XML Helper
+======   ===============================================
+CPHD     :py:class:`sarkit.standards.cphd.xml.XmlHelper`
+SICD     :py:class:`sarkit.standards.sicd.xml.XmlHelper`
+SIDD     :py:class:`sarkit.standards.sidd.xml.XmlHelper`
+======   ===============================================
+
+
+XML Helpers
+-----------
+
+XMLHelpers are instantiated with an `lxml.etree.ElementTree` which can then be manipulated using set and load methods.
+
+.. doctest::
+
+   >>> import sarkit.standards.sicd.xml
+   >>> xmlhelp = sarkit.standards.sicd.xml.XmlHelper(reader.sicd_xmltree)
+   >>> xmlhelp.load(".//{*}ModeType")
+   'SPOTLIGHT'
+
+:py:class:`~sarkit.standards.xml.XmlHelper.load_elem` and :py:class:`~sarkit.standards.xml.XmlHelper.set_elem` can be
+used when you already have an element object:
+
+.. doctest::
+
+   >>> tcoa_poly_elem = reader.sicd_xmltree.find(".//{*}TimeCOAPoly")
+   >>> xmlhelp.load_elem(tcoa_poly_elem)
+   array([[1.2206226]])
+
+   >>> xmlhelp.set_elem(tcoa_poly_elem, [[1.1, -2.2], [-3.3, 4.4]])
+   >>> print(lxml.etree.tostring(tcoa_poly_elem, pretty_print=True, encoding="unicode").strip())
+   <TimeCOAPoly xmlns="urn:SICD:1.4.0" order1="1" order2="1">
+     <Coef exponent1="0" exponent2="0">1.1</Coef>
+     <Coef exponent1="0" exponent2="1">-2.2</Coef>
+     <Coef exponent1="1" exponent2="0">-3.3</Coef>
+     <Coef exponent1="1" exponent2="1">4.4</Coef>
+   </TimeCOAPoly>
+
+:py:class:`~sarkit.standards.xml.XmlHelper.load` / :py:class:`~sarkit.standards.xml.XmlHelper.set` are shortcuts for
+``find`` + :py:class:`~sarkit.standards.xml.XmlHelper.load_elem` / :py:class:`~sarkit.standards.xml.XmlHelper.set_elem`:
+
+.. doctest::
+
+   # find + set_elem/load_elem
+   >>> elem = reader.sicd_xmltree.find("{*}ImageData/{*}SCPPixel")
+   >>> xmlhelp.set_elem(elem, [123, 456])
+   >>> xmlhelp.load_elem(elem)
+   array([123, 456])
+
+   # equivalent methods using set/load
+   >>> xmlhelp.set("{*}ImageData/{*}SCPPixel", [321, 654])
+   >>> xmlhelp.load("{*}ImageData/{*}SCPPixel")
+   array([321, 654])
+
+.. note:: Similar to writers, XMLHelpers only prevent basic errors. Users are responsible for ensuring metadata is
+   accurate and compliant with the standard/schema.
+
+
+What is transcodable?
+---------------------
+
+Every leaf in the supported SAR standards' XML trees has a transcoder, but parent nodes generally only have them for
+standard-defined complex types (e.g. XYZ, LL, LLH, POLY, 2D_POLY, etc.).
+Select parent nodes also have them when a straightforward mapping is apparent (e.g. polygons).
+
+.. doctest::
+
+   # this leaf has a transcoder
+   >>> xmlhelp.load("{*}CollectionInfo/{*}CollectorName")
+   'SyntheticCollector'
+
+   # this parent node does not have a transcoder
+   >>> xmlhelp.load("{*}CollectionInfo")
+   Traceback (most recent call last):
+   sarkit.standards.xml.NotTranscodableError: CollectionInfo is not transcodable
+
 
 .. _consistency_checking:
 

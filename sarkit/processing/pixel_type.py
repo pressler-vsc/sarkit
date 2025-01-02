@@ -66,7 +66,7 @@ def as_re32f_im32f(
     """
     input_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
 
-    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype:
+    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
         raise TypeError(
             f"{array.dtype=} does not match ImageData/PixelType={input_type}"
         )
@@ -106,7 +106,7 @@ def as_re16i_im16i(
     """
     input_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
 
-    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype:
+    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
         raise TypeError(
             f"{array.dtype=} does not match ImageData/PixelType={input_type}"
         )
@@ -118,7 +118,7 @@ def as_re16i_im16i(
     xml_helper = ss_xml.XmlHelper(sicd_xmltree_out)
     if xml_helper.load("./{*}ImageData/{*}PixelType") == "AMP8I_PHS8I":
         array = _amp8i_phs8i_to_re32f_im32f(array, xml_helper)
-    array_f32 = array.reshape(array.shape + (1,)).view(np.float32)
+    array_f32 = array.reshape(array.shape + (1,)).view(array.real.dtype)
     mabs = _max_abs(array_f32)
     scale = (2**15 - 1) / mabs
     scale_sq = scale * scale
@@ -169,7 +169,7 @@ def as_amp8i_phs8i(
     """
     input_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
 
-    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype:
+    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
         raise TypeError(
             f"{array.dtype=} does not match ImageData/PixelType={input_type}"
         )

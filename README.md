@@ -1,19 +1,36 @@
-## Prepare environment
-```bash
-pdm install -dG :all
-```
+<div align="center">
 
-## Build Documentation
-```bash
-pdm run nox -s docs
-```
+<img src="https://sarkit.readthedocs.io/en/latest/_static/SARPy_logo.png" width=200>
 
-## Run lint and tests
-```bash
-pdm run nox
-```
+[![Python package](https://github.com/ValkyrieSystems/sarkit/actions/workflows/python-package.yml/badge.svg)](https://github.com/ValkyrieSystems/sarkit/actions/workflows/python-package.yml)
+[![Documentation Status](https://readthedocs.org/projects/sarkit/badge/?version=latest)](https://sarkit.readthedocs.io/en/latest/?badge=latest)
+
+</div>
+
+**SARkit** is a suite of Synthetic Aperture Radar (SAR)-related tools in Python developed and maintained by the National Geospatial-Intelligence Agency (NGA) to encourage the use of SAR data standards.
+
+With SARkit, you can:
+
+* read and write SAR standards files (CPHD, SICD, SIDD)
+* interact with SAR XML metadata using more convenient Python objects
+* check SAR data/metadata files for inconsistencies
 
 ## Origins
-This project was developed at the National Geospatial-Intelligence Agency (NGA). The
-software use, modification, and distribution rights are stipulated within the
-MIT license (See [`LICENSE`](LICENSE) file).
+This project was developed at the National Geospatial-Intelligence Agency (NGA) as the modern successor to
+[SarPy](https://github.com/ngageoint/sarpy).
+
+## License
+The software use, modification, and distribution rights are stipulated within the MIT license
+(See [`LICENSE`](LICENSE) file).
+
+## Contributing and Development
+Contributions are welcome; for details see the [contributing guide](./CONTRIBUTING.md).
+
+A few tips for getting started using [PDM](https://pdm-project.org/en/latest/) are below:
+
+
+```shell
+$ pdm install -dG :all  # install SARkit with optional & dev dependencies
+$ pdm run nox  # run lint and tests
+$ pdm run nox -s docs  # build documentation
+```

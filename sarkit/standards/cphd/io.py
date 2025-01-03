@@ -161,6 +161,35 @@ def binary_format_string_to_dtype(format_string: str) -> np.dtype:
     return dtype
 
 
+def mask_support_array(
+    array: npt.NDArray, nodata_hex: str | None = None
+) -> np.ma.MaskedArray:
+    """Apply a NODATA hex string to a support array to mask the array.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        Support array to compare to NODATA and create a masked array from
+    nodata_hex : str, optional
+        If None, create a maskedarray with all array elements valid. Otherwise, use the hex string to
+        compare to the values in ``array`` to make the mask
+
+    Returns
+    -------
+    masked_array : MaskedArray
+        `numpy.ma.MaskedArray` corresponding to the valid elements of ``array``
+
+    """
+    if nodata_hex is None:
+        return np.ma.array(array)
+    nodata_v = np.void(bytes.fromhex(nodata_hex))
+    return np.ma.array(
+        array,
+        mask=array.view(nodata_v.dtype) == nodata_v,
+        fill_value=nodata_v.view(array.dtype),
+    )
+
+
 @dataclasses.dataclass(kw_only=True)
 class CphdFileHeaderFields:
     """CPHD header fields which are set per program specific Product Design Document
@@ -395,7 +424,7 @@ class CphdReader:
         Returns
         -------
         ndarray
-            2D array of complex pixels
+            2D array of complex samples
 
 
         """
@@ -460,8 +489,7 @@ class CphdReader:
         """
         return self.read_signal(channel_identifier), self.read_pvps(channel_identifier)
 
-    def read_support_array(self, sa_identifier):
-        """Read SupportArray"""
+    def _read_support_array(self, sa_identifier):
         elem_format = self.cphd_xmltree.find(
             f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}ElementFormat"
         )
@@ -477,10 +505,19 @@ class CphdReader:
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self.support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
-
         return np.fromfile(self._file_object, dtype, count=np.prod(shape)).reshape(
             shape
         )
+
+    def read_support_array(self, sa_identifier, masked=True):
+        """Read SupportArray"""
+        array = self._read_support_array(sa_identifier)
+        if not masked:
+            return array
+        nodata = self.cphd_xmltree.findtext(
+            f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}NODATA"
+        )
+        return mask_support_array(array, nodata)
 
     def done(self):
         "Indicates to the reader that the user is done with it"
@@ -522,11 +559,12 @@ class CphdWriter:
     """
 
     def __init__(self, file, plan):
+        align_to = 64
         self._file_object = file
 
         self._plan = plan
 
-        xml_str = lxml.etree.tostring(plan.cphd_xmltree)
+        xml_block_body = lxml.etree.tostring(plan.cphd_xmltree, encoding="utf-8")
 
         signal_itemsize = binary_format_string_to_dtype(
             plan.cphd_xmltree.find("./{*}Data/{*}SignalArrayFormat").text
@@ -556,11 +594,13 @@ class CphdWriter:
                 "pvp_size": channel_pvp_size,
             }
 
-        signal_block_size = sum(
-            chan["signal_size"] for chan in self._channel_size_offsets.values()
+        signal_block_size = max(
+            chan["signal_size"] + chan["signal_offset"]
+            for chan in self._channel_size_offsets.values()
         )
-        pvp_block_size = sum(
-            chan["pvp_size"] for chan in self._channel_size_offsets.values()
+        pvp_block_size = max(
+            chan["pvp_size"] + chan["pvp_offset"]
+            for chan in self._channel_size_offsets.values()
         )
 
         self._sa_size_offsets = {}
@@ -578,16 +618,15 @@ class CphdWriter:
                 "size": sa_size,
             }
 
-        support_block_size = sum(sa["size"] for sa in self._sa_size_offsets.values())
+        support_block_size = max(
+            sa["size"] + sa["offset"] for sa in self._sa_size_offsets.values()
+        )
 
         def _align(val):
-            align_to = 64
             return int(np.ceil(float(val) / align_to) * align_to)
 
-        # TODO Pad out the header?
-
         self._file_header_kvp = {
-            "XML_BLOCK_SIZE": len(xml_str),
+            "XML_BLOCK_SIZE": len(xml_block_body),
             "XML_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
             "PVP_BLOCK_SIZE": pvp_block_size,
             "PVP_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
@@ -612,53 +651,32 @@ class CphdWriter:
             header_str += "".join(
                 (f"{key} := {value}\n" for key, value in self._file_header_kvp.items())
             )
-            return header_str.encode()
+            return header_str.encode() + CPHD_SECTION_TERMINATOR
 
-        max_file_header_size = _align(len(_serialize_header()))
-
-        self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"] = max_file_header_size + len(
-            CPHD_SECTION_TERMINATOR
-        )
-
-        if self._sa_size_offsets:
-            self._file_header_kvp["SUPPORT_BLOCK_BYTE_OFFSET"] = (
-                self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
-                + self._file_header_kvp["SIGNAL_BLOCK_SIZE"]
-                + len(CPHD_SECTION_TERMINATOR)
-            )
-
-        self._file_header_kvp["PVP_BLOCK_BYTE_OFFSET"] = (
-            self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"]
+        next_offset = _align(len(_serialize_header()))
+        self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"] = next_offset
+        next_offset = _align(
+            next_offset
             + self._file_header_kvp["XML_BLOCK_SIZE"]
             + len(CPHD_SECTION_TERMINATOR)
         )
-        self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"] = (
-            self._file_header_kvp["PVP_BLOCK_BYTE_OFFSET"]
-            + self._file_header_kvp["PVP_BLOCK_SIZE"]
-            + len(CPHD_SECTION_TERMINATOR)
-        )
-        self._file_object.seek(max_file_header_size + len(CPHD_SECTION_TERMINATOR))
-        self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"] = self._file_object.tell()
-        self._file_object.write(xml_str)
-        self._file_object.write(CPHD_SECTION_TERMINATOR)
 
         if self._sa_size_offsets:
-            self._file_header_kvp["SUPPORT_BLOCK_BYTE_OFFSET"] = (
-                self._file_object.tell()
-            )
-            self._file_object.seek(
-                self._file_header_kvp["SUPPORT_BLOCK_SIZE"], os.SEEK_CUR
+            self._file_header_kvp["SUPPORT_BLOCK_BYTE_OFFSET"] = next_offset
+            next_offset = _align(
+                next_offset + self._file_header_kvp["SUPPORT_BLOCK_SIZE"]
             )
 
-        self._file_header_kvp["PVP_BLOCK_BYTE_OFFSET"] = self._file_object.tell()
-        self._file_object.seek(self._file_header_kvp["PVP_BLOCK_SIZE"], os.SEEK_CUR)
+        self._file_header_kvp["PVP_BLOCK_BYTE_OFFSET"] = next_offset
+        next_offset = _align(next_offset + self._file_header_kvp["PVP_BLOCK_SIZE"])
 
-        self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"] = self._file_object.tell()
-        self._file_object.seek(self._file_header_kvp["SIGNAL_BLOCK_SIZE"], os.SEEK_CUR)
+        self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"] = next_offset
+        next_offset = _align(next_offset + self._file_header_kvp["SIGNAL_BLOCK_SIZE"])
 
         self._file_object.seek(0)
         self._file_object.write(_serialize_header())
-        self._file_object.write(CPHD_SECTION_TERMINATOR)
+        self._file_object.seek(self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"])
+        self._file_object.write(xml_block_body + CPHD_SECTION_TERMINATOR)
 
         self._signal_arrays_written = set()
         self._pvp_arrays_written = set()
@@ -672,7 +690,7 @@ class CphdWriter:
         channel_identifier : str
             Channel unique identifier
         signal_array : ndarray
-            2D array of complex pixels
+            2D array of complex samples
 
         """
         assert (
@@ -698,7 +716,7 @@ class CphdWriter:
         ----------
         channel_identifier : str
             Channel unique identifier
-        signal_array : ndarray
+        pvp_array : ndarray
             Array of PVPs
 
         """

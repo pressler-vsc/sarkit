@@ -25,6 +25,14 @@ def example_proj_metadata_bi():
     return proj_metadata
 
 
+@pytest.fixture(
+    params=[DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"]
+)
+def mono_and_bi_proj_metadata(request):
+    etree = lxml.etree.parse(request.param)
+    return ss_proj.MetadataParams.from_xml(etree)
+
+
 def test_metadata_params():
     all_attrs = set()
     set_attrs = set()
@@ -233,3 +241,89 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     assert not success
     mismatched_index = np.argwhere((spp_tgt != spp_tgt_w_bad).any(axis=-1)).squeeze()
     assert np.array_equal(bad_index, mismatched_index)
+
+
+def test_r_rdot_from_rgazim_rgazcomp(example_proj_metadata):
+    example_proj_metadata.IFA = "RGAZCOMP"
+    example_proj_metadata.Grid_Type = "RGAZIM"
+    example_proj_metadata.AzSF = 2.0
+    computed_pos_vel = ss_proj.compute_coa_pos_vel(
+        example_proj_metadata, example_proj_metadata.t_SCP_COA
+    )
+    r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
+        example_proj_metadata,
+        [0, 0],
+        example_proj_metadata.t_SCP_COA,
+        computed_pos_vel,
+    )
+
+    assert all([r_tgt_coa, rdot_tgt_coa])
+
+
+def test_r_rdot_from_rgzero(example_proj_metadata):
+    example_proj_metadata.IFA = "RMA"
+    example_proj_metadata.Grid_Type = "RGZERO"
+    example_proj_metadata.cT_CA = np.array([1.0, 0.0001])
+    example_proj_metadata.cDRSF = np.array([[1.0, 0.0001], [1.0, 0.0001]])
+    example_proj_metadata.R_CA_SCP = 10000
+
+    computed_pos_vel = ss_proj.compute_coa_pos_vel(
+        example_proj_metadata, example_proj_metadata.t_SCP_COA
+    )
+    r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
+        example_proj_metadata,
+        [0, 0],
+        example_proj_metadata.t_SCP_COA,
+        computed_pos_vel,
+    )
+
+    assert all([r_tgt_coa, rdot_tgt_coa])
+
+
+def test_r_rdot_from_xrgycr(mono_and_bi_proj_metadata):
+    mono_and_bi_proj_metadata.Grid_Type = "XRGYCR"
+    computed_pos_vel = ss_proj.compute_coa_pos_vel(
+        mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
+    )
+    r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
+        mono_and_bi_proj_metadata,
+        [0, 0],
+        mono_and_bi_proj_metadata.t_SCP_COA,
+        computed_pos_vel,
+    )
+
+    assert all([r_tgt_coa, rdot_tgt_coa])
+
+
+def test_r_rdot_from_xctyat(mono_and_bi_proj_metadata):
+    mono_and_bi_proj_metadata.Grid_Type = "XCTYAT"
+    computed_pos_vel = ss_proj.compute_coa_pos_vel(
+        mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
+    )
+    r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
+        mono_and_bi_proj_metadata,
+        [0, 0],
+        mono_and_bi_proj_metadata.t_SCP_COA,
+        computed_pos_vel,
+    )
+
+    assert all([r_tgt_coa, rdot_tgt_coa])
+
+
+def test_r_rdot_from_plane(mono_and_bi_proj_metadata):
+    mono_and_bi_proj_metadata.IFA = "RMA"
+    mono_and_bi_proj_metadata.Grid_Type = "PLANE"
+    mono_and_bi_proj_metadata.cT_CA = np.array([1.0, 0.0001])
+    mono_and_bi_proj_metadata.cDRSF = np.array([[1.0, 0.0001], [1.0, 0.0001]])
+    mono_and_bi_proj_metadata.R_CA_SCP = 10000
+    computed_pos_vel = ss_proj.compute_coa_pos_vel(
+        mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
+    )
+    r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
+        mono_and_bi_proj_metadata,
+        [0, 0],
+        mono_and_bi_proj_metadata.t_SCP_COA,
+        computed_pos_vel,
+    )
+
+    assert all([r_tgt_coa, rdot_tgt_coa])

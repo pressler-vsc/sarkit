@@ -10,6 +10,21 @@ SARkit User Guide
 SARkit contains readers and writers for SAR standards files and functions for operating on them.
 This is an overview of basic SARkit functionality. For details, see the :doc:`reference/index`.
 
+.. _installation:
+
+Installation
+============
+Basic SARkit functionality relies on a small set of dependencies.
+Some features require additional dependencies which can be installed using packaging extras:
+
+.. code-block:: shell-session
+
+   $ python -m pip install sarkit  # Install basics dependencies
+   $ python -m pip install sarkit[processing]  # Install processing dependencies
+   $ python -m pip install sarkit[verification]  # Install verification dependencies
+   $ python -m pip install sarkit[all]  # Install all dependencies
+
+
 Reading and writing files
 =========================
 SARkit provides reader/writer classes that are intended to be used as context managers and plan classes that are used to
@@ -239,4 +254,57 @@ Select parent nodes also have them when a straightforward mapping is apparent (e
 Consistency Checking
 ====================
 
-TODO
+.. warning:: Consistency checkers require the ``verification`` :ref:`extra <installation>`.
+
+SARkit provides checkers that can be used to identify inconsistencies in SAR standards files.
+
+======   =================================================
+Format   Consistency Checker
+======   =================================================
+CPHD     :py:class:`~sarkit.verification.cphd_consistency`
+SICD     :py:class:`~sarkit.verification.sicd_consistency`
+======   =================================================
+
+Each consistency checker provides a command line interface for checking SAR data/metadata files.
+When there are no inconsistencies, no output is produced.
+
+.. code-block:: shell-session
+
+   $ python -m sarkit.verification.sicd_consistency good.sicd
+   $
+
+The same command can be used to run a subset of the checks against the XML.
+
+.. code-block:: shell-session
+
+   $ python -m sarkit.verification.sicd_consistency good.sicd.xml
+   $
+
+When a file is inconsistent, failed checks are printed.
+
+.. code-block:: shell-session
+
+   $ python -m sarkit.verification.sicd_consistency bad.sicd
+   check_image_formation_timeline: Checks that the slow time span for data processed to form
+   the image is within collect.
+      [Error] Need: 0 <= TStartProc < TEndProc <= CollectDuration
+
+For further details about consistency checker results, increase the output verbosity.
+The ``-v`` flag is additive and can be used up to 4 times.
+
+.. code-block::
+
+   -v       # display details in failed checks
+   -vv      # display passed asserts in failed checks
+   -vvv     # display passed checks
+   -vvvv    # display details in skipped checks
+
+For example:
+
+.. code-block:: shell-session
+
+   $ python -m sarkit.verification.sicd_consistency good.sicd -vvv
+   check_against_schema: Checks against schema.
+      [Pass] Need: XML passes schema
+      [Pass] Need: Schema available for checking xml whose root tag = {urn:SICD:1.2.1}SICD
+   ...

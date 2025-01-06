@@ -308,14 +308,14 @@ def compute_coa_r_rdot(
         if proj_metadata.IFA == "PFA":
             r_rdot_func = r_rdot_from_rgazim_pfa
         if proj_metadata.IFA == "RGAZCOMP":
-            r_rdot_func = r_rdot_from_rgazim_rgazcomp  # type: ignore
+            r_rdot_func = r_rdot_from_rgazim_rgazcomp
     else:
         r_rdot_func = {
             "RGZERO": r_rdot_from_rgzero,
             "XRGYCR": r_rdot_from_xrgycr,
             "XCTYAT": r_rdot_from_xctyat,
             "PLANE": r_rdot_from_plane,
-        }.get(proj_metadata.Grid_Type)  # type: ignore
+        }.get(proj_metadata.Grid_Type)
     if not r_rdot_func:
         raise ValueError("Insufficient metadata to perform projection")
 
@@ -369,24 +369,130 @@ def r_rdot_from_rgazim_pfa(
     return r, rdot
 
 
-def r_rdot_from_rgazim_rgazcomp():
-    raise NotImplementedError
+def r_rdot_from_rgazim_rgazcomp(
+    proj_metadata: params.MetadataParams,
+    image_grid_locations: npt.ArrayLike,
+    t_coa: npt.ArrayLike,
+    coa_pos_vels: params.CoaPosVels,
+) -> tuple[npt.NDArray, npt.NDArray]:
+    """Image Grid To R/Rdot: Grid_Type = RGAZIM & IFA = RGAZCOMP."""
+
+    assert proj_metadata.is_monostatic()
+    assert coa_pos_vels.VARP_COA is not None
+
+    tgts = np.asarray(image_grid_locations)
+    rg_tgts = tgts[..., 0]
+    az_tgts = tgts[..., 1]
+
+    # Compute the range and range rate to the SCP at COA
+    r_scp_vector = coa_pos_vels.ARP_COA - proj_metadata.SCP
+    r_scp = np.linalg.norm(r_scp_vector, axis=-1, keepdims=True)
+    rdot_scp = (coa_pos_vels.VARP_COA * r_scp_vector).sum(-1, keepdims=True) / r_scp
+
+    # Compute the increment in cosine of the DCA at COA of the target and the increment in range rate
+    delta_cos_dca = proj_metadata.AzSF * az_tgts
+    delta_rdot = (
+        -np.linalg.norm(coa_pos_vels.VARP_COA, axis=-1, keepdims=True) * delta_cos_dca
+    )
+
+    # Compute the range and range rate to the target at COA
+    r_tgt_coa = r_scp + rg_tgts
+    rdot_tgt_coa = rdot_scp + delta_rdot[..., np.newaxis]
+    return r_tgt_coa, rdot_tgt_coa
 
 
-def r_rdot_from_rgzero():
-    raise NotImplementedError
+def r_rdot_from_rgzero(
+    proj_metadata: params.MetadataParams,
+    image_grid_locations: npt.ArrayLike,
+    t_coa: npt.ArrayLike,
+    coa_pos_vels: params.CoaPosVels,
+) -> tuple[npt.NDArray, npt.NDArray]:
+    """Image Grid To R/Rdot: Grid_Type = RGZERO."""
+
+    assert proj_metadata.is_monostatic()
+
+    tgts = np.asarray(image_grid_locations)
+    rg_tgts = tgts[..., 0]
+    az_tgts = tgts[..., 1]
+
+    # Compute the range at closest approach and the time of closest approach for the image grid location
+    r_ca = proj_metadata.R_CA_SCP + rg_tgts
+    t_ca = npp.polyval(az_tgts, proj_metadata.cT_CA)
+
+    # Compute the ARP velocity at t_ca and compute the magnitude of the vector
+    varp_ca = _xyzpolyval(t_ca, npp.polyder(proj_metadata.ARP_Poly))
+    varp_ca_mag = np.linalg.norm(varp_ca, axis=-1, keepdims=True)
+
+    # Compute the Doppler Rate Scale Factor for image grid (rg_tgts, az_tgts)
+    drsf = npp.polyval2d(rg_tgts, az_tgts, proj_metadata.cDRSF)
+
+    # Compute the time difference between the COA time and the CA time
+    delta_t_coa = t_coa - t_ca
+
+    # Compute the range and range rate relative to the ARP at COA
+    r_tgt_coa = np.sqrt(r_ca**2 + drsf * varp_ca_mag**2 * delta_t_coa**2)
+    rdot_tgt_coa = drsf / r_tgt_coa * varp_ca_mag**2 * delta_t_coa
+    return r_tgt_coa, rdot_tgt_coa
 
 
-def r_rdot_from_xrgycr():
-    raise NotImplementedError
+def r_rdot_from_xrgycr(
+    proj_metadata: params.MetadataParams,
+    image_grid_locations: npt.ArrayLike,
+    t_coa: npt.ArrayLike,
+    coa_pos_vels: params.CoaPosVels,
+) -> tuple[npt.NDArray, npt.NDArray]:
+    """Image Grid To R/Rdot: Grid_Type = XRGYCR.
+
+    XRGYCR is a special case of a uniformly sampled image plane.
+    """
+    return r_rdot_from_plane(proj_metadata, image_grid_locations, t_coa, coa_pos_vels)
 
 
-def r_rdot_from_xctyat():
-    raise NotImplementedError
+def r_rdot_from_xctyat(
+    proj_metadata: params.MetadataParams,
+    image_grid_locations: npt.ArrayLike,
+    t_coa: npt.ArrayLike,
+    coa_pos_vels: params.CoaPosVels,
+) -> tuple[npt.NDArray, npt.NDArray]:
+    """Image Grid To R/Rdot: Grid_Type = XCTYAT.
+
+    XCTYAT is a special case of a uniformly sampled image plane.
+    """
+    return r_rdot_from_plane(proj_metadata, image_grid_locations, t_coa, coa_pos_vels)
 
 
-def r_rdot_from_plane():
-    raise NotImplementedError
+def r_rdot_from_plane(
+    proj_metadata: params.MetadataParams,
+    image_grid_locations: npt.ArrayLike,
+    t_coa: npt.ArrayLike,
+    coa_pos_vels: params.CoaPosVels,
+) -> tuple[npt.NDArray, npt.NDArray]:
+    """Image Grid To R/Rdot: Grid_Type = PLANE."""
+
+    tgts = np.asarray(image_grid_locations)
+    x_tgt = tgts[..., 0]
+    y_tgt = tgts[..., 1]
+
+    # Compute the image plane point for image grid location (xrowTGT, ycolTGT), IP_TGT
+    ip_tgt = (
+        proj_metadata.SCP + (x_tgt * proj_metadata.uRow) + (y_tgt * proj_metadata.uCol)
+    )
+
+    # Compute the range and range rate to the image plane point IP_TGT relative to the COA positions and velocities
+    if proj_metadata.is_monostatic():
+        r_tgt_coa = np.linalg.norm(
+            coa_pos_vels.ARP_COA - ip_tgt, axis=-1, keepdims=True
+        )
+        u_pt = (coa_pos_vels.ARP_COA - ip_tgt) / r_tgt_coa
+        rdot_tgt_coa = (coa_pos_vels.VARP_COA * u_pt).sum(-1, keepdims=True)
+
+        return r_tgt_coa, rdot_tgt_coa
+    else:
+        pt_r_rdot_params = compute_pt_r_rdot_parameters(
+            proj_metadata, coa_pos_vels, ip_tgt
+        )
+
+        return pt_r_rdot_params.R_Avg_PT, pt_r_rdot_params.Rdot_Avg_PT
 
 
 def compute_projection_sets(

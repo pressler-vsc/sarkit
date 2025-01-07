@@ -1753,9 +1753,6 @@ class SicdConsistency(con.ConsistencyChecker):
                 "./{*}RadarCollection/{*}RcvChannels/{*}ChanParameters/{*}RcvAPCIndex"
             )
         ]
-        with self.need("RcvAPC and RcvAPCIndex must be included together"):
-            assert len(rcvapc_indices) > 0
-            assert len(rcvapcindex) > 0
 
         for index in rcvapcindex:
             with self.need(

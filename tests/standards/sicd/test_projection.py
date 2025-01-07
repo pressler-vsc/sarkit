@@ -46,6 +46,14 @@ def test_metadata_params():
     assert not unset_attrs
 
 
+def test_metadata_params_without_optional_apcs():
+    etree = lxml.etree.parse(DATAPATH / "example-sicd-1.3.0.xml")
+    assert ss_proj.MetadataParams.from_xml(etree).Rcv_Poly is not None
+    for el in etree.findall(".//{*}RcvAPCIndex") + etree.findall(".//{*}RcvApcPoly"):
+        el.getparent().remove(el)
+    assert ss_proj.MetadataParams.from_xml(etree).Rcv_Poly is None
+
+
 def test_metadata_params_is_monostatic(example_proj_metadata):
     example_proj_metadata.Collect_Type = "MONOSTATIC"
     assert example_proj_metadata.is_monostatic()

@@ -28,6 +28,7 @@ def _get_rcv_poly(xmlhelp):
     rcv_apc_polys = [
         xmlhelp.load(f"{{*}}Position/{{*}}RcvAPC/{{*}}RcvAPCPoly[@index='{c}']")
         for c in rcv_apc_indices
+        if c is not None
     ]
     if rcv_apc_polys:
         return functools.reduce(npp.polyadd, rcv_apc_polys) / len(rcv_apc_polys)

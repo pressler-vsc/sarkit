@@ -1317,7 +1317,7 @@ class CphdConsistency(con.ConsistencyChecker):
                 bytes_after_xml = fp.read(num_bytes_after_xml)
                 terminator = bytes_after_xml[:2]
                 pad = np.array(
-                    struct.unpack(f"{num_bytes_after_xml-2}B", bytes_after_xml[2:])
+                    struct.unpack(f"{num_bytes_after_xml - 2}B", bytes_after_xml[2:])
                 )
 
             with self.need("Section terminator exists"):

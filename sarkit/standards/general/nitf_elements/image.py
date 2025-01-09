@@ -71,8 +71,7 @@ class ImageBand(NITFElement):
         True,
         3,
         default_value="",
-        docstring="Standard Image Filter Code. This field is reserved "
-        "for future use.",
+        docstring="Standard Image Filter Code. This field is reserved for future use.",
     )  # type: str
 
     def __init__(self, **kwargs):

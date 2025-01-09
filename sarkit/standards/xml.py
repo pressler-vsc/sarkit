@@ -193,7 +193,7 @@ class PolyType(Type):
         elem_ns = self.child_ns if self.child_ns else lxml.etree.QName(elem).namespace
         ns = f"{{{elem_ns}}}" if elem_ns else ""
         for dim, ncoef in enumerate(coefs.shape):
-            elem.set(f"order{dim+1}", str(ncoef - 1))
+            elem.set(f"order{dim + 1}", str(ncoef - 1))
         for coord, coef in np.ndenumerate(coefs):
             attribs = {f"exponent{d + 1}": str(c) for d, c in enumerate(coord)}
             lxml.etree.SubElement(elem, ns + "Coef", attrib=attribs).text = str(coef)

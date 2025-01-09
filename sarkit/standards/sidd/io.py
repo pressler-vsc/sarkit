@@ -433,6 +433,7 @@ class SiddNitfReader:
     """Read a SIDD NITF
 
     A SiddNitfReader object should be used as a context manager in a ``with`` statement.
+    Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
     ----------
@@ -923,7 +924,7 @@ def segmentation_algorithm(
                     idlvl=z,
                     ialvl=0,
                     iloc="0000000000",
-                    iid1=f"SIDD{k+1:03d}001",  # Document says 'm', but there is no m variable
+                    iid1=f"SIDD{k + 1:03d}001",  # Document says 'm', but there is no m variable
                     nrows=num_rows_k,
                     ncols=num_cols_k,
                 )
@@ -938,7 +939,7 @@ def segmentation_algorithm(
                     idlvl=z,
                     ialvl=0,
                     iloc="0000000000",
-                    iid1=f"SIDD{k+1:03d}001",  # Document says 'm', but there is no m variable
+                    iid1=f"SIDD{k + 1:03d}001",  # Document says 'm', but there is no m variable
                     nrows=num_rows_limit_k,
                     ncols=num_cols_k,
                 )
@@ -951,7 +952,7 @@ def segmentation_algorithm(
                         idlvl=z,
                         ialvl=z - 1,
                         iloc=f"{num_rows_limit_k:05d}00000",
-                        iid1=f"SIDD{k+1:03d}{n+1:03d}",
+                        iid1=f"SIDD{k + 1:03d}{n + 1:03d}",
                         nrows=num_rows_limit_k,
                         ncols=num_cols_k,
                     )
@@ -964,7 +965,7 @@ def segmentation_algorithm(
                     idlvl=z,
                     ialvl=z - 1,
                     iloc=f"{num_rows_limit_k:05d}00000",  # Document says "lastSegRows", but we need the number of rows in the previous IS
-                    iid1=f"SIDD{k+1:03d}{num_seg_per_image_k:03d}",
+                    iid1=f"SIDD{k + 1:03d}{num_seg_per_image_k:03d}",
                     nrows=last_seg_rows,
                     ncols=num_cols_k,
                 )

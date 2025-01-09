@@ -110,3 +110,8 @@ module = [
     "sarkit.standards.general.slice_parsing"
 ]
 ignore_errors = true
+
+[project.urls]
+Documentation = "https://sarkit.readthedocs.io/"
+Repository = "https://github.com/ValkyrieSystems/sarkit.git"
+"Bug Tracker" = "https://github.com/ValkyrieSystems/sarkit/issues"

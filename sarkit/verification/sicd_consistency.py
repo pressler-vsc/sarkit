@@ -381,7 +381,7 @@ class SicdConsistency(con.ConsistencyChecker):
                     assert imsegs[0].IID1.rstrip() == "SICD000"
                 else:
                     expected_iid1s = [
-                        f"SICD{idx+1:03d}   " for idx in range(len(imsegs))
+                        f"SICD{idx + 1:03d}   " for idx in range(len(imsegs))
                     ]
                     actual_iid1s = [imseg.IID1 for imseg in imsegs]
                     assert actual_iid1s == expected_iid1s

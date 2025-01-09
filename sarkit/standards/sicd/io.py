@@ -421,6 +421,7 @@ class SicdNitfReader:
     """Read a SICD NITF
 
     A SicdNitfReader object can be used as a context manager in a ``with`` statement.
+    Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
     ----------

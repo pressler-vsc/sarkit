@@ -1,6 +1,7 @@
 <div align="center">
 
-<img src="https://sarkit.readthedocs.io/en/latest/_static/SARPy_logo.png" width=200>
+<!-- TODO: Replace link with github asset when available in main -->
+<img src="https://sarkit.readthedocs.io/en/user-guide/_static/sarkit_logo.png" width=200>
 
 [![Python package](https://github.com/ValkyrieSystems/sarkit/actions/workflows/python-package.yml/badge.svg)](https://github.com/ValkyrieSystems/sarkit/actions/workflows/python-package.yml)
 [![Documentation Status](https://readthedocs.org/projects/sarkit/badge/?version=latest)](https://sarkit.readthedocs.io/en/latest/?badge=latest)

@@ -676,3 +676,29 @@ def test_check_image_formation_timeline(sicd_con):
     )
     sicd_con.check("check_image_formation_timeline")
     assert sicd_con.failures()
+
+
+def test_check_rcvapcindex(sicd_con):
+    # Invalid APCIndex
+    sicd_con.xmlhelp.set(
+        "./{*}RadarCollection/{*}RcvChannels/{*}ChanParameters/{*}RcvAPCIndex",
+        100,
+    )
+    sicd_con.check("check_rcvapcindex")
+    assert sicd_con.failures()
+
+    # No APCIndex with APCPolys is OK
+    rcvapcindex = sicd_con.sicdroot.find(
+        "./{*}RadarCollection/{*}RcvChannels/{*}ChanParameters/{*}RcvAPCIndex"
+    )
+    rcvapcindex.getparent().remove(rcvapcindex)
+    sicd_con.check("check_rcvapcindex")
+    assert not sicd_con.failures()
+
+
+def test_check_rcvapcindex_nopolys(sicd_con):
+    # APCIndex with no APCPolys
+    rcvapcnode = sicd_con.sicdroot.find("./{*}Position/{*}RcvAPC")
+    rcvapcnode.getparent().remove(rcvapcnode)
+    sicd_con.check("check_rcvapcindex")
+    assert sicd_con.failures()

@@ -92,19 +92,6 @@ can be run as below.
 pytest tests/standards
 ```
 
-### Building distributions
-
-A wheel can be created using pip and the included pyproject.toml.
-The specified backend is pdm-backend, so that must either be installed
-or available through pip channels.
-
-After the following command is run successfully, the wheel will be located
-in ./dist
-
-```bash
-pip wheel . --no-deps -w dist
-```
-
 ## Submitting changes
 
 Even more excellent than a good bug report is a fix for a bug, or the

@@ -14,9 +14,7 @@ nox.options.sessions = (
 
 @nox.session
 def docs(session):
-    session.run_install(
-        "pdm", "install", "--frozen-lockfile", "-G", "doc", external=True
-    )
+    session.run_install("pdm", "sync", "-G", "all", "-G", "doc", external=True)
     session.run(
         "sphinx-build",
         "docs/source",
@@ -38,18 +36,14 @@ def docs(session):
 
 @nox.session
 def format(session):
-    session.run_install(
-        "pdm", "install", "--frozen-lockfile", "-G", "dev-lint", external=True
-    )
+    session.run_install("pdm", "sync", "--prod", "-G", "dev-lint", external=True)
     session.run("ruff", "check", "--fix")
     session.run("ruff", "format")
 
 
 @nox.session
 def lint(session):
-    session.run_install(
-        "pdm", "install", "--frozen-lockfile", "-G", "dev-lint", external=True
-    )
+    session.run_install("pdm", "sync", "--prod", "-G", "dev-lint", external=True)
     session.run("ruff", "check")
     session.run(
         "ruff",
@@ -67,9 +61,7 @@ def test(session):
 
 @nox.session
 def test_standards(session):
-    session.run_install(
-        "pdm", "install", "--frozen-lockfile", "-G", "dev-test", external=True
-    )
+    session.run_install("pdm", "sync", "--prod", "-G", "dev-test", external=True)
     session.run("pytest", "tests/standards")
 
 
@@ -77,8 +69,8 @@ def test_standards(session):
 def test_processing(session):
     session.run_install(
         "pdm",
-        "install",
-        "--frozen-lockfile",
+        "sync",
+        "--prod",
         "-G",
         "dev-test",
         "-G",
@@ -92,8 +84,8 @@ def test_processing(session):
 def test_verification(session):
     session.run_install(
         "pdm",
-        "install",
-        "--frozen-lockfile",
+        "sync",
+        "--prod",
         "-G",
         "dev-test",
         "-G",
@@ -105,7 +97,7 @@ def test_verification(session):
 
 @nox.session
 def data(session):
-    session.run_install("pdm", "install", "--frozen-lockfile", external=True)
+    session.run_install("pdm", "sync", "--prod", external=True)
     session.run(
         "python", "data/syntax_only/sicd/make_syntax_only_sicd_xmls.py", "--check"
     )

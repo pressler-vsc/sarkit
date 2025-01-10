@@ -11,16 +11,16 @@ workflow:
         - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 default:
-  image: python:3.11
   before_script:
   - pip install -U pdm
   - export PDM_CHECK_UPDATE=false
 
 current_env:
+  image: python:3.12
   stage: build
   script:
-  - pdm lock -dG :all
-  - pdm install --frozen-lockfile -dG test
+  - pdm lock -G:all
+  - pdm sync --no-default -G test
   - pdm run nox
   - pdm run nox -s docs
   artifacts:
@@ -29,8 +29,9 @@ current_env:
     expire_in: 1 week
 
 min_env:
+  image: python:3.11
   stage: build
   script:
-  - pdm lock -dG :all --strategy direct_minimal_versions
-  - pdm install --frozen-lockfile -dG test
+  - pdm lock -G :all --strategy direct_minimal_versions
+  - pdm sync --no-default -G test
   - pdm run nox -s test

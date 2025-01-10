@@ -31,7 +31,7 @@ A few tips for getting started using [PDM](https://pdm-project.org/en/latest/) a
 
 
 ```shell
-$ pdm install -dG :all  # install SARkit with optional & dev dependencies
+$ pdm install -G:all  # install SARkit with optional & dev dependencies
 $ pdm run nox  # run lint and tests
 $ pdm run nox -s docs  # build documentation
 ```

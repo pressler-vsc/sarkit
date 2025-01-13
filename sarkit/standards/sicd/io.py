@@ -521,7 +521,26 @@ class SicdNitfReader:
             SICD image array
         """
         self._file_object.seek(self._initial_offset)
-        return self._nitf_reader.read()
+        nrows = int(self.sicd_xmltree.findtext("{*}ImageData/{*}NumRows"))
+        ncols = int(self.sicd_xmltree.findtext("{*}ImageData/{*}NumCols"))
+        pixel_type = self.sicd_xmltree.findtext("{*}ImageData/{*}PixelType")
+        dtype = PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
+        sicd_pixels = np.empty((nrows, ncols), dtype)
+        imseg_sizes = self._nitf_reader.nitf_details.img_segment_sizes[
+            self._nitf_reader.image_segment_collections
+        ]
+        imseg_offsets = self._nitf_reader.nitf_details.img_segment_offsets[
+            self._nitf_reader.image_segment_collections
+        ]
+        splits = np.cumsum(imseg_sizes // (ncols * dtype.itemsize))[:-1]
+        for split, sz, offset in zip(
+            np.array_split(sicd_pixels, splits, axis=0), imseg_sizes, imseg_offsets
+        ):
+            this_os = offset - self._file_object.tell()
+            split[...] = np.fromfile(
+                self._file_object, dtype, count=sz // dtype.itemsize, offset=this_os
+            ).reshape(split.shape)
+        return sicd_pixels
 
     def read_sub_image(
         self,
@@ -766,9 +785,7 @@ class SicdNitfWriter:
         pixel_type = self._nitf_plan.sicd_xmltree.findtext(
             "./{*}ImageData/{*}PixelType"
         )
-        if (
-            PIXEL_TYPES[pixel_type]["dtype"] != array.dtype
-        ):  # TODO what about byteswaping?
+        if PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
             raise ValueError(
                 f"Array dtype ({array.dtype}) does not match expected dtype ({PIXEL_TYPES[pixel_type]['dtype']}) "
                 f"for PixelType={pixel_type}"
@@ -801,7 +818,14 @@ class SicdNitfWriter:
                 f"array goes beyond end of sicd. start + array.shape = {stop} sicd shape={sicd_shape}"
             )
 
-        self._nitf_writer.write(array, start_indices=tuple(startarr))
+        if pixel_type == "RE32F_IM32F":
+            raw_dtype = array.real.dtype
+        else:
+            assert array.dtype.names is not None  # placate mypy
+            raw_dtype = array.dtype[array.dtype.names[0]]
+        raw_array = array.view((raw_dtype, 2))
+        raw_array = raw_array.astype(raw_dtype.newbyteorder(">"), copy=False)
+        self._nitf_writer.write_raw(raw_array, start_indices=tuple(startarr))
 
     def close(self):
         """

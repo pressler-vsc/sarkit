@@ -25,7 +25,6 @@ import copy
 import datetime
 import functools
 import logging
-import os
 import pathlib
 from typing import Optional
 
@@ -1938,25 +1937,7 @@ def main(args=None):
     if config.schema is not None and config.version is None:
         raise RuntimeError("--version must be specified if using --schema")
 
-    # More questionable abuse of the pytest internals
-    import ast
-
-    import _pytest.assertion.rewrite
-
-    base, _ = os.path.splitext(__file__)  # python2 can return the '*.pyc' file
-    with open(base + ".py", "r") as fd:
-        source = fd.read()
-    tree = ast.parse(source)
-    try:
-        _pytest.assertion.rewrite.rewrite_asserts(tree)
-    except TypeError:
-        _pytest.assertion.rewrite.rewrite_asserts(tree, source)
-
-    co = compile(tree, __file__, "exec", dont_inherit=True)
-    ns = {}
-    exec(co, ns)
-
-    sicd_con = ns["SicdConsistency"].from_file(
+    sicd_con = SicdConsistency.from_file(
         filename=config.file_name, schema=config.schema, version=config.version
     )
     sicd_con.check(ignore_patterns=config.ignore)

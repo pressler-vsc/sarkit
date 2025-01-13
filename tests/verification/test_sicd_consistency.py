@@ -74,7 +74,7 @@ def test_from_file_xml():
     + list(DATAPATH.glob("example-sicd*.xml")),
 )
 def test_main(file):
-    assert not main([str(file)])
+    assert not main([str(file), "-vv"])
 
 
 @pytest.mark.parametrize("xml_file", (DATAPATH / "syntax_only/sicd").glob("*.xml"))

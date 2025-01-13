@@ -7,6 +7,7 @@ Common functionality for verifying files for internal consistency.
 
 """
 
+import ast
 import contextlib
 import linecache
 import re
@@ -24,7 +25,7 @@ def _exception_stack():
     Returns
     -------
     list of dict
-        {'filename': str, 'lineno': int, 'line': str} for each traceback in the current exception
+        {'filename': str, 'lineno': int, 'line': str, 'context': dict} for each traceback in the current exception
     """
 
     try:
@@ -36,10 +37,25 @@ def _exception_stack():
             frame = tback.tb_frame
             filename = frame.f_code.co_filename
             linecache.checkcache(filename)
-            line = linecache.getline(filename, tback.tb_lineno, frame.f_globals)
+            inst = tback.tb_lasti // 2
+            line_start, line_end = list(frame.f_code.co_positions())[inst][:2]
+            lines = []
+            for lineno in range(line_start, line_end + 1):
+                lines.append(
+                    linecache.getline(filename, lineno, frame.f_globals).strip()
+                )
+            line = " ".join(lines)
 
+            ns = dict(frame.f_builtins)
+            ns.update(frame.f_globals)
+            ns.update(frame.f_locals)
             stack.append(
-                {"filename": filename, "lineno": tback.tb_lineno, "line": line.strip()}
+                {
+                    "filename": filename,
+                    "lineno": line_start,
+                    "line": line.strip(),
+                    "context": ns,
+                }
             )
             tback = tback.tb_next
 
@@ -47,6 +63,28 @@ def _exception_stack():
         tb = None
 
     return stack
+
+
+def _line_details(line, ns):
+    try:
+        thing = ast.parse(line)
+    except Exception:
+        return ""
+    context = ""
+    added_to_context = set()
+    for node in ast.walk(thing):
+        if isinstance(node, ast.Constant):
+            continue
+        unparsed = ast.unparse(node)
+        if unparsed in added_to_context:
+            continue
+        added_to_context.add(unparsed)
+        try:
+            evaled = eval(unparsed, ns)
+            context += f"\n\n where:\n {unparsed} = {evaled!r}"
+        except Exception:
+            pass
+    return context
 
 
 class ConsistencyChecker(object):
@@ -196,6 +234,7 @@ class ConsistencyChecker(object):
         frame = stack[depth]
         return (
             "line#{lineno}: {line}".format(lineno=frame["lineno"], line=frame["line"])
+            + _line_details(frame["line"], frame["context"])
             + "\n"
             + "\n".join(str(x) for x in e.args)
         )

@@ -1,9 +1,11 @@
+import functools
 import pathlib
 
 import lxml.etree
 import numpy as np
 import pytest
 
+import sarkit.processing.pixel_type
 import sarkit.standards.general.nitf
 import sarkit.standards.sicd.io
 import sarkit.standards.sicd.xml
@@ -19,24 +21,34 @@ def _random_image(sicd_xmltree):
 
     assert sicd_xmltree.findtext("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
 
-    return np.random.default_rng().random(
+    arr = np.random.default_rng().random(
         shape, dtype=np.float32
     ) + 1j * np.random.default_rng().random(shape, dtype=np.float32)
+    return arr.astype(arr.dtype.newbyteorder(">"))
 
 
 @pytest.mark.parametrize(
-    "sicd_xml",
+    "sicd_xml,pixel_type",
     [
-        DATAPATH / "example-sicd-1.1.0.xml",
-        DATAPATH / "example-sicd-1.2.1.xml",
-        DATAPATH / "example-sicd-1.3.0.xml",
-        DATAPATH / "example-sicd-1.4.0.xml",
+        (DATAPATH / "example-sicd-1.1.0.xml", "RE32F_IM32F"),
+        (DATAPATH / "example-sicd-1.2.1.xml", "RE16I_IM16I"),
+        (DATAPATH / "example-sicd-1.3.0.xml", "AMP8I_PHS8I"),
+        (DATAPATH / "example-sicd-1.4.0.xml", "RE32F_IM32F"),
     ],
 )
-def test_roundtrip(tmp_path, sicd_xml):
+def test_roundtrip(tmp_path, sicd_xml, pixel_type):
     out_sicd = tmp_path / "out.sicd"
     basis_etree = lxml.etree.parse(sicd_xml)
     basis_array = _random_image(basis_etree)
+    converter = {
+        "RE32F_IM32F": sarkit.processing.pixel_type.as_re32f_im32f,
+        "RE16I_IM16I": sarkit.processing.pixel_type.as_re16i_im16i,
+        "AMP8I_PHS8I": functools.partial(
+            sarkit.processing.pixel_type.as_amp8i_phs8i,
+            lut=np.histogram_bin_edges(np.abs(basis_array), 256)[:-1],
+        ),
+    }[pixel_type]
+    basis_array, basis_etree = converter(basis_array, basis_etree)
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(
         file=sarkit.standards.sicd.io.VERSION_INFO[basis_version]["schema"]

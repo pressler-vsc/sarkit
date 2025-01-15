@@ -1,0 +1,912 @@
+<CRSDsar xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0.0_NEXT">
+  <ProductInfo>
+    <ProductName>The CRSDsar Product Name</ProductName>
+    <Classification>UNCLASSIFIED</Classification>
+    <ReleaseInfo>UNRESTRICTED</ReleaseInfo>
+    <CountryCode>ZZ</CountryCode>
+    <Profile>Some profile</Profile>
+    <CreationInfo>
+      <Application>TEST APPLICATION</Application>
+      <DateTime>2024-11-06T14:41:10.688513Z</DateTime>
+      <Site>A Site</Site>
+      <Parameter name="a creationinfo parameter">value 0</Parameter>
+    </CreationInfo>
+    <Parameter name="a productinfo parameter">value 1</Parameter>
+  </ProductInfo>
+  <SARInfo>
+    <CollectType>MONOSTATIC</CollectType>
+    <RadarMode>
+      <ModeType>SPOTLIGHT</ModeType>
+      <ModeID>Some mode</ModeID>
+    </RadarMode>
+    <Parameter name="a sarinfo parameter">value 2</Parameter>
+  </SARInfo>
+  <TransmitInfo>
+    <SensorName>the tx sensor</SensorName>
+    <EventName>the tx event</EventName>
+    <Parameter name="a transmitinfo parameter">value 3</Parameter>
+  </TransmitInfo>
+  <ReceiveInfo>
+    <SensorName>the rcv sensor</SensorName>
+    <EventName>the rcv event</EventName>
+    <Parameter name="a receiveinfo parameter">value 4</Parameter>
+  </ReceiveInfo>
+  <Global>
+    <CollectionRefTime>2023-07-03T20:21:27.195084Z</CollectionRefTime>
+    <TropoParameters>
+        <N0>0.1</N0>
+        <RefHeight>IARP</RefHeight>
+        <N0ErrorStdDev>0.3</N0ErrorStdDev>
+    </TropoParameters>
+    <IonoParameters>
+        <TECV>1.2</TECV>
+        <F2Height>1.3</F2Height>
+        <TECVErrorStdDev>1.4</TECVErrorStdDev>
+    </IonoParameters>
+    <Transmit>
+      <TxTime1>0.0</TxTime1>
+      <TxTime2>1.8704813474941957</TxTime2>
+      <FxMin>9966648089.0475</FxMin>
+      <FxMax>10033351910.952501</FxMax>
+    </Transmit>
+    <Receive>
+      <RcvStartTime1>0.011356413338054757</RcvStartTime1>
+      <RcvStartTime2>1.881821848128226</RcvStartTime2>
+      <FrcvMin>4.0</FrcvMin>
+      <FrcvMax>5.0</FrcvMax>
+    </Receive>
+  </Global>
+  <SceneCoordinates>
+    <EarthModel>WGS_84</EarthModel>
+    <IARP>
+      <ECF>
+        <X>6378137.0</X>
+        <Y>0.0</Y>
+        <Z>0.0</Z>
+      </ECF>
+      <LLH>
+        <Lat>0.0</Lat>
+        <Lon>0.0</Lon>
+        <HAE>0.0</HAE>
+      </LLH>
+    </IARP>
+    <ReferenceSurface>
+      <Planar>
+        <uIAX>
+          <X>0.0</X>
+          <Y>-0.17364817766693033</Y>
+          <Z>-0.9848077530122081</Z>
+        </uIAX>
+        <uIAY>
+          <X>0.0</X>
+          <Y>0.9848077530122081</Y>
+          <Z>-0.17364817766693033</Z>
+        </uIAY>
+      </Planar>
+    </ReferenceSurface>
+    <ImageArea>
+      <X1Y1>
+        <X>-250.0</X>
+        <Y>-250.0</Y>
+      </X1Y1>
+      <X2Y2>
+        <X>250.0</X>
+        <Y>250.0</Y>
+      </X2Y2>
+      <Polygon size="4">
+        <Vertex index="1">
+          <X>-250.0</X>
+          <Y>-250.0</Y>
+        </Vertex>
+        <Vertex index="2">
+          <X>-250.0</X>
+          <Y>250.0</Y>
+        </Vertex>
+        <Vertex index="3">
+          <X>250.0</X>
+          <Y>250.0</Y>
+        </Vertex>
+        <Vertex index="4">
+          <X>250.0</X>
+          <Y>-250.0</Y>
+        </Vertex>
+      </Polygon>
+    </ImageArea>
+    <ImageAreaCornerPoints>
+      <IACP index="1">
+        <Lat>0.0026191804573599776</Lat>
+        <Lon>-0.001821692610367564</Lon>
+      </IACP>
+      <IACP index="2">
+        <Lat>0.0018339698998625154</Lat>
+        <Lon>0.0026016466694818927</Lon>
+      </IACP>
+      <IACP index="3">
+        <Lat>-0.0026191804573599776</Lat>
+        <Lon>0.001821692610367564</Lon>
+      </IACP>
+      <IACP index="4">
+        <Lat>-0.0018339698998625154</Lat>
+        <Lon>-0.0026016466694818927</Lon>
+      </IACP>
+    </ImageAreaCornerPoints>
+    <ExtendedArea>
+      <X1Y1>
+        <X>-250.0</X>
+        <Y>-250.0</Y>
+      </X1Y1>
+      <X2Y2>
+        <X>250.0</X>
+        <Y>250.0</Y>
+      </X2Y2>
+      <Polygon size="4">
+        <Vertex index="1">
+          <X>-250.0</X>
+          <Y>-250.0</Y>
+        </Vertex>
+        <Vertex index="2">
+          <X>-250.0</X>
+          <Y>250.0</Y>
+        </Vertex>
+        <Vertex index="3">
+          <X>250.0</X>
+          <Y>250.0</Y>
+        </Vertex>
+        <Vertex index="4">
+          <X>250.0</X>
+          <Y>-250.0</Y>
+        </Vertex>
+      </Polygon>
+    </ExtendedArea>
+    <ImageGrid>
+        <Identifier>the grid</Identifier>
+        <IARPLocation>
+            <Line>0.1</Line>
+            <Sample>1.2</Sample>
+        </IARPLocation>
+        <IAXExtent>
+            <LineSpacing>1.0</LineSpacing>
+            <FirstLine>3</FirstLine>
+            <NumLines>4</NumLines>
+        </IAXExtent>
+        <IAYExtent>
+            <SampleSpacing>2.0</SampleSpacing>
+            <FirstSample>4</FirstSample>
+            <NumSamples>10</NumSamples>
+        </IAYExtent>
+        <SegmentList>
+            <NumSegments>1</NumSegments>
+            <Segment>
+                <Identifier>the segment</Identifier>
+                <StartLine>1</StartLine>
+                <StartSample>2</StartSample>
+                <EndLine>2</EndLine>
+                <EndSample>3</EndSample>
+                <SegmentPolygon size="3">
+                    <SV index="1">
+                        <Line>1</Line>
+                        <Sample>2</Sample>
+                    </SV>
+                    <SV index="2">
+                        <Line>1</Line>
+                        <Sample>3</Sample>
+                    </SV>
+                    <SV index="3">
+                        <Line>2</Line>
+                        <Sample>2</Sample>
+                    </SV>
+                </SegmentPolygon>
+            </Segment>
+        </SegmentList>
+    </ImageGrid>
+  </SceneCoordinates>
+  <Data>
+    <Support>
+      <NumSupportArrays>7</NumSupportArrays>
+      <SupportArray>
+        <Identifier>the response</Identifier>
+        <NumRows>1</NumRows>
+        <NumCols>100</NumCols>
+        <BytesPerElement>8</BytesPerElement>
+        <ArrayByteOffset>0</ArrayByteOffset>
+      </SupportArray>
+      <SupportArray>
+        <Identifier>transmit_array</Identifier>
+        <NumRows>21</NumRows>
+        <NumCols>21</NumCols>
+        <BytesPerElement>8</BytesPerElement>
+        <ArrayByteOffset>800</ArrayByteOffset>
+      </SupportArray>
+      <SupportArray>
+        <Identifier>transmit_element</Identifier>
+        <NumRows>2</NumRows>
+        <NumCols>2</NumCols>
+        <BytesPerElement>8</BytesPerElement>
+        <ArrayByteOffset>4328</ArrayByteOffset>
+      </SupportArray>
+      <SupportArray>
+        <Identifier>receive_array</Identifier>
+        <NumRows>21</NumRows>
+        <NumCols>21</NumCols>
+        <BytesPerElement>8</BytesPerElement>
+        <ArrayByteOffset>4360</ArrayByteOffset>
+      </SupportArray>
+      <SupportArray>
+        <Identifier>receive_element</Identifier>
+        <NumRows>2</NumRows>
+        <NumCols>2</NumCols>
+        <BytesPerElement>8</BytesPerElement>
+        <ArrayByteOffset>7888</ArrayByteOffset>
+      </SupportArray>
+      <SupportArray>
+        <Identifier>IAZ array</Identifier>
+        <NumRows>2</NumRows>
+        <NumCols>2</NumCols>
+        <BytesPerElement>4</BytesPerElement>
+        <ArrayByteOffset>7920</ArrayByteOffset>
+      </SupportArray>
+      <SupportArray>
+        <Identifier>Added array</Identifier>
+        <NumRows>2</NumRows>
+        <NumCols>2</NumCols>
+        <BytesPerElement>2</BytesPerElement>
+        <ArrayByteOffset>7936</ArrayByteOffset>
+      </SupportArray>
+    </Support>
+    <Transmit>
+      <NumBytesPPP>200</NumBytesPPP>
+      <NumTxSequences>1</NumTxSequences>
+      <TxSequence>
+        <Identifier>the sequence</Identifier>
+        <NumPulses>560</NumPulses>
+        <PPPArrayByteOffset>0</PPPArrayByteOffset>
+      </TxSequence>
+    </Transmit>
+    <Receive>
+      <SignalArrayFormat>CI2</SignalArrayFormat>
+      <NumBytesPVP>224</NumBytesPVP>
+      <NumCRSDChannels>1</NumCRSDChannels>
+      <Channel>
+        <Identifier>the channel</Identifier>
+        <NumVectors>560</NumVectors>
+        <NumSamples>246</NumSamples>
+        <SignalArrayByteOffset>0</SignalArrayByteOffset>
+        <PVPArrayByteOffset>0</PVPArrayByteOffset>
+      </Channel>
+    </Receive>
+  </Data>
+  <TxSequence>
+    <RefTxID>the sequence</RefTxID>
+    <TxWFType>LFM</TxWFType>
+    <Parameters>
+      <Identifier>the sequence</Identifier>
+      <RefPulseIndex>283</RefPulseIndex>
+      <FxResponseId>the response</FxResponseId>
+      <FxBWFixed>true</FxBWFixed>
+      <FxC>10000000000.0</FxC>
+      <FxBW>66703821.90500069</FxBW>
+      <TXmtMin>200.0</TXmtMin>
+      <TXmtMax>200.0</TXmtMax>
+      <TxTime1>0.0</TxTime1>
+      <TxTime2>1.8704813474941957</TxTime2>
+      <TxAPCId>transmit</TxAPCId>
+      <TxAPATId>transmit</TxAPATId>
+      <TxRefPoint>
+        <ECF>
+          <X>6378137.0</X>
+          <Y>0.0</Y>
+          <Z>0.0</Z>
+        </ECF>
+        <IAC>
+          <X>0.0</X>
+          <Y>0.0</Y>
+        </IAC>
+      </TxRefPoint>
+      <TxPolarization>
+        <PolarizationID>S</PolarizationID>
+        <AmpH>0.942828260332401</AmpH>
+        <AmpV>0.33327896951139646</AmpV>
+        <PhaseH>0.0</PhaseH>
+        <PhaseV>0.0</PhaseV>
+      </TxPolarization>
+      <TxRefRadIntensity>210.0</TxRefRadIntensity>
+      <TxRadIntErrorStdDev>100.0</TxRadIntErrorStdDev>
+      <TxRefLAtm>0.9</TxRefLAtm>
+      <Parameter name="a txsequence parameter">value 5</Parameter>
+    </Parameters>
+  </TxSequence>
+  <Channel>
+    <RefChId>the channel</RefChId>
+    <Parameters>
+      <Identifier>the channel</Identifier>
+      <RefVectorIndex>280</RefVectorIndex>
+      <RefFreqFixed>true</RefFreqFixed>
+      <FrcvFixed>true</FrcvFixed>
+      <SignalNormal>false</SignalNormal>
+      <F0Ref>1.0</F0Ref>
+      <Fs>1000000000.0</Fs>
+      <BWInst>800000000.0</BWInst>
+      <RcvStartTime1>0.011356413338054757</RcvStartTime1>
+      <RcvStartTime2>1.881821848128226</RcvStartTime2>
+      <FrcvMin>4.0</FrcvMin>
+      <FrcvMax>5.0</FrcvMax>
+      <RcvAPCId>receive</RcvAPCId>
+      <RcvAPATId>receive</RcvAPATId>
+      <RcvRefPoint>
+        <ECF>
+          <X>6378137.0</X>
+          <Y>0.0</Y>
+          <Z>0.0</Z>
+        </ECF>
+        <IAC>
+          <X>0.0</X>
+          <Y>0.0</Y>
+        </IAC>
+      </RcvRefPoint>
+      <RcvPolarization>
+        <PolarizationID>S</PolarizationID>
+        <AmpH>0.9428287458101422</AmpH>
+        <AmpV>0.33327759611782226</AmpV>
+        <PhaseH>0.0</PhaseH>
+        <PhaseV>0.0</PhaseV>
+      </RcvPolarization>
+      <RcvRefIrradiance>1.0</RcvRefIrradiance>
+      <RcvIrradianceErrorStdDev>100.0</RcvIrradianceErrorStdDev>
+      <RcvRefLAtm>1.0</RcvRefLAtm>
+      <PNCRSD>10.0</PNCRSD>
+      <BNCRSD>0.8</BNCRSD>
+      <Parameter name="a channel parameter">value 6</Parameter>
+      <SARImage>
+        <TxId>the sequence</TxId>
+        <RefVectorPulseIndex>280</RefVectorPulseIndex>
+        <TxPolarization>
+          <PolarizationID>S</PolarizationID>
+          <AmpH>0.9428245389484817</AmpH>
+          <AmpV>0.3332894969190943</AmpV>
+          <PhaseH>0.0</PhaseH>
+          <PhaseV>0.0</PhaseV>
+        </TxPolarization>
+        <DwellTimes>
+          <Polynomials>
+            <CODId>the channel</CODId>
+            <DwellId>the channel</DwellId>
+          </Polynomials>
+        </DwellTimes>
+        <ImageArea>
+          <X1Y1>
+            <X>-250.0</X>
+            <Y>-250.0</Y>
+          </X1Y1>
+          <X2Y2>
+            <X>250.0</X>
+            <Y>250.0</Y>
+          </X2Y2>
+          <Polygon size="4">
+            <Vertex index="1">
+              <X>250.0</X>
+              <Y>-250.0</Y>
+            </Vertex>
+            <Vertex index="2">
+              <X>-250.0</X>
+              <Y>-250.0</Y>
+            </Vertex>
+            <Vertex index="3">
+              <X>-250.0</X>
+              <Y>250.0</Y>
+            </Vertex>
+            <Vertex index="4">
+              <X>250.0</X>
+              <Y>250.0</Y>
+            </Vertex>
+          </Polygon>
+        </ImageArea>
+      </SARImage>
+    </Parameters>
+  </Channel>
+  <ReferenceGeometry>
+    <RefPoint>
+      <ECF>
+        <X>6378137.0</X>
+        <Y>0.0</Y>
+        <Z>0.0</Z>
+      </ECF>
+      <IAC>
+        <X>0.0</X>
+        <Y>0.0</Y>
+      </IAC>
+    </RefPoint>
+    <SARImage>
+      <CODTime>0.8863722900782136</CODTime>
+      <DwellTime>1.5727452910305109</DwellTime>
+      <ReferenceTime>0.9425879416269674</ReferenceTime>
+      <ARPPos>
+        <X>7228728.557469463</X>
+        <Y>255412.1358540885</Y>
+        <Z>1450829.6595842484</Z>
+      </ARPPos>
+      <ARPVel>
+        <X>340.0816683698231</X>
+        <Y>-7332.833245191265</Y>
+        <Z>-403.589514541315</Z>
+      </ARPVel>
+      <BistaticAngle>0.002767539111287036</BistaticAngle>
+      <BistaticAngleRate>3.822304967842137e-06</BistaticAngleRate>
+      <SideOfTrack>L</SideOfTrack>
+      <SlantRange>1701072.6198223345</SlantRange>
+      <GroundRange>1282240.272109871</GroundRange>
+      <DopplerConeAngle>80.01149733418877</DopplerConeAngle>
+      <SquintAngle>13.394982826490518</SquintAngle>
+      <AzimuthAngle>9.984361845235355</AzimuthAngle>
+      <GrazeAngle>30.002148755182244</GrazeAngle>
+      <IncidenceAngle>59.99785124481775</IncidenceAngle>
+      <TwistAngle>8.970708323523684</TwistAngle>
+      <SlopeAngle>31.19451807159041</SlopeAngle>
+      <LayoverAngle>352.4634376297167</LayoverAngle>
+    </SARImage>
+    <TxParameters>
+      <Time>0.9369137339863592</Time>
+      <APCPos>
+        <X>7228726.627512002</X>
+        <Y>255453.7437934127</Y>
+        <Z>1450831.9491855826</Z>
+      </APCPos>
+      <APCVel>
+        <X>340.1224031136811</X>
+        <Y>-7332.831807239649</Y>
+        <Z>-403.58133915062774</Z>
+      </APCVel>
+      <SideOfTrack>L</SideOfTrack>
+      <SlantRange>1701079.855393836</SlantRange>
+      <GroundRange>1282248.627332232</GroundRange>
+      <DopplerConeAngle>80.01033163812535</DopplerConeAngle>
+      <SquintAngle>13.396529365438717</SquintAngle>
+      <AzimuthAngle>9.98594017082946</AzimuthAngle>
+      <GrazeAngle>30.001932975287268</GrazeAngle>
+      <IncidenceAngle>59.99806702471273</IncidenceAngle>
+    </TxParameters>
+    <RcvParameters>
+      <Time>0.9482621009969021</Time>
+      <APCPos>
+        <X>7228730.48688359</X>
+        <Y>255370.52811050444</Y>
+        <Z>1450827.369103648</Z>
+      </APCPos>
+      <APCVel>
+        <X>340.04093392035986</X>
+        <Y>-7332.834685578055</Y>
+        <Z>-403.5976902731088</Z>
+      </APCVel>
+      <SideOfTrack>L</SideOfTrack>
+      <SlantRange>1701065.3842508332</SlantRange>
+      <GroundRange>1282231.9172234803</GroundRange>
+      <DopplerConeAngle>80.01266302977616</DopplerConeAngle>
+      <SquintAngle>13.393436282258312</SquintAngle>
+      <AzimuthAngle>9.982783512777303</AzimuthAngle>
+      <GrazeAngle>30.002364516249767</GrazeAngle>
+      <IncidenceAngle>59.99763548375023</IncidenceAngle>
+    </RcvParameters>
+  </ReferenceGeometry>
+  <Dwell>
+    <NumCODTimes>1</NumCODTimes>
+    <CODTime>
+      <Identifier>the channel</Identifier>
+      <CODTimePoly order1="0" order2="0">
+        <Coef exponent1="0" exponent2="0">0.8863722900782136</Coef>
+      </CODTimePoly>
+    </CODTime>
+    <NumDwellTimes>1</NumDwellTimes>
+    <DwellTime>
+      <Identifier>the channel</Identifier>
+      <DwellTimePoly order1="0" order2="0">
+        <Coef exponent1="0" exponent2="0">1.5727452910305109</Coef>
+      </DwellTimePoly>
+    </DwellTime>
+  </Dwell>
+  <SupportArray>
+    <AntGainPhase>
+      <Identifier>transmit_array</Identifier>
+      <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
+      <X0>-0.0003830770078408768</X0>
+      <Y0>-0.0003830770078408768</Y0>
+      <XSS>3.8307700784087685e-05</XSS>
+      <YSS>3.8307700784087685e-05</YSS>
+    </AntGainPhase>
+    <AntGainPhase>
+      <Identifier>transmit_element</Identifier>
+      <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
+      <X0>-1.0</X0>
+      <Y0>-1.0</Y0>
+      <XSS>2.0</XSS>
+      <YSS>2.0</YSS>
+    </AntGainPhase>
+    <AntGainPhase>
+      <Identifier>receive_array</Identifier>
+      <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
+      <X0>-0.0003830770078408768</X0>
+      <Y0>-0.0003830770078408768</Y0>
+      <XSS>3.8307700784087685e-05</XSS>
+      <YSS>3.8307700784087685e-05</YSS>
+    </AntGainPhase>
+    <AntGainPhase>
+      <Identifier>receive_element</Identifier>
+      <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
+      <X0>-1.0</X0>
+      <Y0>-1.0</Y0>
+      <XSS>2.0</XSS>
+      <YSS>2.0</YSS>
+      <NODATA>FEEDFACEDEADBEEF</NODATA>
+    </AntGainPhase>
+    <FxResponseArray>
+      <Identifier>the response</Identifier>
+      <ElementFormat>Amp=F4;Phase=F4;</ElementFormat>
+      <Fx0FXR>5000000000.0</Fx0FXR>
+      <FxSSFXR>100000000.0</FxSSFXR>
+    </FxResponseArray>
+    <IAZArray>
+        <Identifier>IAZ array</Identifier>
+        <ElementFormat>IAZ=F4;</ElementFormat>
+        <X0>-2.0</X0>
+        <Y0>-1.0</Y0>
+        <XSS>1.0</XSS>
+        <YSS>2.0</YSS>
+        <NODATA>ABADCAFE</NODATA>
+    </IAZArray>
+    <AddedSupportArray>
+        <Identifier>Added array</Identifier>
+        <ElementFormat>I2</ElementFormat>
+        <X0>-2.1</X0>
+        <Y0>-1.1</Y0>
+        <XSS>1.1</XSS>
+        <YSS>2.1</YSS>
+        <NODATA>4B1D</NODATA>
+        <XUnits>Diet Cokes</XUnits>
+        <YUnits>Cheeseburgers</YUnits>
+        <ZUnits>Bald Eagles</ZUnits>
+        <Parameter name="Added support array parameter">value 7</Parameter>
+    </AddedSupportArray>
+  </SupportArray>
+  <PPP>
+    <TxTime>
+      <Offset>0</Offset>
+      <Size>2</Size>
+      <Format>Int=I8;Frac=F8;</Format>
+    </TxTime>
+    <TxPos>
+      <Offset>2</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </TxPos>
+    <TxVel>
+      <Offset>5</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </TxVel>
+    <FX1>
+      <Offset>8</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </FX1>
+    <FX2>
+      <Offset>9</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </FX2>
+    <TXmt>
+      <Offset>10</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </TXmt>
+    <PhiX0>
+      <Offset>11</Offset>
+      <Size>2</Size>
+      <Format>Int=I8;Frac=F8;</Format>
+    </PhiX0>
+    <FxFreq0>
+      <Offset>13</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </FxFreq0>
+    <FxRate>
+      <Offset>14</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </FxRate>
+    <TxRadInt>
+      <Offset>15</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </TxRadInt>
+    <TxACX>
+      <Offset>16</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </TxACX>
+    <TxACY>
+      <Offset>19</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </TxACY>
+    <TxEB>
+      <Offset>22</Offset>
+      <Size>2</Size>
+      <Format>DCX=F8;DCY=F8;</Format>
+    </TxEB>
+    <FxResponseIndex>
+      <Offset>24</Offset>
+      <Size>1</Size>
+      <Format>I8</Format>
+    </FxResponseIndex>
+    <AddedPPP>
+      <Name>Some Added PPP</Name>
+       <Offset>25</Offset>
+       <Size>1</Size>
+       <Format>F8</Format>
+    </AddedPPP>
+  </PPP>
+  <PVP>
+    <RcvStart>
+      <Offset>0</Offset>
+      <Size>2</Size>
+      <Format>Int=I8;Frac=F8;</Format>
+    </RcvStart>
+    <RcvPos>
+      <Offset>2</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </RcvPos>
+    <RcvVel>
+      <Offset>5</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </RcvVel>
+    <FRCV1>
+      <Offset>8</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </FRCV1>
+    <FRCV2>
+      <Offset>9</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </FRCV2>
+    <RefPhi0>
+      <Offset>10</Offset>
+      <Size>2</Size>
+      <Format>Int=I8;Frac=F8;</Format>
+    </RefPhi0>
+    <RefFreq>
+      <Offset>12</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </RefFreq>
+    <DFIC0>
+      <Offset>13</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </DFIC0>
+    <FICRate>
+      <Offset>14</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </FICRate>
+    <RcvACX>
+      <Offset>15</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </RcvACX>
+    <RcvACY>
+      <Offset>18</Offset>
+      <Size>3</Size>
+      <Format>X=F8;Y=F8;Z=F8;</Format>
+    </RcvACY>
+    <RcvEB>
+      <Offset>21</Offset>
+      <Size>2</Size>
+      <Format>DCX=F8;DCY=F8;</Format>
+    </RcvEB>
+    <SIGNAL>
+      <Offset>23</Offset>
+      <Size>1</Size>
+      <Format>I8</Format>
+    </SIGNAL>
+    <AmpSF>
+      <Offset>24</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </AmpSF>
+    <DGRGC>
+      <Offset>25</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </DGRGC>
+    <TxPulseIndex>
+      <Offset>27</Offset>
+      <Size>1</Size>
+      <Format>I8</Format>
+    </TxPulseIndex>
+    <AddedPVP>
+      <Name>Extra</Name>
+      <Offset>26</Offset>
+      <Size>1</Size>
+      <Format>F8</Format>
+    </AddedPVP>
+  </PVP>
+  <Antenna>
+    <NumACFs>2</NumACFs>
+    <NumAPCs>2</NumAPCs>
+    <NumAntPats>2</NumAntPats>
+    <AntCoordFrame>
+      <Identifier>receive</Identifier>
+    </AntCoordFrame>
+    <AntCoordFrame>
+      <Identifier>transmit</Identifier>
+    </AntCoordFrame>
+    <AntPhaseCenter>
+      <Identifier>transmit</Identifier>
+      <ACFId>transmit</ACFId>
+      <APCXYZ>
+        <X>0.0</X>
+        <Y>0.0</Y>
+        <Z>0.0</Z>
+      </APCXYZ>
+    </AntPhaseCenter>
+    <AntPhaseCenter>
+      <Identifier>receive</Identifier>
+      <ACFId>receive</ACFId>
+      <APCXYZ>
+        <X>0.0</X>
+        <Y>0.0</Y>
+        <Z>0.0</Z>
+      </APCXYZ>
+    </AntPhaseCenter>
+    <AntPattern>
+      <Identifier>transmit</Identifier>
+      <FreqZero>10000000000.0</FreqZero>
+      <ArrayGPId>transmit_array</ArrayGPId>
+      <ElementGPId>transmit_element</ElementGPId>
+      <EBFreqShift>
+        <DCXSF>1.0</DCXSF>
+        <DCYSF>1.0</DCYSF>
+      </EBFreqShift>
+      <MLFreqDilation>
+        <DCXSF>0.0</DCXSF>
+        <DCYSF>0.0</DCYSF>
+      </MLFreqDilation>
+      <GainBSPoly order1="0">
+        <Coef exponent1="0">0.0</Coef>
+      </GainBSPoly>
+      <AntPolRef>
+        <AmpX>1.0</AmpX>
+        <AmpY>0.0</AmpY>
+        <PhaseX>0.0</PhaseX>
+        <PhaseY>0.0</PhaseY>
+      </AntPolRef>
+    </AntPattern>
+    <AntPattern>
+      <Identifier>receive</Identifier>
+      <FreqZero>10000000000.0</FreqZero>
+      <ArrayGPId>receive_array</ArrayGPId>
+      <ElementGPId>receive_element</ElementGPId>
+      <EBFreqShift>
+        <DCXSF>1.0</DCXSF>
+        <DCYSF>1.0</DCYSF>
+      </EBFreqShift>
+      <MLFreqDilation>
+        <DCXSF>0.0</DCXSF>
+        <DCYSF>0.0</DCYSF>
+      </MLFreqDilation>
+      <GainBSPoly order1="0">
+        <Coef exponent1="0">0.0</Coef>
+      </GainBSPoly>
+      <AntPolRef>
+        <AmpX>0.0</AmpX>
+        <AmpY>1.0</AmpY>
+        <PhaseX>0.0</PhaseX>
+        <PhaseY>0.0</PhaseY>
+      </AntPolRef>
+    </AntPattern>
+  </Antenna>
+  <ErrorParameters>
+    <SARImage>
+      <Monostatic>
+        <PosVelError>
+          <Frame>ECF</Frame>
+          <PVCov size1="6" size2="6">
+            <Entry index1="2" index2="2">1.0</Entry>
+            <Entry index1="3" index2="3">2.0</Entry>
+            <Entry index1="4" index2="4">3.0</Entry>
+            <Entry index1="5" index2="5">4.0</Entry>
+            <Entry index1="6" index2="6">5.0</Entry>
+          </PVCov>
+          <PosDecorr>
+            <CorrCoefZero>1.0e-10</CorrCoefZero>
+            <DecorrRate>1.0</DecorrRate>
+          </PosDecorr>
+        </PosVelError>
+        <RadarSensor>
+          <TimeFreqCov size1="3" size2="3">
+            <Entry index1="1" index2="1">6.0</Entry>
+            <Entry index1="2" index2="2">15.0</Entry>
+            <Entry index1="3" index2="3">7.0</Entry>
+          </TimeFreqCov>
+          <TimeFreqDecorr>
+            <TxTimeDecorr>
+              <CorrCoefZero>1.0e-10</CorrCoefZero>
+              <DecorrRate>1.0</DecorrRate>
+            </TxTimeDecorr>
+            <RcvTimeDecorr>
+              <CorrCoefZero>1.0e-10</CorrCoefZero>
+              <DecorrRate>1.0</DecorrRate>
+            </RcvTimeDecorr>
+            <ClockFreqDecorr>
+              <CorrCoefZero>1.0e-10</CorrCoefZero>
+              <DecorrRate>1.0</DecorrRate>
+            </ClockFreqDecorr>
+          </TimeFreqDecorr>
+        </RadarSensor>
+      </Monostatic>
+    </SARImage>
+  </ErrorParameters>
+  <GeoInfo name="a name">
+    <Desc name="a desc name">Some Description</Desc>
+    <Point>
+      <Lat>0.1</Lat>
+      <Lon>0.1</Lon>
+    </Point>
+    <Line size="2">
+      <Endpoint index="1">
+        <Lat>0.1</Lat>
+        <Lon>0.1</Lon>
+      </Endpoint>
+      <Endpoint index="2">
+        <Lat>0.1</Lat>
+        <Lon>2.1</Lon>
+      </Endpoint>
+    </Line>
+    <Polygon size="3">
+      <Vertex index="1">
+        <Lat>1.1</Lat>
+        <Lon>2.1</Lon>
+      </Vertex>
+      <Vertex index="2">
+        <Lat>2.1</Lat>
+        <Lon>2.1</Lon>
+      </Vertex>
+      <Vertex index="3">
+        <Lat>1.1</Lat>
+        <Lon>3.1</Lon>
+      </Vertex>
+    </Polygon>
+    <GeoInfo name="another name">
+      <Desc name="another desc name">Some Nested Description</Desc>
+      <Point>
+        <Lat>0.2</Lat>
+        <Lon>0.2</Lon>
+      </Point>
+      <Line size="2">
+        <Endpoint index="1">
+          <Lat>0.2</Lat>
+          <Lon>1.2</Lon>
+        </Endpoint>
+        <Endpoint index="2">
+          <Lat>2.2</Lat>
+          <Lon>3.2</Lon>
+        </Endpoint>
+      </Line>
+      <Polygon size="3">
+        <Vertex index="1">
+          <Lat>4.2</Lat>
+          <Lon>5.2</Lon>
+        </Vertex>
+        <Vertex index="2">
+          <Lat>6.2</Lat>
+          <Lon>5.2</Lon>
+        </Vertex>
+        <Vertex index="3">
+          <Lat>4.2</Lat>
+          <Lon>7.2</Lon>
+        </Vertex>
+      </Polygon>
+    </GeoInfo>
+  </GeoInfo>
+</CRSDsar>

@@ -1,0 +1,9 @@
+<DwellTimeArray>
+  <Identifier>DwellTime ID</Identifier>
+  <ElementFormat>COD=F4;DT=F4;</ElementFormat>
+  <X0>-1.0</X0>
+  <Y0>-3.0</Y0>
+  <XSS>10.3</XSS>
+  <YSS>30.3</YSS>
+  <NODATA>FFDDFFDDFFDDFFDD</NODATA>
+</DwellTimeArray>

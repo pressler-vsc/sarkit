@@ -1,0 +1,57 @@
+<Bistatic>
+  <PosVelError>
+    <TxFrame>ECF</TxFrame>
+    <TxPVCov size1="6" size2="6">
+      <Entry index1="2" index2="2">1.0</Entry>
+      <Entry index1="3" index2="3">2.0</Entry>
+      <Entry index1="4" index2="4">3.0</Entry>
+      <Entry index1="5" index2="5">4.0</Entry>
+      <Entry index1="6" index2="6">5.0</Entry>
+    </TxPVCov>
+    <RcvFrame>RIC_ECI</RcvFrame>
+    <RcvPVCov size1="6" size2="6">
+      <Entry index1="1" index2="1">0.1</Entry>
+      <Entry index1="2" index2="2">1.1</Entry>
+      <Entry index1="3" index2="3">2.1</Entry>
+      <Entry index1="4" index2="4">3.1</Entry>
+      <Entry index1="5" index2="5">4.1</Entry>
+      <Entry index1="6" index2="6">5.1</Entry>
+    </RcvPVCov>
+    <TxRcvPVCov size1="6" size2="6">
+      <Entry index1="3" index2="3">1e-30</Entry>
+    </TxRcvPVCov>
+    <PosVelDecorr>
+      <TxPosDecorr>
+        <CorrCoefZero>1.0e-10</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </TxPosDecorr>
+      <RcvPosDecorr>
+        <CorrCoefZero>1.0e-10</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </RcvPosDecorr>
+    </PosVelDecorr>
+  </PosVelError>
+  <RadarSensor>
+    <TimeFreqCov size1="4" size2="4">
+      <Entry index1="1" index2="1">1.0</Entry>
+    </TimeFreqCov>
+    <TimeFreqDecorr>
+      <TxTimeDecorr>
+        <CorrCoefZero>1.0e-10</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </TxTimeDecorr>
+      <RcvTimeDecorr>
+        <CorrCoefZero>1.0</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </RcvTimeDecorr>
+      <TxClockFreqDecorr>
+        <CorrCoefZero>1.0</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </TxClockFreqDecorr>
+      <RcvClockFreqDecorr>
+        <CorrCoefZero>1.0</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </RcvClockFreqDecorr>
+    </TimeFreqDecorr>
+  </RadarSensor>
+</Bistatic>

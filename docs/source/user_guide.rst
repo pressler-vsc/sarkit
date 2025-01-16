@@ -30,13 +30,28 @@ Reading and writing files
 SARkit provides reader/writer classes that are intended to be used as context managers and plan classes that are used to
 describe file contents and metadata prior to writing.
 
-======   =================================================     ===============================================    =================================================
-Format   Reader                                                Plan                                               Writer
-======   =================================================     ===============================================    =================================================
-CPHD     :py:class:`~sarkit.standards.cphd.CphdReader`         :py:class:`~sarkit.standards.cphd.CphdPlan`        :py:class:`~sarkit.standards.cphd.CphdWriter`
-SICD     :py:class:`~sarkit.standards.sicd.SicdNitfReader`     :py:class:`~sarkit.standards.sicd.SicdNitfPlan`    :py:class:`~sarkit.standards.sicd.SicdNitfWriter`
-SIDD     :py:class:`~sarkit.standards.sidd.SiddNitfReader`     :py:class:`~sarkit.standards.sidd.SiddNitfPlan`    :py:class:`~sarkit.standards.sidd.SiddNitfWriter`
-======   =================================================     ===============================================    =================================================
+.. list-table::
+
+   * - Format
+     - Reader
+     - Plan
+     - Writer
+   * - ⛔ CRSD [Draft] ⛔
+     - :py:class:`~sarkit.standards.crsd.CrsdReader`
+     - :py:class:`~sarkit.standards.crsd.CrsdPlan`
+     - :py:class:`~sarkit.standards.crsd.CrsdWriter`
+   * - CPHD
+     - :py:class:`~sarkit.standards.cphd.CphdReader`
+     - :py:class:`~sarkit.standards.cphd.CphdPlan`
+     - :py:class:`~sarkit.standards.cphd.CphdWriter`
+   * - SICD
+     - :py:class:`~sarkit.standards.sicd.SicdNitfReader`
+     - :py:class:`~sarkit.standards.sicd.SicdNitfPlan`
+     - :py:class:`~sarkit.standards.sicd.SicdNitfWriter`
+   * - SIDD
+     - :py:class:`~sarkit.standards.sidd.SiddNitfReader`
+     - :py:class:`~sarkit.standards.sidd.SiddNitfPlan`
+     - :py:class:`~sarkit.standards.sidd.SiddNitfWriter`
 
 
 Reading
@@ -171,13 +186,18 @@ For simple operations, `xml.etree.ElementTree` and/or `lxml` are often sufficien
 For complicated metadata, SARkit provides XML helper classes that can be used to transcode between XML and more
 convenient Python objects.
 
-======   ===============================================
-Format   XML Helper
-======   ===============================================
-CPHD     :py:class:`sarkit.standards.cphd.xml.XmlHelper`
-SICD     :py:class:`sarkit.standards.sicd.xml.XmlHelper`
-SIDD     :py:class:`sarkit.standards.sidd.xml.XmlHelper`
-======   ===============================================
+.. list-table::
+
+   * - Format
+     - XML Helper
+   * - ⛔ CRSD [Draft] ⛔
+     - :py:class:`sarkit.standards.crsd.xml.XmlHelper`
+   * - CPHD
+     - :py:class:`sarkit.standards.cphd.xml.XmlHelper`
+   * - SICD
+     - :py:class:`sarkit.standards.sicd.xml.XmlHelper`
+   * - SIDD
+     - :py:class:`sarkit.standards.sidd.xml.XmlHelper`
 
 
 XML Helpers
@@ -258,12 +278,18 @@ Consistency Checking
 
 SARkit provides checkers that can be used to identify inconsistencies in SAR standards files.
 
-======   =================================================
-Format   Consistency Checker
-======   =================================================
-CPHD     :py:class:`~sarkit.verification.cphd_consistency`
-SICD     :py:class:`~sarkit.verification.sicd_consistency`
-======   =================================================
+.. list-table::
+
+   * - Format
+     - Consistency Checker
+   * - ⛔ CRSD [Draft] ⛔
+     - :py:class:`~sarkit.verification.crsd_consistency`
+   * - CPHD
+     - :py:class:`~sarkit.verification.cphd_consistency`
+   * - SICD
+     - :py:class:`~sarkit.verification.sicd_consistency`
+   * - SIDD
+     - To be added
 
 Each consistency checker provides a command line interface for checking SAR data/metadata files.
 When there are no inconsistencies, no output is produced.

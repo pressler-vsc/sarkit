@@ -10,7 +10,6 @@ import dataclasses
 import importlib.resources
 import logging
 import os
-from typing import BinaryIO
 
 import lxml.etree
 import numpy as np
@@ -171,15 +170,16 @@ class CrsdReader:
     """Read a CRSD file
 
     A CrsdReader object can be used as a context manager in a ``with`` statement.
+    Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
     ----------
-    file : file-like
+    file : `file object`
         CRSD file to read
 
     Examples
     --------
-    >>> with crsd_io.CrsdReader(file) as reader:
+    >>> with crsd_path.open('rb') as file, CrsdReader(file) as reader:
     ...     crsd_xmltree = reader.crsd_xmltree
     ...     signal, pvp = reader.read_channel(<chan_id>)
 
@@ -191,16 +191,16 @@ class CrsdReader:
         CRSD XML ElementTree
     plan : :py:class:`CrsdPlan`
         A CrsdPlan object suitable for use in a CrsdWriter
-    xml_block_size
-    xml_block_byte_offset
-    ppp_block_size
-    ppp_block_byte_offset
-    pvp_block_size
-    pvp_block_byte_offset
-    signal_block_size
-    signal_block_byte_offset
-    support_block_size
-    support_block_byte_offset
+    xml_block_size : int
+    xml_block_byte_offset : int
+    ppp_block_size : int or None
+    ppp_block_byte_offset : int or None
+    pvp_block_size : int or None
+    pvp_block_byte_offset : int or None
+    signal_block_size : int or None
+    signal_block_byte_offset : int or None
+    support_block_size : int
+    support_block_byte_offset : int
 
     See Also
     --------
@@ -208,7 +208,7 @@ class CrsdReader:
     CrsdWriter
     """
 
-    def __init__(self, file: BinaryIO):
+    def __init__(self, file):
         self._file_object = file
 
         # skip the version line and read header
@@ -232,60 +232,66 @@ class CrsdReader:
         )
 
     @property
-    def xml_block_byte_offset(self):
+    def xml_block_byte_offset(self) -> int:
         """Offset to the XML block"""
         return int(self._kvp_list["XML_BLOCK_BYTE_OFFSET"])
 
     @property
-    def xml_block_size(self):
+    def xml_block_size(self) -> int:
         """Size of the XML block"""
         return int(self._kvp_list["XML_BLOCK_SIZE"])
 
     @property
-    def pvp_block_byte_offset(self):
+    def pvp_block_byte_offset(self) -> int | None:
         """Offset to the PVP block"""
-        return int(self._kvp_list["PVP_BLOCK_BYTE_OFFSET"])
+        if (n := self._kvp_list.get("PVP_BLOCK_BYTE_OFFSET")) is not None:
+            return int(n)
+        return None
 
     @property
-    def pvp_block_size(self):
+    def pvp_block_size(self) -> int | None:
         """Size of the PVP block"""
-        return int(self._kvp_list["PVP_BLOCK_SIZE"])
+        if (n := self._kvp_list.get("PVP_BLOCK_SIZE")) is not None:
+            return int(n)
+        return None
 
     @property
-    def ppp_block_byte_offset(self):
+    def ppp_block_byte_offset(self) -> int | None:
         """Offset to the PPP block"""
-        return int(self._kvp_list["PPP_BLOCK_BYTE_OFFSET"])
+        if (n := self._kvp_list.get("PPP_BLOCK_BYTE_OFFSET")) is not None:
+            return int(n)
+        return None
 
     @property
-    def ppp_block_size(self):
+    def ppp_block_size(self) -> int | None:
         """Size of the PPP block"""
-        return int(self._kvp_list["PPP_BLOCK_SIZE"])
+        if (n := self._kvp_list.get("PPP_BLOCK_SIZE")) is not None:
+            return int(n)
+        return None
 
     @property
-    def signal_block_byte_offset(self):
+    def signal_block_byte_offset(self) -> int | None:
         """Offset to the Signal block"""
-        return int(self._kvp_list["SIGNAL_BLOCK_BYTE_OFFSET"])
+        if (n := self._kvp_list.get("SIGNAL_BLOCK_BYTE_OFFSET")) is not None:
+            return int(n)
+        return None
 
     @property
-    def signal_block_size(self):
+    def signal_block_size(self) -> int | None:
         """Size of the Signal block"""
-        return int(self._kvp_list["SIGNAL_BLOCK_SIZE"])
+        if (n := self._kvp_list.get("SIGNAL_BLOCK_SIZE")) is not None:
+            return int(n)
+        return None
 
     @property
-    def support_block_byte_offset(self):
+    def support_block_byte_offset(self) -> int:
         """Offset to the Support block"""
-        if "SUPPORT_BLOCK_BYTE_OFFSET" in self._kvp_list:
-            return int(self._kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"])
-        else:
-            return None
+        return int(self._kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"])
 
     @property
-    def support_block_size(self):
+    def support_block_size(self) -> int:
         """Size of the Support block"""
-        if "SUPPORT_BLOCK_SIZE" in self._kvp_list:
-            return int(self._kvp_list["SUPPORT_BLOCK_SIZE"])
-        else:
-            return None
+        return int(self._kvp_list["SUPPORT_BLOCK_SIZE"])
 
     def read_signal(self, channel_identifier: str) -> npt.NDArray:
         """Read signal data from a CRSD file
@@ -309,6 +315,7 @@ class CrsdReader:
         shape = (num_vect, num_samp)
 
         signal_offset = int(channel_info.find("./{*}SignalArrayByteOffset").text)
+        assert self.signal_block_byte_offset is not None  # placate mypy
         self._file_object.seek(signal_offset + self.signal_block_byte_offset)
 
         signal_dtype = binary_format_string_to_dtype(
@@ -339,6 +346,7 @@ class CrsdReader:
         num_vect = int(channel_info.find("./{*}NumVectors").text)
 
         pvp_offset = int(channel_info.find("./{*}PVPArrayByteOffset").text)
+        assert self.pvp_block_byte_offset is not None  # placate mypy
         self._file_object.seek(pvp_offset + self.pvp_block_byte_offset)
 
         pvp_dtype = get_pvp_dtype(self.crsd_xmltree).newbyteorder("B")
@@ -382,6 +390,7 @@ class CrsdReader:
         num_pulse = int(channel_info.find("./{*}NumPulses").text)
 
         ppp_offset = int(channel_info.find("./{*}PPPArrayByteOffset").text)
+        assert self.ppp_block_byte_offset is not None  # placate mypy
         self._file_object.seek(ppp_offset + self.ppp_block_byte_offset)
 
         ppp_dtype = get_ppp_dtype(self.crsd_xmltree).newbyteorder("B")
@@ -419,7 +428,7 @@ class CrsdReader:
         return mask_support_array(array, nodata)
 
     def done(self):
-        "Indicates to the CRSDReader that the user is done using the reader"
+        "Indicates to the reader that the user is done with it"
         self._file_object = None
 
     def __enter__(self):
@@ -436,7 +445,7 @@ class CrsdWriter:
 
     Parameters
     ----------
-    file : file-like
+    file : `file object`
         CRSD file to write
     plan : :py:class:`CrsdPlan`
         A CrsdPlan object
@@ -447,7 +456,7 @@ class CrsdWriter:
 
     Examples
     --------
-    >>> with crsd_io.CrsdWriter(file, plan) as writer:
+    >>> with output_path.open('wb') as file, CrsdWriter(file, plan) as writer:
     ...     writer.write_signal("1", signal)
     ...     writer.write_pvp("1", pvp)
 

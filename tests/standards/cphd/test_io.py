@@ -177,10 +177,8 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
                     (
                         int(x.findtext("{*}ArrayByteOffset"))
                         + int(x.findtext("{*}NumRows"))
-                        * int(
-                            x.findtext("{*}NumCols")
-                            * int(x.findtext("{*}BytesPerElement"))
-                        )
+                        * int(x.findtext("{*}NumCols"))
+                        * int(x.findtext("{*}BytesPerElement"))
                         for x in basis_etree.findall("{*}Data/{*}SupportArray")
                     ),
                     default=0,

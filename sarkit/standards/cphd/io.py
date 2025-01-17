@@ -693,6 +693,7 @@ class CphdWriter:
             2D array of complex samples
 
         """
+        # TODO Add support for partial CPHD writing
         assert (
             signal_array.nbytes
             == self._channel_size_offsets[channel_identifier]["signal_size"]
@@ -705,9 +706,6 @@ class CphdWriter:
         )
         output_dtype = signal_array.dtype.newbyteorder(">")
         signal_array.astype(output_dtype, copy=False).tofile(self._file_object)
-
-        # TODO Add support for partial CPHD writing
-        return
 
     def write_pvp(self, channel_identifier: str, pvp_array: npt.NDArray):
         """Write pvp data to a CPHD file
@@ -732,7 +730,6 @@ class CphdWriter:
         )
         output_dtype = pvp_array.dtype.newbyteorder(">")
         pvp_array.astype(output_dtype, copy=False).tofile(self._file_object)
-        return
 
     def write_support_array(
         self, support_array_identifier: str, support_array: npt.NDArray
@@ -745,20 +742,50 @@ class CphdWriter:
             Unique support array identifier
         support_array : ndarray
             Array of support data
-
         """
-        assert (
-            support_array.nbytes
-            == self._sa_size_offsets[support_array_identifier]["size"]
+        data_sa_elem = self._plan.cphd_xmltree.find(
+            f"{{*}}Data/{{*}}SupportArray[{{*}}Identifier='{support_array_identifier}']"
         )
+        expected_shape = (
+            int(data_sa_elem.findtext("{*}NumRows")),
+            int(data_sa_elem.findtext("{*}NumCols")),
+        )
+        sa_elem = self._plan.cphd_xmltree.find(
+            f"{{*}}SupportArray/*[{{*}}Identifier='{support_array_identifier}']"
+        )
+        element_format = sa_elem.findtext("{*}ElementFormat")
+        expected_dtype = binary_format_string_to_dtype(element_format)
+        expected_nodata = sa_elem.findtext("{*}NODATA")
 
-        self._support_arrays_written.add(support_array_identifier)
+        if expected_dtype != support_array.dtype.newbyteorder("="):
+            raise ValueError(
+                f"{support_array.dtype=} is not compatible with {expected_dtype=}"
+            )
+        if expected_shape != support_array.shape:
+            raise ValueError(f"{support_array.shape=} does not match {expected_shape=}")
+        if isinstance(support_array, np.ma.MaskedArray):
+            actual_nodata = (
+                support_array.fill_value.astype(expected_dtype.newbyteorder(">"))
+                .tobytes()
+                .hex()
+            )
+
+            def _is_masked(array):
+                # structured arrays don't play nice with np.ma
+                if array.dtype.names is None:
+                    return np.ma.is_masked(array)
+                return any(_is_masked(array[n]) for n in array.dtype.names)
+
+            if _is_masked(support_array) and expected_nodata != actual_nodata:
+                raise ValueError(f"{actual_nodata=} does not match {expected_nodata=}")
+
         self._file_object.seek(self._file_header_kvp["SUPPORT_BLOCK_BYTE_OFFSET"])
         self._file_object.seek(
             self._sa_size_offsets[support_array_identifier]["offset"], os.SEEK_CUR
         )
         output_dtype = support_array.dtype.newbyteorder(">")
-        support_array.astype(output_dtype, copy=False).tofile(self._file_object)
+        self._file_object.write(support_array.astype(output_dtype, copy=False).data)
+        self._support_arrays_written.add(support_array_identifier)
 
     def done(self):
         """Warn about unwritten arrays declared in the XML"""

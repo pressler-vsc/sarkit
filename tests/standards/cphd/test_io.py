@@ -1,5 +1,7 @@
 import pathlib
+import uuid
 
+import lxml.builder
 import lxml.etree
 import numpy as np
 import pytest
@@ -19,83 +21,66 @@ def test_version_info():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn
 
 
-def test_dtype_to_binary_format():
-    # Basic types
-    assert cphd_io.dtype_to_binary_format_string(np.int8) == "I1"
-    assert cphd_io.dtype_to_binary_format_string(np.int16) == "I2"
-    assert cphd_io.dtype_to_binary_format_string(np.int32) == "I4"
-    assert cphd_io.dtype_to_binary_format_string(np.int64) == "I8"
-    assert cphd_io.dtype_to_binary_format_string(np.uint8) == "U1"
-    assert cphd_io.dtype_to_binary_format_string(np.uint16) == "U2"
-    assert cphd_io.dtype_to_binary_format_string(np.uint32) == "U4"
-    assert cphd_io.dtype_to_binary_format_string(np.uint64) == "U8"
-    assert cphd_io.dtype_to_binary_format_string(np.float32) == "F4"
-    assert cphd_io.dtype_to_binary_format_string(np.float64) == "F8"
-    assert cphd_io.dtype_to_binary_format_string(np.complex64) == "CF8"
-    assert cphd_io.dtype_to_binary_format_string(np.complex128) == "CF16"
-    dt = np.dtype([("real", np.int8), ("imag", np.int8)])
-    assert cphd_io.dtype_to_binary_format_string(dt) == "real=I1;imag=I1;"
-    dt = np.dtype([("real", np.int16), ("imag", np.int16)])
-    assert cphd_io.dtype_to_binary_format_string(dt) == "real=I2;imag=I2;"
-    dt = np.dtype([("real", np.int32), ("imag", np.int32)])
-    assert cphd_io.dtype_to_binary_format_string(dt) == "real=I4;imag=I4;"
-    dt = np.dtype([("I", np.int64), ("Q", np.int64)])
-    assert cphd_io.dtype_to_binary_format_string(dt) == "I=I8;Q=I8;"
-    dt = np.dtype("S30")
-    assert cphd_io.dtype_to_binary_format_string(dt) == "S30"
-
-    # Special handling
-    dt = np.dtype(("f8", 2))
-    assert cphd_io.dtype_to_binary_format_string(dt) == "DCX=F8;DCY=F8;"
-
-    dt = np.dtype(("f8", 3))
-    assert cphd_io.dtype_to_binary_format_string(dt) == "X=F8;Y=F8;Z=F8;"
-
-    dt = np.dtype([("a", "i8"), ("b", "f8"), ("c", "f8")])
-    assert cphd_io.dtype_to_binary_format_string(dt) == "a=I8;b=F8;c=F8;"
-
-    with pytest.raises(ValueError):
-        cphd_io.dtype_to_binary_format_string(np.dtype(("f8", 4)))
-
-    with pytest.raises(ValueError):
-        dt = np.dtype([("a", "i8"), ("b", ("f8", 3)), ("c", "f8")])
-        cphd_io.dtype_to_binary_format_string(dt)
+dtype_binary_mapping = [
+    (np.int8, "I1"),
+    (np.int16, "I2"),
+    (np.int32, "I4"),
+    (np.int64, "I8"),
+    (np.uint8, "U1"),
+    (np.uint16, "U2"),
+    (np.uint32, "U4"),
+    (np.uint64, "U8"),
+    (np.float32, "F4"),
+    (np.float64, "F8"),
+    (np.complex64, "CF8"),
+    (np.complex128, "CF16"),
+    (np.dtype([("real", np.int8), ("imag", np.int8)]), "real=I1;imag=I1;"),
+    (np.dtype([("real", np.int16), ("imag", np.int16)]), "real=I2;imag=I2;"),
+    (np.dtype([("real", np.int32), ("imag", np.int32)]), "real=I4;imag=I4;"),
+    (np.dtype([("I", np.int64), ("Q", np.int64)]), "I=I8;Q=I8;"),
+    (np.dtype("S30"), "S30"),
+    (np.dtype(("f8", 2)), "DCX=F8;DCY=F8;"),
+    (np.dtype(("f8", 3)), "X=F8;Y=F8;Z=F8;"),
+    (np.dtype([("a", "i8"), ("b", "f8"), ("c", "f8")]), "a=I8;b=F8;c=F8;"),
+]
 
 
-def test_binary_format_to_dtype():
-    # Basic types
-    assert cphd_io.binary_format_string_to_dtype("I1") == np.int8
-    assert cphd_io.binary_format_string_to_dtype("I2") == np.int16
-    assert cphd_io.binary_format_string_to_dtype("I4") == np.int32
-    assert cphd_io.binary_format_string_to_dtype("I8") == np.int64
-    assert cphd_io.binary_format_string_to_dtype("U1") == np.uint8
-    assert cphd_io.binary_format_string_to_dtype("U2") == np.uint16
-    assert cphd_io.binary_format_string_to_dtype("U4") == np.uint32
-    assert cphd_io.binary_format_string_to_dtype("U8") == np.uint64
-    assert cphd_io.binary_format_string_to_dtype("F4") == np.float32
-    assert cphd_io.binary_format_string_to_dtype("F8") == np.float64
-    assert cphd_io.binary_format_string_to_dtype("CF8") == np.complex64
-    assert cphd_io.binary_format_string_to_dtype("CF16") == np.complex128
-    dt = np.dtype([("real", np.int8), ("imag", np.int8)])
-    assert cphd_io.binary_format_string_to_dtype("real=I1;imag=I1;") == dt
-    dt = np.dtype([("real", np.int16), ("imag", np.int16)])
-    assert cphd_io.binary_format_string_to_dtype("real=I2;imag=I2;") == dt
-    dt = np.dtype([("real", np.int32), ("imag", np.int32)])
-    assert cphd_io.binary_format_string_to_dtype("real=I4;imag=I4;") == dt
-    dt = np.dtype([("I", np.int64), ("Q", np.int64)])
-    assert cphd_io.binary_format_string_to_dtype("I=I8;Q=I8;") == dt
-    dt = np.dtype("S30")
-    assert cphd_io.binary_format_string_to_dtype("S30") == dt
+@pytest.mark.parametrize("dtype, format_str", dtype_binary_mapping)
+def test_dtype_binary_format(dtype, format_str):
+    assert cphd_io.dtype_to_binary_format_string(dtype) == format_str
+    assert cphd_io.binary_format_string_to_dtype(format_str) == dtype
 
-    # Special handling
-    dt = np.dtype([("a", "i8"), ("b", "f8"), ("c", "f8")])
-    assert cphd_io.binary_format_string_to_dtype("a=I8;b=F8;c=F8;") == dt
 
-    dt = np.dtype(("f8", 3))
-    assert cphd_io.binary_format_string_to_dtype("X=F8;Y=F8;Z=F8;") == dt
+def _random_array(shape, dtype, reshape=True):
+    rng = np.random.default_rng()
+    retval = np.frombuffer(
+        rng.bytes(np.prod(shape) * dtype.itemsize), dtype=dtype
+    ).copy()
 
-    dt = np.dtype(("f8", 2))
-    assert cphd_io.binary_format_string_to_dtype("DCX=F8;DCY=F8;") == dt
+    def _zerofill(arr):
+        if arr.dtype.names is None:
+            arr[~np.isfinite(arr)] = 0
+        else:
+            for name in arr.dtype.names:
+                _zerofill(arr[name])
+
+    _zerofill(retval)
+    return retval.reshape(shape) if reshape else retval
+
+
+def _random_support_array(cphd_xmltree, sa_id):
+    xmlhelp = cphd_xml.XmlHelper(cphd_xmltree)
+    data_sa_elem = cphd_xmltree.find(
+        f"{{*}}Data/{{*}}SupportArray[{{*}}Identifier='{sa_id}']"
+    )
+    sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
+    nrows = xmlhelp.load_elem(data_sa_elem.find("./{*}NumRows"))
+    ncols = xmlhelp.load_elem(data_sa_elem.find("./{*}NumCols"))
+    sa_elem = cphd_xmltree.find(f"./{{*}}SupportArray/*[{{*}}Identifier='{sa_id}']")
+    format_str = sa_elem.findtext("{*}ElementFormat")
+    return _random_array(
+        (nrows, ncols), cphd_io.binary_format_string_to_dtype(format_str)
+    )
 
 
 def test_roundtrip(tmp_path):
@@ -108,18 +93,6 @@ def test_roundtrip(tmp_path):
         x.text for x in basis_etree.findall("./{*}Channel/{*}Parameters/{*}Identifier")
     ]
     assert len(channel_ids) == 1
-    rng = np.random.default_rng()
-
-    def _random_array(shape, dtype, reshape=True):
-        retval = np.frombuffer(
-            rng.bytes(np.prod(shape) * dtype.itemsize), dtype=dtype
-        ).copy()
-        if dtype.names is None:
-            retval[~np.isfinite(retval)] = 0
-        else:
-            for name in dtype.names:
-                retval[name][~np.isfinite(retval[name])] = 0
-        return retval.reshape(shape) if reshape else retval
 
     signal_dtype = cphd_io.binary_format_string_to_dtype(
         basis_etree.findtext("./{*}Data/{*}SignalArrayFormat")
@@ -135,13 +108,7 @@ def test_roundtrip(tmp_path):
     support_arrays = {}
     for data_sa_elem in basis_etree.findall("./{*}Data/{*}SupportArray"):
         sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
-        nrows = xmlhelp.load_elem(data_sa_elem.find("./{*}NumRows"))
-        ncols = xmlhelp.load_elem(data_sa_elem.find("./{*}NumCols"))
-        format_str = basis_etree.findtext(
-            f"./{{*}}SupportArray//{{*}}Identifier[.='{sa_id}']/../{{*}}ElementFormat"
-        )
-        dt = cphd_io.binary_format_string_to_dtype(format_str)
-        support_arrays[sa_id] = _random_array((nrows, ncols), dt)
+        support_arrays[sa_id] = _random_support_array(basis_etree, sa_id)
 
     cphd_plan = cphd_io.CphdPlan(
         file_header=cphd_io.CphdFileHeaderFields(
@@ -176,3 +143,81 @@ def test_roundtrip(tmp_path):
     assert lxml.etree.tostring(
         reader.cphd_xmltree, method="c14n"
     ) == lxml.etree.tostring(basis_etree, method="c14n")
+
+
+@pytest.mark.parametrize("is_masked", (True, False))
+@pytest.mark.parametrize("nodata_in_xml", (True, False))
+def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
+    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    elem_ns = lxml.etree.QName(basis_etree.getroot()).namespace
+    em = lxml.builder.ElementMaker(namespace=elem_ns, nsmap={None: elem_ns})
+    sa_id = str(uuid.uuid4())
+    sa_elem = em.AddedSupportArray(
+        em.Identifier(sa_id),
+        em.ElementFormat("a=CI4;b=CI4;"),
+        em.X0("0.1"),
+        em.Y0("0.2"),
+        em.XSS("0.3"),
+        em.YSS("0.4"),
+        em.NODATA(),  # placeholder
+        em.XUnits(""),
+        em.YUnits(""),
+        em.ZUnits(""),
+    )
+    data_sa_elem = em.SupportArray(
+        em.Identifier(sa_id),
+        em.NumRows("24"),
+        em.NumCols("8"),
+        em.BytesPerElement(
+            str(cphd_io.binary_format_string_to_dtype("a=CI4;b=CI4;").itemsize)
+        ),
+        em.ArrayByteOffset(
+            str(
+                max(
+                    (
+                        int(x.findtext("{*}ArrayByteOffset"))
+                        + int(x.findtext("{*}NumRows"))
+                        * int(
+                            x.findtext("{*}NumCols")
+                            * int(x.findtext("{*}BytesPerElement"))
+                        )
+                        for x in basis_etree.findall("{*}Data/{*}SupportArray")
+                    ),
+                    default=0,
+                )
+            )
+        ),
+    )
+    basis_etree.find("{*}Data").append(data_sa_elem)
+    basis_etree.find("{*}SupportArray").append(sa_elem)
+    basis_array = _random_support_array(basis_etree, sa_id)
+    basis_array = basis_array.astype(basis_array.dtype.newbyteorder(">"))
+
+    nodata_elem = sa_elem.find("{*}NODATA")
+    nodata_hex_str = basis_array.flat[0].tobytes().hex()
+    nodata_elem.text = nodata_hex_str
+    if not nodata_in_xml:
+        sa_elem.remove(nodata_elem)
+
+    mx = cphd_io.mask_support_array(basis_array, nodata_hex_str)
+    if not is_masked:
+        mx = mx.filled(0)
+
+    cphd_plan = cphd_io.CphdPlan(
+        file_header=cphd_io.CphdFileHeaderFields(
+            classification="UNCLASSIFIED",
+            release_info="UNRESTRICTED",
+        ),
+        cphd_xmltree=basis_etree,
+    )
+    out_cphd = tmp_path / "out.cphd"
+    with open(out_cphd, "wb") as f, cphd_io.CphdWriter(f, cphd_plan) as writer:
+        if is_masked and not nodata_in_xml:
+            with pytest.raises(ValueError, match="nodata.*does not match.*"):
+                writer.write_support_array(sa_id, mx)
+            return
+        writer.write_support_array(sa_id, mx)
+
+    with open(out_cphd, "rb") as f, cphd_io.CphdReader(f) as reader:
+        read_sa = reader.read_support_array(sa_id)
+        assert np.array_equal(mx, read_sa)

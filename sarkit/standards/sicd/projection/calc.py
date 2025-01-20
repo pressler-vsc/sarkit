@@ -158,6 +158,7 @@ def compute_coa_pos_vel(
     grp_coa = _xyzpolyval(t_coa, proj_metadata.GRP_Poly)
 
     # Compute transmit time
+    assert proj_metadata.Xmt_Poly is not None
     x0 = _xyzpolyval(t_coa, proj_metadata.Xmt_Poly)
     r_x0 = np.linalg.norm(x0 - grp_coa)
     tx_coa = t_coa - r_x0 / sarkit.constants.speed_of_light
@@ -172,6 +173,7 @@ def compute_coa_pos_vel(
     tr_coa = t_coa + r_r0 / sarkit.constants.speed_of_light
 
     # Compute receive APC position and velocity
+    assert proj_metadata.Rcv_Poly is not None
     rcv_coa = _xyzpolyval(tr_coa, proj_metadata.Rcv_Poly)
     vrcv_coa = _xyzpolyval(tr_coa, npp.polyder(proj_metadata.Rcv_Poly))
 
@@ -333,6 +335,7 @@ def r_rdot_from_rgazim_pfa(
     tgts = np.asarray(image_grid_locations)
     rg_tgts = tgts[..., 0]
     az_tgts = tgts[..., 1]
+    t_coa = np.asarray(t_coa)
 
     if proj_metadata.is_monostatic():
         r_scp_vector = coa_pos_vels.ARP_COA - proj_metadata.SCP
@@ -346,10 +349,12 @@ def r_rdot_from_rgazim_pfa(
         rdot_scp = pt_r_rdot_params.Rdot_Avg_PT
 
     # Compute polar angle and its derivative with respect to time
+    assert proj_metadata.cPA is not None
     theta = npp.polyval(t_coa, proj_metadata.cPA)
     dtheta_dt = npp.polyval(t_coa, npp.polyder(proj_metadata.cPA))
 
     # Compute polar aperture scale factor and its derivative with respect to polar angle
+    assert proj_metadata.cKSF is not None
     ksf = npp.polyval(theta, proj_metadata.cKSF)
     dksf_dtheta = npp.polyval(theta, npp.polyder(proj_metadata.cKSF))
 
@@ -416,6 +421,7 @@ def r_rdot_from_rgzero(
     az_tgts = tgts[..., 1]
 
     # Compute the range at closest approach and the time of closest approach for the image grid location
+    assert proj_metadata.cT_CA is not None
     r_ca = proj_metadata.R_CA_SCP + rg_tgts
     t_ca = npp.polyval(az_tgts, proj_metadata.cT_CA)
 
@@ -424,6 +430,7 @@ def r_rdot_from_rgzero(
     varp_ca_mag = np.linalg.norm(varp_ca, axis=-1, keepdims=True)
 
     # Compute the Doppler Rate Scale Factor for image grid (rg_tgts, az_tgts)
+    assert proj_metadata.cDRSF is not None
     drsf = npp.polyval2d(rg_tgts, az_tgts, proj_metadata.cDRSF)
 
     # Compute the time difference between the COA time and the CA time

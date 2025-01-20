@@ -653,6 +653,8 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
     # Additional COA Parameters for Bistatic Images
     params = ss_proj.MetadataParams.from_xml(sicd_xmltree)
     if not pre_1_4 and not params.is_monostatic():
+        assert params.Xmt_Poly is not None
+        assert params.Rcv_Poly is not None
         tx_coa = t_coa - (1 / sarkit.constants.speed_of_light) * np.linalg.norm(
             npp.polyval(t_coa, params.Xmt_Poly) - scp
         )

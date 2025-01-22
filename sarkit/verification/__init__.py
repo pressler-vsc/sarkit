@@ -11,5 +11,6 @@ Verification of SAR data in NGA standard formats.
 
    consistency
    cphd_consistency
+   crsd_consistency
    sicd_consistency
 """

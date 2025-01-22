@@ -1,0 +1,27 @@
+<XXSensor>
+  <PosVelError>
+    <Frame>ECF</Frame>
+    <PVCov size1="6" size2="6">
+      <Entry index1="2" index2="2">1.0</Entry>
+    </PVCov>
+    <PosDecorr>
+      <CorrCoefZero>1.0</CorrCoefZero>
+      <DecorrRate>1.0</DecorrRate>
+    </PosDecorr>
+  </PosVelError>
+  <RadarSensor>
+    <TimeFreqCov size1="2" size2="2">
+      <Entry index1="1" index2="2">1.0</Entry>
+    </TimeFreqCov>
+    <TimeFreqDecorr>
+      <TimeDecorr>
+        <CorrCoefZero>1.0</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </TimeDecorr>
+      <ClockFreqDecorr>
+        <CorrCoefZero>1.0</CorrCoefZero>
+        <DecorrRate>1.0</DecorrRate>
+      </ClockFreqDecorr>
+    </TimeFreqDecorr>
+  </RadarSensor>
+</XXSensor>

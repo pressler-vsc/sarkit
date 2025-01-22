@@ -1,0 +1,8 @@
+<SignalCompression>
+    <Identifier>Some Magic Compression Method</Identifier>
+    <CompressedSignalSize>3</CompressedSignalSize>
+    <Processing>
+        <Type>A processing type</Type>
+        <Parameter name="a compression parameter">a compression parameter value</Parameter>
+    </Processing>
+</SignalCompression>

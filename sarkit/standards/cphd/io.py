@@ -817,6 +817,8 @@ class CphdWriter:
         if missing_sa:
             logging.warning(f"Not all Support Arrays written.  Missing {missing_sa}")
 
+        self._file_object = None
+
     def __enter__(self):
         return self
 

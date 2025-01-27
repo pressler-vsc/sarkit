@@ -502,6 +502,131 @@ def r_rdot_from_plane(
         return pt_r_rdot_params.R_Avg_PT, pt_r_rdot_params.Rdot_Avg_PT
 
 
+def compute_and_apply_offsets(
+    proj_metadata: params.MetadataParams,
+    init_proj_set: params.ProjectionSets,
+    apo_input_set: params.AdjustableParameterOffsets,
+) -> params.ProjectionSets:
+    """Compute adjusted Center of Aperture projection set.
+
+    The APO input set is used to compute a set of offsets that are applied to each COA projection
+    set. For each projection set, the computed offsets are functions of the COA time(s) in the
+    projection set. The resulting projection set is referred to as the “adjusted” COA projection
+    set.
+
+    MONOSTATIC
+        t_COA, ARP_COA, VARP_COA, R_COA, Rdot_COA
+
+    BISTATIC
+        t_COA, tx_COA, tr_COA, Xmt_COA, VXmt_COA, Rcv_COA, VRcv_COA, R_Avg_COA, Rdot_Avg_COA
+
+    Parameters
+    ----------
+    proj_metadata : MetadataParams
+        Metadata parameters relevant to projection.
+    init_proj_set : ProjectionSets
+        Initial projection set.
+    apo_input_set : AdjustableParameterOffsets
+        Input APO set, used to compute the offsets to be added to the initial
+        COA projection set to form the adjusted COA projection set.
+
+    Returns
+    -------
+    ProjectionSets
+        Ensemble of adjusted Center of Aperture projection sets.
+
+    """
+    if proj_metadata.is_monostatic():
+        assert apo_input_set.delta_ARP_SCP_COA is not None
+        assert apo_input_set.delta_VARP is not None
+        assert init_proj_set.t_COA is not None
+        assert init_proj_set.ARP_COA is not None
+        assert init_proj_set.VARP_COA is not None
+        assert init_proj_set.R_COA is not None
+        assert init_proj_set.Rdot_COA is not None
+
+        # The input APOs are used to compute the following offsets to be added to the initial COA projection set
+        # to form the adjusted COA projection set.
+        delta_ARP_COA = (  # noqa N806
+            apo_input_set.delta_ARP_SCP_COA
+            + apo_input_set.delta_VARP * (init_proj_set.t_COA - proj_metadata.t_SCP_COA)
+        )
+        delta_R_ARP = (  # noqa N806
+            sarkit.constants.speed_of_light
+            / 2
+            * (apo_input_set.delta_tr_SCP_COA - apo_input_set.delta_tx_SCP_COA)
+        )
+
+        return params.ProjectionSets(
+            t_COA=init_proj_set.t_COA,
+            ARP_COA=init_proj_set.ARP_COA + delta_ARP_COA,
+            VARP_COA=init_proj_set.VARP_COA + apo_input_set.delta_VARP,
+            R_COA=init_proj_set.R_COA + delta_R_ARP,
+            Rdot_COA=init_proj_set.Rdot_COA,
+        )
+
+    assert apo_input_set.delta_Xmt_SCP_COA is not None
+    assert apo_input_set.delta_VXmt is not None
+    assert apo_input_set.f_Clk_X_SF is not None
+    assert apo_input_set.delta_Rcv_SCP_COA is not None
+    assert apo_input_set.delta_VRcv is not None
+    assert apo_input_set.f_Clk_R_SF is not None
+    assert proj_metadata.t_SCP_COA is not None
+    assert init_proj_set.tx_COA is not None
+    assert init_proj_set.tr_COA is not None
+    assert init_proj_set.VXmt_COA is not None
+    assert init_proj_set.VRcv_COA is not None
+    assert init_proj_set.R_Avg_COA is not None
+    assert init_proj_set.Rdot_Avg_COA is not None
+
+    # For the transmit sensor, the transmit time offset and the clock frequency scale factor are
+    # used to compute a transmit time offset
+    T_Clk_X_SF = -apo_input_set.f_Clk_X_SF * (1.0 / (1 + apo_input_set.f_Clk_X_SF))  # noqa N806
+    delta_tx_COA = apo_input_set.delta_tx_SCP_COA + T_Clk_X_SF * (  # noqa N806
+        init_proj_set.tx_COA - proj_metadata.t_SCP_COA
+    )
+
+    # For the receive sensor, the receive time offset and the clock frequency scale factor are
+    # used to compute a transmit time offset
+    T_Clk_R_SF = -apo_input_set.f_Clk_R_SF * (1.0 / (1 + apo_input_set.f_Clk_R_SF))  # noqa N806
+    delta_tr_COA = apo_input_set.delta_tr_SCP_COA + T_Clk_R_SF * (  # noqa N806
+        init_proj_set.tr_COA - proj_metadata.t_SCP_COA
+    )
+
+    # The input APOs are used to compute the following offsets to be added to the initial COA
+    # projection set to form the adjusted COA projection set
+    delta_Xmt_COA = (  # noqa N806
+        init_proj_set.VXmt_COA * delta_tx_COA
+        + apo_input_set.delta_Xmt_SCP_COA
+        + apo_input_set.delta_VXmt
+        * (init_proj_set.tx_COA + delta_tx_COA - proj_metadata.t_SCP_COA)
+    )
+    delta_Rcv_COA = (  # noqa N806
+        init_proj_set.VRcv_COA * delta_tr_COA
+        + apo_input_set.delta_Rcv_SCP_COA
+        + apo_input_set.delta_VRcv
+        * (init_proj_set.tr_COA + delta_tr_COA - proj_metadata.t_SCP_COA)
+    )
+    delta_R_Avg_COA = (  # noqa N806
+        sarkit.constants.speed_of_light / 2 * (delta_tr_COA - delta_tx_COA)
+    )
+    delta_Rdot_Avg_COA = (  # noqa N806
+        sarkit.constants.speed_of_light / 2 * (T_Clk_R_SF - T_Clk_X_SF)
+    )
+
+    return params.ProjectionSets(
+        t_COA=init_proj_set.t_COA,
+        tx_COA=init_proj_set.tx_COA + delta_tx_COA,
+        tr_COA=init_proj_set.tr_COA + delta_tr_COA,
+        Xmt_COA=init_proj_set.Xmt_COA + delta_Xmt_COA,
+        VXmt_COA=init_proj_set.VXmt_COA + apo_input_set.delta_VXmt,
+        Rcv_COA=init_proj_set.Rcv_COA + delta_Rcv_COA,
+        VRcv_COA=init_proj_set.VRcv_COA + apo_input_set.delta_VRcv,
+        R_Avg_COA=init_proj_set.R_Avg_COA + delta_R_Avg_COA,
+        Rdot_Avg_COA=init_proj_set.Rdot_Avg_COA + delta_Rdot_Avg_COA,
+    )
+
+
 def compute_projection_sets(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
@@ -544,6 +669,7 @@ def compute_projection_sets(
             R_COA=r,
             Rdot_COA=rdot,
         )
+
     return params.ProjectionSets(
         t_COA=t_coa,
         tx_COA=coa_pos_vels.tx_COA,
@@ -872,6 +998,7 @@ def scene_to_image(
     proj_metadata: params.MetadataParams,
     scene_points: npt.ArrayLike,
     *,
+    adjust_param_offsets: params.AdjustableParameterOffsets | None = None,
     delta_gp_s2i: float = 0.001,
     maxiter: int = 10,
     bistat_delta_gp_gpp: float = 0.010,
@@ -886,6 +1013,9 @@ def scene_to_image(
     scene_points : (..., 3) array_like
         Array of scene points with ECEF (WGS 84 cartesian) X, Y, Z components in meters in the
         last dimension.
+    adjust_param_offsets : AdjustableParameterOffsets, optional
+        Used to compute the offsets to be added to the initial COA projection set to form the
+        adjusted COA projection set.
     delta_gp_s2i : float, optional
         Ground plane displacement threshold for final ground plane point in meters.
     maxiter : int, optional
@@ -947,6 +1077,11 @@ def scene_to_image(
         projection_sets = compute_projection_sets(
             proj_metadata, image_grid_locations[above_threshold]
         )
+
+        if adjust_param_offsets is not None:
+            projection_sets = compute_and_apply_offsets(
+                proj_metadata, projection_sets, adjust_param_offsets
+            )
 
         # Compute precise projection to ground plane.
         if proj_metadata.is_monostatic():

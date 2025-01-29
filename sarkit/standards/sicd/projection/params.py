@@ -52,16 +52,16 @@ class MetadataParams:
     SCP_Row: float
     SCP_Col: float
     # SCP COA Parameters
-    t_SCP_COA: float  # noqa N802
+    t_SCP_COA: float  # noqa N815
     ARP_SCP_COA: np.ndarray
     VARP_SCP_COA: np.ndarray
     SideOfTrack: str
     GRAZ_SCP_COA: float
     # SCP COA Parameters - Only provided for Collect_Type = BISTATIC
-    tx_SCP_COA: Optional[float] = None  # noqa N802
+    tx_SCP_COA: Optional[float] = None  # noqa N815
     Xmt_SCP_COA: Optional[np.ndarray] = None
     VXmt_SCP_COA: Optional[np.ndarray] = None
-    tr_SCP_COA: Optional[float] = None  # noqa N802
+    tr_SCP_COA: Optional[float] = None  # noqa N815
     Rcv_SCP_COA: Optional[np.ndarray] = None
     VRcv_SCP_COA: Optional[np.ndarray] = None
     # Image Data Parameters
@@ -71,11 +71,11 @@ class MetadataParams:
     FirstCol: int
     # Image Grid Parameters
     Grid_Type: str
-    uRow: np.ndarray  # noqa N802
-    uCol: np.ndarray  # noqa N802
+    uRow: np.ndarray  # noqa N815
+    uCol: np.ndarray  # noqa N815
     Row_SS: float
     Col_SS: float
-    cT_COA: np.ndarray  # noqa N802
+    cT_COA: np.ndarray  # noqa N815
     # ARP Position Parameters
     ARP_Poly: np.ndarray
     Xmt_Poly: Optional[np.ndarray] = None
@@ -86,12 +86,12 @@ class MetadataParams:
     # Range & Azimuth Compression Parameters
     AzSF: Optional[float] = None
     # Polar Format Algorithm Parameters
-    cPA: Optional[np.ndarray] = None  # noqa N802
-    cKSF: Optional[np.ndarray] = None  # noqa N802
+    cPA: Optional[np.ndarray] = None  # noqa N815
+    cKSF: Optional[np.ndarray] = None  # noqa N815
     # Range Migration Algorithm INCA Parameters
-    cT_CA: Optional[np.ndarray] = None  # noqa N802
+    cT_CA: Optional[np.ndarray] = None  # noqa N815
     R_CA_SCP: Optional[float] = None
-    cDRSF: Optional[np.ndarray] = None  # noqa N802
+    cDRSF: Optional[np.ndarray] = None  # noqa N815
 
     def is_monostatic(self) -> bool:
         """Returns True if MONOSTATIC, False if BISTATIC. Otherwise raises exception."""
@@ -311,3 +311,112 @@ class ScenePointGpXyParams:
     uGY: np.ndarray  # noqa N802
     M_RRdot_GPXY: np.ndarray
     M_GPXY_RRdot: np.ndarray
+
+
+@dataclasses.dataclass(kw_only=True)
+class AdjustableParameterOffsets:
+    """Parameters from IPDD Adjustable Parameter Offsets List."""
+
+    # To help link the code to the SICD Image Projections Description Document, the variable names
+    # used here are intended to closely match the names used in the document.  As a result they
+    # may not adhere to the PEP8 convention used elsewhere in the code.
+
+    delta_tx_SCP_COA: float  # noqa N815
+    delta_tr_SCP_COA: float  # noqa N815
+    # Monostatic Adjustable Offsets
+    delta_ARP_SCP_COA: Optional[np.ndarray] = None  # noqa N815
+    delta_VARP: Optional[np.ndarray] = None  # noqa N815
+    # Bistatic Adjustable Offsets
+    delta_Xmt_SCP_COA: Optional[np.ndarray] = None  # noqa N815
+    delta_VXmt: Optional[np.ndarray] = None  # noqa N815
+    f_Clk_X_SF: Optional[float] = None  # noqa N815
+    delta_Rcv_SCP_COA: Optional[np.ndarray] = None  # noqa N815
+    delta_VRcv: Optional[np.ndarray] = None  # noqa N815
+    f_Clk_R_SF: Optional[float] = None  # noqa N815
+
+    @classmethod
+    def exists(cls, sicd_xmltree: lxml.etree.ElementTree) -> bool:
+        """Determine if the APO nodes exist in the SICD XML.
+
+        Parameters
+        ----------
+        sicd_xmltree : lxml.etree.ElementTree
+            SICD XML metadata.
+
+        Returns
+        -------
+        bool
+
+        """
+        if (
+            sicd_xmltree.find("{*}ErrorStatistics/{*}AdjustableParameterOffsets")
+            is not None
+        ):
+            return True
+        if (
+            sicd_xmltree.find(
+                "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets"
+            )
+            is not None
+        ):
+            return True
+        return False
+
+    @classmethod
+    def from_xml(cls, sicd_xmltree: lxml.etree.ElementTree) -> Self:
+        """Extract relevant adjustable parameter offsets from SICD XML as described in SICD IPDD.
+
+        Parameters
+        ----------
+        sicd_xmltree : lxml.etree.ElementTree
+            SICD XML metadata.
+
+        Returns
+        -------
+        AdjustableParameterOffsets
+            The adjustable parameter offsets list object initialized with values from the XML.
+
+        """
+        xmlhelp = ss_xml.XmlHelper(sicd_xmltree)
+        return cls(
+            **{
+                "delta_tx_SCP_COA": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}TxTimeSCPCOA"
+                )
+                or xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}TimeSCPCOA"
+                ),
+                "delta_tr_SCP_COA": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}RcvTimeSCPCOA"
+                )
+                or xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}TimeSCPCOA"
+                ),
+                # Optional Monostatic Adjustable Offsets
+                "delta_ARP_SCP_COA": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}ARPPosSCPCOA"
+                ),
+                "delta_VARP": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}ARPVel"
+                ),
+                # Optional Bistatic Adjustable Offsets
+                "delta_Xmt_SCP_COA": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}APCPosSCPCOA"
+                ),
+                "delta_VXmt": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}APCVel"
+                ),
+                "f_Clk_X_SF": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}ClockFreqSF"
+                ),
+                "delta_Rcv_SCP_COA": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}APCPosSCPCOA"
+                ),
+                "delta_VRcv": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}APCVel"
+                ),
+                "f_Clk_R_SF": xmlhelp.load(
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}ClockFreqSF"
+                ),
+            }
+        )

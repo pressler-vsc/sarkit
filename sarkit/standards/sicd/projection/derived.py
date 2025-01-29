@@ -52,6 +52,12 @@ def image_to_ground_plane(
     """
     proj_metadata = params.MetadataParams.from_xml(sicd_xmltree)
     projection_sets = calc.compute_projection_sets(proj_metadata, image_grid_locations)
+
+    if params.AdjustableParameterOffsets.exists(sicd_xmltree):
+        adjust_param_offsets = params.AdjustableParameterOffsets.from_xml(sicd_xmltree)
+        projection_sets = calc.compute_and_apply_offsets(
+            proj_metadata, projection_sets, adjust_param_offsets
+        )
     method = (
         {True: "monostatic", False: "bistatic"}[proj_metadata.is_monostatic()]
         if method is None
@@ -133,9 +139,15 @@ def scene_to_image(
         intermediate ground plane points.
     """
     proj_metadata = params.MetadataParams.from_xml(sicd_xmltree)
+
+    adjust_param_offsets = None
+    if params.AdjustableParameterOffsets.exists(sicd_xmltree):
+        adjust_param_offsets = params.AdjustableParameterOffsets.from_xml(sicd_xmltree)
+
     return calc.scene_to_image(
         proj_metadata,
         scene_points,
+        adjust_param_offsets=adjust_param_offsets,
         delta_gp_s2i=delta_gp_s2i,
         maxiter=maxiter,
         bistat_delta_gp_gpp=bistat_delta_gp_gpp,
@@ -187,6 +199,13 @@ def image_to_constant_hae_surface(
     """
     proj_metadata = params.MetadataParams.from_xml(sicd_xmltree)
     projection_sets = calc.compute_projection_sets(proj_metadata, image_grid_locations)
+
+    if params.AdjustableParameterOffsets.exists(sicd_xmltree):
+        adjust_param_offsets = params.AdjustableParameterOffsets.from_xml(sicd_xmltree)
+        projection_sets = calc.compute_and_apply_offsets(
+            proj_metadata, projection_sets, adjust_param_offsets
+        )
+
     return calc.r_rdot_to_constant_hae_surface(
         proj_metadata,
         projection_sets,

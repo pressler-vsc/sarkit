@@ -17,6 +17,7 @@ relevant subset, e.g. for when Collect_Type = MONOSTATIC vs BISTATIC.
 .. autosummary::
    :toctree: generated/
 
+   AdjustableParameterOffsets
    MetadataParams
    CoaPosVels
    ProjectionSets
@@ -78,6 +79,14 @@ Scene To Image Grid Projection
 
    scene_to_image
 
+Adjustable Parameters
+=====================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_and_apply_offsets
+
 Precise R/Rdot to Constant HAE Surface Projection
 =================================================
 
@@ -88,6 +97,7 @@ Precise R/Rdot to Constant HAE Surface Projection
 """
 
 from .calc import (
+    compute_and_apply_offsets,
     compute_coa_pos_vel,
     compute_coa_r_rdot,
     compute_coa_time,
@@ -104,6 +114,7 @@ from .calc import (
     scene_to_image,
 )
 from .params import (
+    AdjustableParameterOffsets,
     CoaPosVels,
     MetadataParams,
     ProjectionSets,
@@ -112,6 +123,7 @@ from .params import (
 )
 
 __all__ = [
+    "compute_and_apply_offsets",
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
     "compute_coa_time",
@@ -129,6 +141,7 @@ __all__ = [
 ]
 
 __all__ += [
+    "AdjustableParameterOffsets",
     "CoaPosVels",
     "MetadataParams",
     "ProjectionSets",

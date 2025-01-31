@@ -20,17 +20,17 @@ import numpy.typing as npt
 import sarkit.constants
 import sarkit.standards.sicd.io
 import sarkit.standards.sicd.projection as ss_proj
-import sarkit.standards.xml as ssxml
+import sarkit.xmlhelp as skxml
 
 
-class ImageCornersType(ssxml.ListType):
+class ImageCornersType(skxml.ListType):
     """
     Transcoder for SICD-like GeoData/ImageCorners XML parameter types.
 
     """
 
     def __init__(self) -> None:
-        super().__init__("ICP", ssxml.LatLonType())
+        super().__init__("ICP", skxml.LatLonType())
 
     def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
         """Returns the array of ImageCorners encoded in ``elem``.
@@ -77,7 +77,7 @@ class ImageCornersType(ssxml.ListType):
             self.sub_type.set_elem(icp, coord)
 
 
-class MtxType(ssxml.Type):
+class MtxType(skxml.Type):
     """
     Transcoder for MTX XML parameter types containing a matrix.
 
@@ -125,261 +125,261 @@ class MtxType(ssxml.Type):
             lxml.etree.SubElement(elem, ns + "Entry", attrib=attribs).text = str(entry)
 
 
-TRANSCODERS: dict[str, ssxml.Type] = {
-    "CollectionInfo/CollectorName": ssxml.TxtType(),
-    "CollectionInfo/IlluminatorName": ssxml.TxtType(),
-    "CollectionInfo/CoreName": ssxml.TxtType(),
-    "CollectionInfo/CollectType": ssxml.TxtType(),
-    "CollectionInfo/RadarMode/ModeType": ssxml.TxtType(),
-    "CollectionInfo/RadarMode/ModeID": ssxml.TxtType(),
-    "CollectionInfo/Classification": ssxml.TxtType(),
-    "CollectionInfo/InformationSecurityMarking": ssxml.TxtType(),
-    "CollectionInfo/CountryCode": ssxml.TxtType(),
-    "CollectionInfo/Parameter": ssxml.ParameterType(),
+TRANSCODERS: dict[str, skxml.Type] = {
+    "CollectionInfo/CollectorName": skxml.TxtType(),
+    "CollectionInfo/IlluminatorName": skxml.TxtType(),
+    "CollectionInfo/CoreName": skxml.TxtType(),
+    "CollectionInfo/CollectType": skxml.TxtType(),
+    "CollectionInfo/RadarMode/ModeType": skxml.TxtType(),
+    "CollectionInfo/RadarMode/ModeID": skxml.TxtType(),
+    "CollectionInfo/Classification": skxml.TxtType(),
+    "CollectionInfo/InformationSecurityMarking": skxml.TxtType(),
+    "CollectionInfo/CountryCode": skxml.TxtType(),
+    "CollectionInfo/Parameter": skxml.ParameterType(),
 }
 TRANSCODERS |= {
-    "ImageCreation/Application": ssxml.TxtType(),
-    "ImageCreation/DateTime": ssxml.XdtType(),
-    "ImageCreation/Site": ssxml.TxtType(),
-    "ImageCreation/Profile": ssxml.TxtType(),
+    "ImageCreation/Application": skxml.TxtType(),
+    "ImageCreation/DateTime": skxml.XdtType(),
+    "ImageCreation/Site": skxml.TxtType(),
+    "ImageCreation/Profile": skxml.TxtType(),
 }
 TRANSCODERS |= {
-    "ImageData/PixelType": ssxml.TxtType(),
-    "ImageData/AmpTable": ssxml.ListType("Amplitude", ssxml.DblType(), index_start=0),
-    "ImageData/NumRows": ssxml.IntType(),
-    "ImageData/NumCols": ssxml.IntType(),
-    "ImageData/FirstRow": ssxml.IntType(),
-    "ImageData/FirstCol": ssxml.IntType(),
-    "ImageData/FullImage/NumRows": ssxml.IntType(),
-    "ImageData/FullImage/NumCols": ssxml.IntType(),
-    "ImageData/SCPPixel": ssxml.RowColType(),
-    "ImageData/ValidData": ssxml.ListType("Vertex", ssxml.RowColType()),
+    "ImageData/PixelType": skxml.TxtType(),
+    "ImageData/AmpTable": skxml.ListType("Amplitude", skxml.DblType(), index_start=0),
+    "ImageData/NumRows": skxml.IntType(),
+    "ImageData/NumCols": skxml.IntType(),
+    "ImageData/FirstRow": skxml.IntType(),
+    "ImageData/FirstCol": skxml.IntType(),
+    "ImageData/FullImage/NumRows": skxml.IntType(),
+    "ImageData/FullImage/NumCols": skxml.IntType(),
+    "ImageData/SCPPixel": skxml.RowColType(),
+    "ImageData/ValidData": skxml.ListType("Vertex", skxml.RowColType()),
 }
 TRANSCODERS |= {
-    "GeoData/EarthModel": ssxml.TxtType(),
-    "GeoData/SCP/ECF": ssxml.XyzType(),
-    "GeoData/SCP/LLH": ssxml.LatLonHaeType(),
+    "GeoData/EarthModel": skxml.TxtType(),
+    "GeoData/SCP/ECF": skxml.XyzType(),
+    "GeoData/SCP/LLH": skxml.LatLonHaeType(),
     "GeoData/ImageCorners": ImageCornersType(),
-    "GeoData/ValidData": ssxml.ListType("Vertex", ssxml.LatLonType()),
-    "GeoData/GeoInfo/Desc": ssxml.ParameterType(),
-    "GeoData/GeoInfo/Point": ssxml.LatLonType(),
-    "GeoData/GeoInfo/Line": ssxml.ListType("Endpoint", ssxml.LatLonType()),
-    "GeoData/GeoInfo/Polygon": ssxml.ListType("Vertex", ssxml.LatLonType()),
+    "GeoData/ValidData": skxml.ListType("Vertex", skxml.LatLonType()),
+    "GeoData/GeoInfo/Desc": skxml.ParameterType(),
+    "GeoData/GeoInfo/Point": skxml.LatLonType(),
+    "GeoData/GeoInfo/Line": skxml.ListType("Endpoint", skxml.LatLonType()),
+    "GeoData/GeoInfo/Polygon": skxml.ListType("Vertex", skxml.LatLonType()),
 }
 TRANSCODERS |= {
-    "Grid/ImagePlane": ssxml.TxtType(),
-    "Grid/Type": ssxml.TxtType(),
-    "Grid/TimeCOAPoly": ssxml.Poly2dType(),
+    "Grid/ImagePlane": skxml.TxtType(),
+    "Grid/Type": skxml.TxtType(),
+    "Grid/TimeCOAPoly": skxml.Poly2dType(),
 }
 for d in ("Row", "Col"):
     TRANSCODERS |= {
-        f"Grid/{d}/UVectECF": ssxml.XyzType(),
-        f"Grid/{d}/SS": ssxml.DblType(),
-        f"Grid/{d}/ImpRespWid": ssxml.DblType(),
-        f"Grid/{d}/Sgn": ssxml.IntType(),
-        f"Grid/{d}/ImpRespBW": ssxml.DblType(),
-        f"Grid/{d}/KCtr": ssxml.DblType(),
-        f"Grid/{d}/DeltaK1": ssxml.DblType(),
-        f"Grid/{d}/DeltaK2": ssxml.DblType(),
-        f"Grid/{d}/DeltaKCOAPoly": ssxml.Poly2dType(),
-        f"Grid/{d}/WgtType/WindowName": ssxml.TxtType(),
-        f"Grid/{d}/WgtType/Parameter": ssxml.ParameterType(),
-        f"Grid/{d}/WgtFunct": ssxml.ListType("Wgt", ssxml.DblType()),
+        f"Grid/{d}/UVectECF": skxml.XyzType(),
+        f"Grid/{d}/SS": skxml.DblType(),
+        f"Grid/{d}/ImpRespWid": skxml.DblType(),
+        f"Grid/{d}/Sgn": skxml.IntType(),
+        f"Grid/{d}/ImpRespBW": skxml.DblType(),
+        f"Grid/{d}/KCtr": skxml.DblType(),
+        f"Grid/{d}/DeltaK1": skxml.DblType(),
+        f"Grid/{d}/DeltaK2": skxml.DblType(),
+        f"Grid/{d}/DeltaKCOAPoly": skxml.Poly2dType(),
+        f"Grid/{d}/WgtType/WindowName": skxml.TxtType(),
+        f"Grid/{d}/WgtType/Parameter": skxml.ParameterType(),
+        f"Grid/{d}/WgtFunct": skxml.ListType("Wgt", skxml.DblType()),
     }
 TRANSCODERS |= {
-    "Timeline/CollectStart": ssxml.XdtType(),
-    "Timeline/CollectDuration": ssxml.DblType(),
-    "Timeline/IPP/Set/TStart": ssxml.DblType(),
-    "Timeline/IPP/Set/TEnd": ssxml.DblType(),
-    "Timeline/IPP/Set/IPPStart": ssxml.IntType(),
-    "Timeline/IPP/Set/IPPEnd": ssxml.IntType(),
-    "Timeline/IPP/Set/IPPPoly": ssxml.PolyType(),
+    "Timeline/CollectStart": skxml.XdtType(),
+    "Timeline/CollectDuration": skxml.DblType(),
+    "Timeline/IPP/Set/TStart": skxml.DblType(),
+    "Timeline/IPP/Set/TEnd": skxml.DblType(),
+    "Timeline/IPP/Set/IPPStart": skxml.IntType(),
+    "Timeline/IPP/Set/IPPEnd": skxml.IntType(),
+    "Timeline/IPP/Set/IPPPoly": skxml.PolyType(),
 }
 TRANSCODERS |= {
-    "Position/ARPPoly": ssxml.XyzPolyType(),
-    "Position/GRPPoly": ssxml.XyzPolyType(),
-    "Position/TxAPCPoly": ssxml.XyzPolyType(),
-    "Position/RcvAPC/RcvAPCPoly": ssxml.XyzPolyType(),
+    "Position/ARPPoly": skxml.XyzPolyType(),
+    "Position/GRPPoly": skxml.XyzPolyType(),
+    "Position/TxAPCPoly": skxml.XyzPolyType(),
+    "Position/RcvAPC/RcvAPCPoly": skxml.XyzPolyType(),
 }
 TRANSCODERS |= {
-    "RadarCollection/TxFrequency/Min": ssxml.DblType(),
-    "RadarCollection/TxFrequency/Max": ssxml.DblType(),
-    "RadarCollection/RefFreqIndex": ssxml.IntType(),
-    "RadarCollection/Waveform/WFParameters/TxPulseLength": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/TxRFBandwidth": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/TxFreqStart": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/TxFMRate": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvDemodType": ssxml.TxtType(),
-    "RadarCollection/Waveform/WFParameters/RcvWindowLength": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/ADCSampleRate": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvIFBandwidth": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvFreqStart": ssxml.DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvFMRate": ssxml.DblType(),
-    "RadarCollection/TxPolarization": ssxml.TxtType(),
-    "RadarCollection/TxSequence/TxStep/WFIndex": ssxml.IntType(),
-    "RadarCollection/TxSequence/TxStep/TxPolarization": ssxml.TxtType(),
-    "RadarCollection/RcvChannels/ChanParameters/TxRcvPolarization": ssxml.TxtType(),
-    "RadarCollection/RcvChannels/ChanParameters/RcvAPCIndex": ssxml.IntType(),
-    "RadarCollection/Area/Corner": ssxml.ListType(
-        "ACP", ssxml.LatLonHaeType(), include_size_attr=False
+    "RadarCollection/TxFrequency/Min": skxml.DblType(),
+    "RadarCollection/TxFrequency/Max": skxml.DblType(),
+    "RadarCollection/RefFreqIndex": skxml.IntType(),
+    "RadarCollection/Waveform/WFParameters/TxPulseLength": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/TxRFBandwidth": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/TxFreqStart": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/TxFMRate": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/RcvDemodType": skxml.TxtType(),
+    "RadarCollection/Waveform/WFParameters/RcvWindowLength": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/ADCSampleRate": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/RcvIFBandwidth": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/RcvFreqStart": skxml.DblType(),
+    "RadarCollection/Waveform/WFParameters/RcvFMRate": skxml.DblType(),
+    "RadarCollection/TxPolarization": skxml.TxtType(),
+    "RadarCollection/TxSequence/TxStep/WFIndex": skxml.IntType(),
+    "RadarCollection/TxSequence/TxStep/TxPolarization": skxml.TxtType(),
+    "RadarCollection/RcvChannels/ChanParameters/TxRcvPolarization": skxml.TxtType(),
+    "RadarCollection/RcvChannels/ChanParameters/RcvAPCIndex": skxml.IntType(),
+    "RadarCollection/Area/Corner": skxml.ListType(
+        "ACP", skxml.LatLonHaeType(), include_size_attr=False
     ),
-    "RadarCollection/Area/Plane/RefPt/ECF": ssxml.XyzType(),
-    "RadarCollection/Area/Plane/RefPt/Line": ssxml.DblType(),
-    "RadarCollection/Area/Plane/RefPt/Sample": ssxml.DblType(),
-    "RadarCollection/Area/Plane/XDir/UVectECF": ssxml.XyzType(),
-    "RadarCollection/Area/Plane/XDir/LineSpacing": ssxml.DblType(),
-    "RadarCollection/Area/Plane/XDir/NumLines": ssxml.IntType(),
-    "RadarCollection/Area/Plane/XDir/FirstLine": ssxml.IntType(),
-    "RadarCollection/Area/Plane/YDir/UVectECF": ssxml.XyzType(),
-    "RadarCollection/Area/Plane/YDir/SampleSpacing": ssxml.DblType(),
-    "RadarCollection/Area/Plane/YDir/NumSamples": ssxml.IntType(),
-    "RadarCollection/Area/Plane/YDir/FirstSample": ssxml.IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/StartLine": ssxml.IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/StartSample": ssxml.IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/EndLine": ssxml.IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/EndSample": ssxml.IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/Identifier": ssxml.TxtType(),
-    "RadarCollection/Area/Plane/Orientation": ssxml.TxtType(),
-    "RadarCollection/Parameter": ssxml.ParameterType(),
+    "RadarCollection/Area/Plane/RefPt/ECF": skxml.XyzType(),
+    "RadarCollection/Area/Plane/RefPt/Line": skxml.DblType(),
+    "RadarCollection/Area/Plane/RefPt/Sample": skxml.DblType(),
+    "RadarCollection/Area/Plane/XDir/UVectECF": skxml.XyzType(),
+    "RadarCollection/Area/Plane/XDir/LineSpacing": skxml.DblType(),
+    "RadarCollection/Area/Plane/XDir/NumLines": skxml.IntType(),
+    "RadarCollection/Area/Plane/XDir/FirstLine": skxml.IntType(),
+    "RadarCollection/Area/Plane/YDir/UVectECF": skxml.XyzType(),
+    "RadarCollection/Area/Plane/YDir/SampleSpacing": skxml.DblType(),
+    "RadarCollection/Area/Plane/YDir/NumSamples": skxml.IntType(),
+    "RadarCollection/Area/Plane/YDir/FirstSample": skxml.IntType(),
+    "RadarCollection/Area/Plane/SegmentList/Segment/StartLine": skxml.IntType(),
+    "RadarCollection/Area/Plane/SegmentList/Segment/StartSample": skxml.IntType(),
+    "RadarCollection/Area/Plane/SegmentList/Segment/EndLine": skxml.IntType(),
+    "RadarCollection/Area/Plane/SegmentList/Segment/EndSample": skxml.IntType(),
+    "RadarCollection/Area/Plane/SegmentList/Segment/Identifier": skxml.TxtType(),
+    "RadarCollection/Area/Plane/Orientation": skxml.TxtType(),
+    "RadarCollection/Parameter": skxml.ParameterType(),
 }
 TRANSCODERS |= {
-    "ImageFormation/RcvChanProc/NumChanProc": ssxml.IntType(),
-    "ImageFormation/RcvChanProc/PRFScaleFactor": ssxml.DblType(),
-    "ImageFormation/RcvChanProc/ChanIndex": ssxml.IntType(),
-    "ImageFormation/TxRcvPolarizationProc": ssxml.TxtType(),
-    "ImageFormation/TStartProc": ssxml.DblType(),
-    "ImageFormation/TEndProc": ssxml.DblType(),
-    "ImageFormation/TxFrequencyProc/MinProc": ssxml.DblType(),
-    "ImageFormation/TxFrequencyProc/MaxProc": ssxml.DblType(),
-    "ImageFormation/SegmentIdentifier": ssxml.TxtType(),
-    "ImageFormation/ImageFormAlgo": ssxml.TxtType(),
-    "ImageFormation/STBeamComp": ssxml.TxtType(),
-    "ImageFormation/ImageBeamComp": ssxml.TxtType(),
-    "ImageFormation/AzAutofocus": ssxml.TxtType(),
-    "ImageFormation/RgAutofocus": ssxml.TxtType(),
-    "ImageFormation/Processing/Type": ssxml.TxtType(),
-    "ImageFormation/Processing/Applied": ssxml.BoolType(),
-    "ImageFormation/Processing/Parameter": ssxml.ParameterType(),
-    "ImageFormation/PolarizationCalibration/DistortCorrectionApplied": ssxml.BoolType(),
-    "ImageFormation/PolarizationCalibration/Distortion/CalibrationDate": ssxml.XdtType(),
-    "ImageFormation/PolarizationCalibration/Distortion/A": ssxml.DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/F1": ssxml.CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q1": ssxml.CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q2": ssxml.CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/F2": ssxml.CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q3": ssxml.CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q4": ssxml.CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/GainErrorA": ssxml.DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/GainErrorF1": ssxml.DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/GainErrorF2": ssxml.DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/PhaseErrorF1": ssxml.DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/PhaseErrorF2": ssxml.DblType(),
+    "ImageFormation/RcvChanProc/NumChanProc": skxml.IntType(),
+    "ImageFormation/RcvChanProc/PRFScaleFactor": skxml.DblType(),
+    "ImageFormation/RcvChanProc/ChanIndex": skxml.IntType(),
+    "ImageFormation/TxRcvPolarizationProc": skxml.TxtType(),
+    "ImageFormation/TStartProc": skxml.DblType(),
+    "ImageFormation/TEndProc": skxml.DblType(),
+    "ImageFormation/TxFrequencyProc/MinProc": skxml.DblType(),
+    "ImageFormation/TxFrequencyProc/MaxProc": skxml.DblType(),
+    "ImageFormation/SegmentIdentifier": skxml.TxtType(),
+    "ImageFormation/ImageFormAlgo": skxml.TxtType(),
+    "ImageFormation/STBeamComp": skxml.TxtType(),
+    "ImageFormation/ImageBeamComp": skxml.TxtType(),
+    "ImageFormation/AzAutofocus": skxml.TxtType(),
+    "ImageFormation/RgAutofocus": skxml.TxtType(),
+    "ImageFormation/Processing/Type": skxml.TxtType(),
+    "ImageFormation/Processing/Applied": skxml.BoolType(),
+    "ImageFormation/Processing/Parameter": skxml.ParameterType(),
+    "ImageFormation/PolarizationCalibration/DistortCorrectionApplied": skxml.BoolType(),
+    "ImageFormation/PolarizationCalibration/Distortion/CalibrationDate": skxml.XdtType(),
+    "ImageFormation/PolarizationCalibration/Distortion/A": skxml.DblType(),
+    "ImageFormation/PolarizationCalibration/Distortion/F1": skxml.CmplxType(),
+    "ImageFormation/PolarizationCalibration/Distortion/Q1": skxml.CmplxType(),
+    "ImageFormation/PolarizationCalibration/Distortion/Q2": skxml.CmplxType(),
+    "ImageFormation/PolarizationCalibration/Distortion/F2": skxml.CmplxType(),
+    "ImageFormation/PolarizationCalibration/Distortion/Q3": skxml.CmplxType(),
+    "ImageFormation/PolarizationCalibration/Distortion/Q4": skxml.CmplxType(),
+    "ImageFormation/PolarizationCalibration/Distortion/GainErrorA": skxml.DblType(),
+    "ImageFormation/PolarizationCalibration/Distortion/GainErrorF1": skxml.DblType(),
+    "ImageFormation/PolarizationCalibration/Distortion/GainErrorF2": skxml.DblType(),
+    "ImageFormation/PolarizationCalibration/Distortion/PhaseErrorF1": skxml.DblType(),
+    "ImageFormation/PolarizationCalibration/Distortion/PhaseErrorF2": skxml.DblType(),
 }
 TRANSCODERS |= {
-    "SCPCOA/SCPTime": ssxml.DblType(),
-    "SCPCOA/ARPPos": ssxml.XyzType(),
-    "SCPCOA/ARPVel": ssxml.XyzType(),
-    "SCPCOA/ARPAcc": ssxml.XyzType(),
-    "SCPCOA/SideOfTrack": ssxml.TxtType(),
-    "SCPCOA/SlantRange": ssxml.DblType(),
-    "SCPCOA/GroundRange": ssxml.DblType(),
-    "SCPCOA/DopplerConeAng": ssxml.DblType(),
-    "SCPCOA/GrazeAng": ssxml.DblType(),
-    "SCPCOA/IncidenceAng": ssxml.DblType(),
-    "SCPCOA/TwistAng": ssxml.DblType(),
-    "SCPCOA/SlopeAng": ssxml.DblType(),
-    "SCPCOA/AzimAng": ssxml.DblType(),
-    "SCPCOA/LayoverAng": ssxml.DblType(),
-    "SCPCOA/Bistatic/BistaticAng": ssxml.DblType(),
-    "SCPCOA/Bistatic/BistaticAngRate": ssxml.DblType(),
+    "SCPCOA/SCPTime": skxml.DblType(),
+    "SCPCOA/ARPPos": skxml.XyzType(),
+    "SCPCOA/ARPVel": skxml.XyzType(),
+    "SCPCOA/ARPAcc": skxml.XyzType(),
+    "SCPCOA/SideOfTrack": skxml.TxtType(),
+    "SCPCOA/SlantRange": skxml.DblType(),
+    "SCPCOA/GroundRange": skxml.DblType(),
+    "SCPCOA/DopplerConeAng": skxml.DblType(),
+    "SCPCOA/GrazeAng": skxml.DblType(),
+    "SCPCOA/IncidenceAng": skxml.DblType(),
+    "SCPCOA/TwistAng": skxml.DblType(),
+    "SCPCOA/SlopeAng": skxml.DblType(),
+    "SCPCOA/AzimAng": skxml.DblType(),
+    "SCPCOA/LayoverAng": skxml.DblType(),
+    "SCPCOA/Bistatic/BistaticAng": skxml.DblType(),
+    "SCPCOA/Bistatic/BistaticAngRate": skxml.DblType(),
 }
 for d in ("Tx", "Rcv"):
     TRANSCODERS |= {
-        f"SCPCOA/Bistatic/{d}Platform/Time": ssxml.DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/Pos": ssxml.XyzType(),
-        f"SCPCOA/Bistatic/{d}Platform/Vel": ssxml.XyzType(),
-        f"SCPCOA/Bistatic/{d}Platform/Acc": ssxml.XyzType(),
-        f"SCPCOA/Bistatic/{d}Platform/SideOfTrack": ssxml.TxtType(),
-        f"SCPCOA/Bistatic/{d}Platform/SlantRange": ssxml.DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/GroundRange": ssxml.DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/DopplerConeAng": ssxml.DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/GrazeAng": ssxml.DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/IncidenceAng": ssxml.DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/AzimAng": ssxml.DblType(),
+        f"SCPCOA/Bistatic/{d}Platform/Time": skxml.DblType(),
+        f"SCPCOA/Bistatic/{d}Platform/Pos": skxml.XyzType(),
+        f"SCPCOA/Bistatic/{d}Platform/Vel": skxml.XyzType(),
+        f"SCPCOA/Bistatic/{d}Platform/Acc": skxml.XyzType(),
+        f"SCPCOA/Bistatic/{d}Platform/SideOfTrack": skxml.TxtType(),
+        f"SCPCOA/Bistatic/{d}Platform/SlantRange": skxml.DblType(),
+        f"SCPCOA/Bistatic/{d}Platform/GroundRange": skxml.DblType(),
+        f"SCPCOA/Bistatic/{d}Platform/DopplerConeAng": skxml.DblType(),
+        f"SCPCOA/Bistatic/{d}Platform/GrazeAng": skxml.DblType(),
+        f"SCPCOA/Bistatic/{d}Platform/IncidenceAng": skxml.DblType(),
+        f"SCPCOA/Bistatic/{d}Platform/AzimAng": skxml.DblType(),
     }
 TRANSCODERS |= {
-    "Radiometric/NoiseLevel/NoiseLevelType": ssxml.TxtType(),
-    "Radiometric/NoiseLevel/NoisePoly": ssxml.Poly2dType(),
-    "Radiometric/RCSSFPoly": ssxml.Poly2dType(),
-    "Radiometric/SigmaZeroSFPoly": ssxml.Poly2dType(),
-    "Radiometric/BetaZeroSFPoly": ssxml.Poly2dType(),
-    "Radiometric/GammaZeroSFPoly": ssxml.Poly2dType(),
+    "Radiometric/NoiseLevel/NoiseLevelType": skxml.TxtType(),
+    "Radiometric/NoiseLevel/NoisePoly": skxml.Poly2dType(),
+    "Radiometric/RCSSFPoly": skxml.Poly2dType(),
+    "Radiometric/SigmaZeroSFPoly": skxml.Poly2dType(),
+    "Radiometric/BetaZeroSFPoly": skxml.Poly2dType(),
+    "Radiometric/GammaZeroSFPoly": skxml.Poly2dType(),
 }
 for a in ("Tx", "Rcv", "TwoWay"):
     TRANSCODERS |= {
-        f"Antenna/{a}/XAxisPoly": ssxml.XyzPolyType(),
-        f"Antenna/{a}/YAxisPoly": ssxml.XyzPolyType(),
-        f"Antenna/{a}/FreqZero": ssxml.DblType(),
-        f"Antenna/{a}/EB/DCXPoly": ssxml.PolyType(),
-        f"Antenna/{a}/EB/DCYPoly": ssxml.PolyType(),
-        f"Antenna/{a}/Array/GainPoly": ssxml.Poly2dType(),
-        f"Antenna/{a}/Array/PhasePoly": ssxml.Poly2dType(),
-        f"Antenna/{a}/Elem/GainPoly": ssxml.Poly2dType(),
-        f"Antenna/{a}/Elem/PhasePoly": ssxml.Poly2dType(),
-        f"Antenna/{a}/GainBSPoly": ssxml.PolyType(),
-        f"Antenna/{a}/EBFreqShift": ssxml.BoolType(),
-        f"Antenna/{a}/MLFreqDilation": ssxml.BoolType(),
+        f"Antenna/{a}/XAxisPoly": skxml.XyzPolyType(),
+        f"Antenna/{a}/YAxisPoly": skxml.XyzPolyType(),
+        f"Antenna/{a}/FreqZero": skxml.DblType(),
+        f"Antenna/{a}/EB/DCXPoly": skxml.PolyType(),
+        f"Antenna/{a}/EB/DCYPoly": skxml.PolyType(),
+        f"Antenna/{a}/Array/GainPoly": skxml.Poly2dType(),
+        f"Antenna/{a}/Array/PhasePoly": skxml.Poly2dType(),
+        f"Antenna/{a}/Elem/GainPoly": skxml.Poly2dType(),
+        f"Antenna/{a}/Elem/PhasePoly": skxml.Poly2dType(),
+        f"Antenna/{a}/GainBSPoly": skxml.PolyType(),
+        f"Antenna/{a}/EBFreqShift": skxml.BoolType(),
+        f"Antenna/{a}/MLFreqDilation": skxml.BoolType(),
     }
 
 
 def _decorr_type(xml_path):
-    return {f"{xml_path}/{x}": ssxml.DblType() for x in ("CorrCoefZero", "DecorrRate")}
+    return {f"{xml_path}/{x}": skxml.DblType() for x in ("CorrCoefZero", "DecorrRate")}
 
 
 TRANSCODERS |= {
-    "ErrorStatistics/CompositeSCP/Rg": ssxml.DblType(),
-    "ErrorStatistics/CompositeSCP/Az": ssxml.DblType(),
-    "ErrorStatistics/CompositeSCP/RgAz": ssxml.DblType(),
-    "ErrorStatistics/BistaticCompositeSCP/RAvg": ssxml.DblType(),
-    "ErrorStatistics/BistaticCompositeSCP/RdotAvg": ssxml.DblType(),
-    "ErrorStatistics/BistaticCompositeSCP/RAvgRdotAvg": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/Frame": ssxml.TxtType(),
-    "ErrorStatistics/Components/PosVelErr/P1": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/P2": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/P3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/V1": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/V2": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/V3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P2": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V1": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V2": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2P3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V1": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V2": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V1": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V2": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V2": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V3": ssxml.DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V2V3": ssxml.DblType(),
+    "ErrorStatistics/CompositeSCP/Rg": skxml.DblType(),
+    "ErrorStatistics/CompositeSCP/Az": skxml.DblType(),
+    "ErrorStatistics/CompositeSCP/RgAz": skxml.DblType(),
+    "ErrorStatistics/BistaticCompositeSCP/RAvg": skxml.DblType(),
+    "ErrorStatistics/BistaticCompositeSCP/RdotAvg": skxml.DblType(),
+    "ErrorStatistics/BistaticCompositeSCP/RAvgRdotAvg": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/Frame": skxml.TxtType(),
+    "ErrorStatistics/Components/PosVelErr/P1": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/P2": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/P3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/V1": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/V2": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/V3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P2": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V1": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V2": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2P3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V1": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V2": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V1": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V2": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V2": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V3": skxml.DblType(),
+    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V2V3": skxml.DblType(),
     **_decorr_type("ErrorStatistics/Components/PosVelErr/PositionDecorr"),
-    "ErrorStatistics/Components/RadarSensor/RangeBias": ssxml.DblType(),
-    "ErrorStatistics/Components/RadarSensor/ClockFreqSF": ssxml.DblType(),
-    "ErrorStatistics/Components/RadarSensor/TransmitFreqSF": ssxml.DblType(),
+    "ErrorStatistics/Components/RadarSensor/RangeBias": skxml.DblType(),
+    "ErrorStatistics/Components/RadarSensor/ClockFreqSF": skxml.DblType(),
+    "ErrorStatistics/Components/RadarSensor/TransmitFreqSF": skxml.DblType(),
     **_decorr_type("ErrorStatistics/Components/RadarSensor/RangeBiasDecorr"),
-    "ErrorStatistics/Components/TropoError/TropoRangeVertical": ssxml.DblType(),
-    "ErrorStatistics/Components/TropoError/TropoRangeSlant": ssxml.DblType(),
+    "ErrorStatistics/Components/TropoError/TropoRangeVertical": skxml.DblType(),
+    "ErrorStatistics/Components/TropoError/TropoRangeSlant": skxml.DblType(),
     **_decorr_type("ErrorStatistics/Components/TropoError/TropoRangeDecorr"),
-    "ErrorStatistics/Components/IonoError/IonoRangeVertical": ssxml.DblType(),
-    "ErrorStatistics/Components/IonoError/IonoRangeRateVertical": ssxml.DblType(),
-    "ErrorStatistics/Components/IonoError/IonoRgRgRateCC": ssxml.DblType(),
+    "ErrorStatistics/Components/IonoError/IonoRangeVertical": skxml.DblType(),
+    "ErrorStatistics/Components/IonoError/IonoRangeRateVertical": skxml.DblType(),
+    "ErrorStatistics/Components/IonoError/IonoRgRgRateCC": skxml.DblType(),
     **_decorr_type("ErrorStatistics/Components/IonoError/IonoRangeVertDecorr"),
-    "ErrorStatistics/BistaticComponents/PosVelErr/TxFrame": ssxml.TxtType(),
+    "ErrorStatistics/BistaticComponents/PosVelErr/TxFrame": skxml.TxtType(),
     "ErrorStatistics/BistaticComponents/PosVelErr/TxPVCov": MtxType((6, 6)),
-    "ErrorStatistics/BistaticComponents/PosVelErr/RcvFrame": ssxml.TxtType(),
+    "ErrorStatistics/BistaticComponents/PosVelErr/RcvFrame": skxml.TxtType(),
     "ErrorStatistics/BistaticComponents/PosVelErr/RcvPVCov": MtxType((6, 6)),
     "ErrorStatistics/BistaticComponents/PosVelErr/TxRcvPVXCov": MtxType((6, 6)),
     "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreq": MtxType((4, 4)),
@@ -395,101 +395,101 @@ TRANSCODERS |= {
     **_decorr_type(
         "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreqDecorr/RcvClockFreqDecorr"
     ),
-    "ErrorStatistics/BistaticComponents/AtmosphericError/TxSCP": ssxml.DblType(),
-    "ErrorStatistics/BistaticComponents/AtmosphericError/RcvSCP": ssxml.DblType(),
-    "ErrorStatistics/BistaticComponents/AtmosphericError/TxRcvCC": ssxml.DblType(),
-    "ErrorStatistics/Unmodeled/Xrow": ssxml.DblType(),
-    "ErrorStatistics/Unmodeled/Ycol": ssxml.DblType(),
-    "ErrorStatistics/Unmodeled/XrowYcol": ssxml.DblType(),
+    "ErrorStatistics/BistaticComponents/AtmosphericError/TxSCP": skxml.DblType(),
+    "ErrorStatistics/BistaticComponents/AtmosphericError/RcvSCP": skxml.DblType(),
+    "ErrorStatistics/BistaticComponents/AtmosphericError/TxRcvCC": skxml.DblType(),
+    "ErrorStatistics/Unmodeled/Xrow": skxml.DblType(),
+    "ErrorStatistics/Unmodeled/Ycol": skxml.DblType(),
+    "ErrorStatistics/Unmodeled/XrowYcol": skxml.DblType(),
     **_decorr_type("ErrorStatistics/Unmodeled/UnmodeledDecorr/Xrow"),
     **_decorr_type("ErrorStatistics/Unmodeled/UnmodeledDecorr/Ycol"),
-    "ErrorStatistics/AdditionalParms/Parameter": ssxml.ParameterType(),
-    "ErrorStatistics/AdjustableParameterOffsets/ARPPosSCPCOA": ssxml.XyzType(),
-    "ErrorStatistics/AdjustableParameterOffsets/ARPVel": ssxml.XyzType(),
-    "ErrorStatistics/AdjustableParameterOffsets/TxTimeSCPCOA": ssxml.DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/RcvTimeSCPCOA": ssxml.DblType(),
+    "ErrorStatistics/AdditionalParms/Parameter": skxml.ParameterType(),
+    "ErrorStatistics/AdjustableParameterOffsets/ARPPosSCPCOA": skxml.XyzType(),
+    "ErrorStatistics/AdjustableParameterOffsets/ARPVel": skxml.XyzType(),
+    "ErrorStatistics/AdjustableParameterOffsets/TxTimeSCPCOA": skxml.DblType(),
+    "ErrorStatistics/AdjustableParameterOffsets/RcvTimeSCPCOA": skxml.DblType(),
     "ErrorStatistics/AdjustableParameterOffsets/APOError": MtxType((8, 8)),
-    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Rg": ssxml.DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Az": ssxml.DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/RgAz": ssxml.DblType(),
+    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Rg": skxml.DblType(),
+    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Az": skxml.DblType(),
+    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/RgAz": skxml.DblType(),
 }
 for p in ("Tx", "Rcv"):
     TRANSCODERS |= {
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/APCPosSCPCOA": ssxml.XyzType(),
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/APCVel": ssxml.XyzType(),
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/TimeSCPCOA": ssxml.DblType(),
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/ClockFreqSF": ssxml.DblType(),
+        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/APCPosSCPCOA": skxml.XyzType(),
+        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/APCVel": skxml.XyzType(),
+        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/TimeSCPCOA": skxml.DblType(),
+        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/ClockFreqSF": skxml.DblType(),
     }
 TRANSCODERS |= {
     "ErrorStatistics/BistaticAdjustableParameterOffsets/APOError": MtxType((16, 16)),
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvg": ssxml.DblType(),
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RdotAvg": ssxml.DblType(),
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvgRdotAvg": ssxml.DblType(),
+    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvg": skxml.DblType(),
+    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RdotAvg": skxml.DblType(),
+    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvgRdotAvg": skxml.DblType(),
 }
 TRANSCODERS |= {
-    "MatchInfo/NumMatchTypes": ssxml.IntType(),
-    "MatchInfo/MatchType/TypeID": ssxml.TxtType(),
-    "MatchInfo/MatchType/CurrentIndex": ssxml.IntType(),
-    "MatchInfo/MatchType/NumMatchCollections": ssxml.IntType(),
-    "MatchInfo/MatchType/MatchCollection/CoreName": ssxml.TxtType(),
-    "MatchInfo/MatchType/MatchCollection/MatchIndex": ssxml.IntType(),
-    "MatchInfo/MatchType/MatchCollection/Parameter": ssxml.ParameterType(),
+    "MatchInfo/NumMatchTypes": skxml.IntType(),
+    "MatchInfo/MatchType/TypeID": skxml.TxtType(),
+    "MatchInfo/MatchType/CurrentIndex": skxml.IntType(),
+    "MatchInfo/MatchType/NumMatchCollections": skxml.IntType(),
+    "MatchInfo/MatchType/MatchCollection/CoreName": skxml.TxtType(),
+    "MatchInfo/MatchType/MatchCollection/MatchIndex": skxml.IntType(),
+    "MatchInfo/MatchType/MatchCollection/Parameter": skxml.ParameterType(),
 }
 TRANSCODERS |= {
-    "RgAzComp/AzSF": ssxml.DblType(),
-    "RgAzComp/KazPoly": ssxml.PolyType(),
+    "RgAzComp/AzSF": skxml.DblType(),
+    "RgAzComp/KazPoly": skxml.PolyType(),
 }
 TRANSCODERS |= {
-    "PFA/FPN": ssxml.XyzType(),
-    "PFA/IPN": ssxml.XyzType(),
-    "PFA/PolarAngRefTime": ssxml.DblType(),
-    "PFA/PolarAngPoly": ssxml.PolyType(),
-    "PFA/SpatialFreqSFPoly": ssxml.PolyType(),
-    "PFA/Krg1": ssxml.DblType(),
-    "PFA/Krg2": ssxml.DblType(),
-    "PFA/Kaz1": ssxml.DblType(),
-    "PFA/Kaz2": ssxml.DblType(),
-    "PFA/STDeskew/Applied": ssxml.BoolType(),
-    "PFA/STDeskew/STDSPhasePoly": ssxml.Poly2dType(),
+    "PFA/FPN": skxml.XyzType(),
+    "PFA/IPN": skxml.XyzType(),
+    "PFA/PolarAngRefTime": skxml.DblType(),
+    "PFA/PolarAngPoly": skxml.PolyType(),
+    "PFA/SpatialFreqSFPoly": skxml.PolyType(),
+    "PFA/Krg1": skxml.DblType(),
+    "PFA/Krg2": skxml.DblType(),
+    "PFA/Kaz1": skxml.DblType(),
+    "PFA/Kaz2": skxml.DblType(),
+    "PFA/STDeskew/Applied": skxml.BoolType(),
+    "PFA/STDeskew/STDSPhasePoly": skxml.Poly2dType(),
 }
 TRANSCODERS |= {
-    "RMA/RMAlgoType": ssxml.TxtType(),
-    "RMA/ImageType": ssxml.TxtType(),
-    "RMA/RMAT/PosRef": ssxml.XyzType(),
-    "RMA/RMAT/VelRef": ssxml.XyzType(),
-    "RMA/RMAT/DopConeAngRef": ssxml.DblType(),
-    "RMA/RMCR/PosRef": ssxml.XyzType(),
-    "RMA/RMCR/VelRef": ssxml.XyzType(),
-    "RMA/RMCR/DopConeAngRef": ssxml.DblType(),
-    "RMA/INCA/TimeCAPoly": ssxml.PolyType(),
-    "RMA/INCA/R_CA_SCP": ssxml.DblType(),
-    "RMA/INCA/FreqZero": ssxml.DblType(),
-    "RMA/INCA/DRateSFPoly": ssxml.Poly2dType(),
-    "RMA/INCA/DopCentroidPoly": ssxml.Poly2dType(),
-    "RMA/INCA/DopCentroidCOA": ssxml.BoolType(),
+    "RMA/RMAlgoType": skxml.TxtType(),
+    "RMA/ImageType": skxml.TxtType(),
+    "RMA/RMAT/PosRef": skxml.XyzType(),
+    "RMA/RMAT/VelRef": skxml.XyzType(),
+    "RMA/RMAT/DopConeAngRef": skxml.DblType(),
+    "RMA/RMCR/PosRef": skxml.XyzType(),
+    "RMA/RMCR/VelRef": skxml.XyzType(),
+    "RMA/RMCR/DopConeAngRef": skxml.DblType(),
+    "RMA/INCA/TimeCAPoly": skxml.PolyType(),
+    "RMA/INCA/R_CA_SCP": skxml.DblType(),
+    "RMA/INCA/FreqZero": skxml.DblType(),
+    "RMA/INCA/DRateSFPoly": skxml.Poly2dType(),
+    "RMA/INCA/DopCentroidPoly": skxml.Poly2dType(),
+    "RMA/INCA/DopCentroidCOA": skxml.BoolType(),
 }
 
 # Polynomial subelements
 TRANSCODERS.update(
     {
-        f"{p}/{coord}": ssxml.PolyType()
+        f"{p}/{coord}": skxml.PolyType()
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.XyzPolyType)
+        if isinstance(v, skxml.XyzPolyType)
         for coord in "XYZ"
     }
 )
 TRANSCODERS.update(
     {
-        f"{p}/Coef": ssxml.DblType()
+        f"{p}/Coef": skxml.DblType()
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.PolyNdType)
+        if isinstance(v, skxml.PolyNdType)
     }
 )
 
 # Matrix subelements
 TRANSCODERS.update(
     {
-        f"{p}/Entry": ssxml.DblType()
+        f"{p}/Entry": skxml.DblType()
         for p, v in TRANSCODERS.items()
         if isinstance(v, MtxType)
     }
@@ -500,7 +500,7 @@ TRANSCODERS.update(
     {
         f"{p}/{v.sub_tag}": v.sub_type
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.ListType)
+        if isinstance(v, skxml.ListType)
     }
 )
 
@@ -509,13 +509,13 @@ TRANSCODERS.update(
     {
         f"{p}/{sub_name}": sub_type
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.SequenceType)
+        if isinstance(v, skxml.SequenceType)
         for sub_name, sub_type in v.subelements.items()
     }
 )
 
 
-class XmlHelper(ssxml.XmlHelper):
+class XmlHelper(skxml.XmlHelper):
     """
     XmlHelper for Sensor Independent Complex Data (SICD).
 

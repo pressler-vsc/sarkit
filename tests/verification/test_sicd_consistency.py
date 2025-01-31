@@ -7,7 +7,7 @@ import pytest
 from lxml import etree
 
 import sarkit.standards.sicd.io as sicd_io
-import sarkit.standards.xml
+import sarkit.xmlhelp
 from sarkit.verification.sicd_consistency import SicdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
@@ -546,7 +546,7 @@ def test_rgazcomp_polys(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
             em.AzSF("0.0"),
-            sarkit.standards.xml.PolyType().make_elem("KazPoly", np.zeros(4)),
+            sarkit.xmlhelp.PolyType().make_elem("KazPoly", np.zeros(4)),
         )
     )
     sicd_con.check("check_rgazcomp_polys")
@@ -560,7 +560,7 @@ def test_rgazcomp_ifa(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
             em.AzSF("0.0"),
-            sarkit.standards.xml.PolyType().make_elem("KazPoly", np.zeros(4)),
+            sarkit.xmlhelp.PolyType().make_elem("KazPoly", np.zeros(4)),
         )
     )
 
@@ -579,9 +579,7 @@ def test_pfa_polys(sicd_con, em, poly_to_invalidate):
     sicd_con.sicdroot.find("./{*}PFA").append(
         em.STDeskew(
             em.Applied("true"),
-            sarkit.standards.xml.Poly2dType().make_elem(
-                "STDSPhasePoly", np.zeros((2, 3))
-            ),
+            sarkit.xmlhelp.Poly2dType().make_elem("STDSPhasePoly", np.zeros((2, 3))),
         )
     )
     sicd_con.check("check_pfa_polys")
@@ -637,13 +635,11 @@ def sicd_con_bad_inca(sicd_con, em):
             em.RMAlgoType("RG_DOP"),
             em.ImageType("INCA"),
             em.INCA(
-                sarkit.standards.xml.PolyType().make_elem("TimeCAPoly", np.ones(4)),
+                sarkit.xmlhelp.PolyType().make_elem("TimeCAPoly", np.ones(4)),
                 em.R_CA_SCP("10000.0"),
                 em.FreqZero("0.0"),
-                sarkit.standards.xml.Poly2dType().make_elem(
-                    "DRateSFPoly", np.ones((4, 3))
-                ),
-                sarkit.standards.xml.Poly2dType().make_elem(
+                sarkit.xmlhelp.Poly2dType().make_elem("DRateSFPoly", np.ones((4, 3))),
+                sarkit.xmlhelp.Poly2dType().make_elem(
                     "DopCentroidPoly", np.ones((5, 4))
                 ),
                 em.DopCentroidCOA("false"),

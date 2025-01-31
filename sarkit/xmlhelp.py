@@ -1,12 +1,58 @@
 """
-===============
-XML transcoding
-===============
+===================================
+XML helpers (:mod:`sarkit.xmlhelp`)
+===================================
 
 The parsed XML element tree is a fundamental component of SARkit interfaces for the NGA
 SAR standards that use XML as their primary metadata container.
-:py:mod:`sarkit.standards.xml` contains classes and functions that make it easier to interact
+:py:mod:`sarkit.xmlhelp` contains classes and functions that make it easier to interact
 with element trees using more convenient datatypes.
+
+XML Helper
+==========
+
+.. autosummary::
+   :toctree: generated/
+
+   XmlHelper
+
+simpleType Transcoders
+======================
+
+.. autosummary::
+   :toctree: generated/
+
+   Type
+   BoolType
+   DblType
+   EnuType
+   HexType
+   IntType
+   TxtType
+   XdtType
+
+complexType Transcoders
+=======================
+
+.. autosummary::
+   :toctree: generated/
+
+   SequenceType
+   ArrayType
+   ListType
+   CmplxType
+   LatLonHaeType
+   LatLonType
+   LineSampType
+   ParameterType
+   Poly2dType
+   PolyNdType
+   PolyType
+   RowColType
+   XyType
+   XyzPolyType
+   XyzType
+
 """
 
 import abc
@@ -575,10 +621,6 @@ class ParameterType(Type):
         TxtType().set_elem(elem, val[1])
 
 
-class NotTranscodableError(Exception):
-    pass
-
-
 class XmlHelper:
     """
     Base Class for generic XmlHelpers, which provide methods for transcoding data
@@ -615,7 +657,7 @@ class XmlHelper:
         """Returns the transcoder name associated with ``elem``."""
         simple_path = self._get_simple_path(elem)
         if simple_path not in self._transcoders_:
-            raise NotTranscodableError(f"{simple_path} is not transcodable")
+            raise LookupError(f"{simple_path} is not transcodable")
         return simple_path
 
     def _get_transcoder(self, elem):

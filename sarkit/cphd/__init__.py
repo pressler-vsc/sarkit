@@ -1,7 +1,7 @@
 """
-=====================================
-Compensated Phase History Data (CPHD)
-=====================================
+===================================================
+Compensated Phase History Data (:mod:`sarkit.cphd`)
+===================================================
 
 Python reference implementations of the suite of NGA.STND.0068 standardization
 documents that define the Compensated Phase History Data (CPHD) format.
@@ -66,7 +66,7 @@ Constants
    * - ``CPHD_SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
    * - ``TRANSCODERS``
-     - `dict` of {name: `sarkit.standards.xml.Type`}
+     - `dict` of {name: `sarkit.xmlhelp.Type`}
 
 References
 ==========
@@ -94,7 +94,7 @@ CPHD 1.1.0
    https://nsgreg.nga.mil/doc/view?i=5421
 """
 
-from sarkit.standards.xml import (
+from sarkit.xmlhelp import (
     BoolType,
     DblType,
     EnuType,

@@ -96,7 +96,7 @@ def test_transcoders():
                 schema.assertValid(xml_helper.element_tree)
                 np.testing.assert_equal(xml_helper.load_elem(elem), val)
                 used_transcoders.add(xml_helper.get_transcoder_name(elem))
-            except sarkit.standards.xml.NotTranscodableError:
+            except LookupError:
                 if len(elem) == 0:
                     no_transcode_leaf.add(xml_helper.element_tree.getelementpath(elem))
     unused_transcoders = sarkit.standards.sidd.xml.TRANSCODERS.keys() - used_transcoders

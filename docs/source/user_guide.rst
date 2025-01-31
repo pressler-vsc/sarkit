@@ -199,11 +199,15 @@ convenient Python objects.
    * - SIDD
      - :py:class:`sarkit.standards.sidd.xml.XmlHelper`
 
+.. admonition:: See also
+
+   `sarkit.xmlhelp`
 
 XML Helpers
 -----------
 
-XMLHelpers are instantiated with an `lxml.etree.ElementTree` which can then be manipulated using set and load methods.
+:py:class:`~sarkit.xmlhelp.XmlHelper` s are instantiated with an `lxml.etree.ElementTree` which can then be manipulated
+using set and load methods.
 
 .. doctest::
 
@@ -212,7 +216,7 @@ XMLHelpers are instantiated with an `lxml.etree.ElementTree` which can then be m
    >>> xmlhelp.load(".//{*}ModeType")
    'SPOTLIGHT'
 
-:py:class:`~sarkit.standards.xml.XmlHelper.load_elem` and :py:class:`~sarkit.standards.xml.XmlHelper.set_elem` can be
+:py:class:`~sarkit.xmlhelp.XmlHelper.load_elem` and :py:class:`~sarkit.xmlhelp.XmlHelper.set_elem` can be
 used when you already have an element object:
 
 .. doctest::
@@ -230,8 +234,8 @@ used when you already have an element object:
      <Coef exponent1="1" exponent2="1">4.4</Coef>
    </TimeCOAPoly>
 
-:py:class:`~sarkit.standards.xml.XmlHelper.load` / :py:class:`~sarkit.standards.xml.XmlHelper.set` are shortcuts for
-``find`` + :py:class:`~sarkit.standards.xml.XmlHelper.load_elem` / :py:class:`~sarkit.standards.xml.XmlHelper.set_elem`:
+:py:class:`~sarkit.xmlhelp.XmlHelper.load` / :py:class:`~sarkit.xmlhelp.XmlHelper.set` are shortcuts for
+``find`` + :py:class:`~sarkit.xmlhelp.XmlHelper.load_elem` / :py:class:`~sarkit.xmlhelp.XmlHelper.set_elem`:
 
 .. doctest::
 
@@ -266,7 +270,7 @@ Select parent nodes also have them when a straightforward mapping is apparent (e
    # this parent node does not have a transcoder
    >>> xmlhelp.load("{*}CollectionInfo")
    Traceback (most recent call last):
-   sarkit.standards.xml.NotTranscodableError: CollectionInfo is not transcodable
+   LookupError: CollectionInfo is not transcodable
 
 
 .. _consistency_checking:

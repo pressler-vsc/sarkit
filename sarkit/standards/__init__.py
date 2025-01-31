@@ -19,6 +19,5 @@ Interacting with SAR data in standard formats.
    sidd
    sidd.xml
    sidd.io
-   xml
 
 """

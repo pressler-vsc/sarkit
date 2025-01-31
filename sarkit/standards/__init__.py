@@ -8,9 +8,6 @@ Interacting with SAR data in standard formats.
 .. autosummary::
    :toctree: generated/
 
-   cphd
-   cphd.xml
-   cphd.io
    crsd
    crsd.xml
    crsd.io

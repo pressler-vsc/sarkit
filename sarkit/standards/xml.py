@@ -53,6 +53,13 @@ class TxtType(Type):
         elem.text = val or None
 
 
+class EnuType(TxtType):
+    """Transcoder for enumeration (ENU) XML parameter types.
+
+    Alias for `TxtType` (does not enforce allowable values).
+    """
+
+
 class BoolType(Type):
     """
     Transcoder for boolean (BOOL) XML parameter types.
@@ -131,7 +138,7 @@ class XdtType(Type):
         elem.text = dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-class PolyType(Type):
+class PolyNdType(Type):
     """
     Transcoder for N-variate polynomial (POLY, 2D_POLY, etc.) XML parameter types.
 
@@ -199,6 +206,20 @@ class PolyType(Type):
             lxml.etree.SubElement(elem, ns + "Coef", attrib=attribs).text = str(coef)
 
 
+class PolyType(PolyNdType):
+    """Transcoder for one-dimensional polynomial (POLY) XML parameter types."""
+
+    def __init__(self, *, child_ns=""):
+        super().__init__(child_ns=child_ns)
+
+
+class Poly2dType(PolyNdType):
+    """Transcoder for two-dimensional polynomial (2D_POLY) XML parameter types."""
+
+    def __init__(self, *, child_ns=""):
+        super().__init__(nvar=2, child_ns=child_ns)
+
+
 class XyzPolyType(Type):
     """
     Transcoder for XYZ_POLY XML parameter types containing triplets of 1D polynomials.
@@ -229,7 +250,7 @@ class XyzPolyType(Type):
             polynomials.
 
         """
-        xyz = [PolyType(1).parse_elem(elem.find(f"{{*}}{d}")) for d in "XYZ"]
+        xyz = [PolyType().parse_elem(elem.find(f"{{*}}{d}")) for d in "XYZ"]
         xyz_coefs = np.zeros_like(xyz[0], shape=(max(len(d) for d in xyz), len(xyz)))
         for dim, coefs in enumerate(xyz):
             xyz_coefs[: len(coefs), dim] = coefs
@@ -256,7 +277,7 @@ class XyzPolyType(Type):
         ns = f"{{{elem_ns}}}" if elem_ns else ""
         for index, tag in enumerate("XYZ"):
             subelem = lxml.etree.SubElement(elem, ns + tag)
-            PolyType(1).set_elem(subelem, coefs[:, index])
+            PolyType().set_elem(subelem, coefs[:, index])
 
 
 class SequenceType(abc.ABC, Type):

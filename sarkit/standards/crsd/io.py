@@ -15,7 +15,7 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-import sarkit.standards.cphd.io as cphd_io
+import sarkit.cphd as skcphd
 
 SCHEMA_DIR = importlib.resources.files("sarkit.standards.crsd.schemas")
 CRSD_SECTION_TERMINATOR = b"\f\n"
@@ -44,11 +44,11 @@ VERSION_INFO = {
 }
 
 
-dtype_to_binary_format_string = cphd_io.dtype_to_binary_format_string
-binary_format_string_to_dtype = cphd_io.binary_format_string_to_dtype
+dtype_to_binary_format_string = skcphd.dtype_to_binary_format_string
+binary_format_string_to_dtype = skcphd.binary_format_string_to_dtype
 
 
-mask_support_array = cphd_io.mask_support_array
+mask_support_array = skcphd.mask_support_array
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -96,7 +96,7 @@ class CrsdPlan:
     crsd_xmltree: lxml.etree.ElementTree
 
 
-read_file_header = cphd_io.read_file_header
+read_file_header = skcphd.read_file_header
 
 
 def _get_pxp_dtype(pxp_node):

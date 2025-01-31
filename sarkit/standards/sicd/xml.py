@@ -169,7 +169,7 @@ TRANSCODERS |= {
 TRANSCODERS |= {
     "Grid/ImagePlane": ssxml.TxtType(),
     "Grid/Type": ssxml.TxtType(),
-    "Grid/TimeCOAPoly": ssxml.PolyType(2),
+    "Grid/TimeCOAPoly": ssxml.Poly2dType(),
 }
 for d in ("Row", "Col"):
     TRANSCODERS |= {
@@ -181,7 +181,7 @@ for d in ("Row", "Col"):
         f"Grid/{d}/KCtr": ssxml.DblType(),
         f"Grid/{d}/DeltaK1": ssxml.DblType(),
         f"Grid/{d}/DeltaK2": ssxml.DblType(),
-        f"Grid/{d}/DeltaKCOAPoly": ssxml.PolyType(2),
+        f"Grid/{d}/DeltaKCOAPoly": ssxml.Poly2dType(),
         f"Grid/{d}/WgtType/WindowName": ssxml.TxtType(),
         f"Grid/{d}/WgtType/Parameter": ssxml.ParameterType(),
         f"Grid/{d}/WgtFunct": ssxml.ListType("Wgt", ssxml.DblType()),
@@ -309,11 +309,11 @@ for d in ("Tx", "Rcv"):
     }
 TRANSCODERS |= {
     "Radiometric/NoiseLevel/NoiseLevelType": ssxml.TxtType(),
-    "Radiometric/NoiseLevel/NoisePoly": ssxml.PolyType(2),
-    "Radiometric/RCSSFPoly": ssxml.PolyType(2),
-    "Radiometric/SigmaZeroSFPoly": ssxml.PolyType(2),
-    "Radiometric/BetaZeroSFPoly": ssxml.PolyType(2),
-    "Radiometric/GammaZeroSFPoly": ssxml.PolyType(2),
+    "Radiometric/NoiseLevel/NoisePoly": ssxml.Poly2dType(),
+    "Radiometric/RCSSFPoly": ssxml.Poly2dType(),
+    "Radiometric/SigmaZeroSFPoly": ssxml.Poly2dType(),
+    "Radiometric/BetaZeroSFPoly": ssxml.Poly2dType(),
+    "Radiometric/GammaZeroSFPoly": ssxml.Poly2dType(),
 }
 for a in ("Tx", "Rcv", "TwoWay"):
     TRANSCODERS |= {
@@ -322,10 +322,10 @@ for a in ("Tx", "Rcv", "TwoWay"):
         f"Antenna/{a}/FreqZero": ssxml.DblType(),
         f"Antenna/{a}/EB/DCXPoly": ssxml.PolyType(),
         f"Antenna/{a}/EB/DCYPoly": ssxml.PolyType(),
-        f"Antenna/{a}/Array/GainPoly": ssxml.PolyType(2),
-        f"Antenna/{a}/Array/PhasePoly": ssxml.PolyType(2),
-        f"Antenna/{a}/Elem/GainPoly": ssxml.PolyType(2),
-        f"Antenna/{a}/Elem/PhasePoly": ssxml.PolyType(2),
+        f"Antenna/{a}/Array/GainPoly": ssxml.Poly2dType(),
+        f"Antenna/{a}/Array/PhasePoly": ssxml.Poly2dType(),
+        f"Antenna/{a}/Elem/GainPoly": ssxml.Poly2dType(),
+        f"Antenna/{a}/Elem/PhasePoly": ssxml.Poly2dType(),
         f"Antenna/{a}/GainBSPoly": ssxml.PolyType(),
         f"Antenna/{a}/EBFreqShift": ssxml.BoolType(),
         f"Antenna/{a}/MLFreqDilation": ssxml.BoolType(),
@@ -450,7 +450,7 @@ TRANSCODERS |= {
     "PFA/Kaz1": ssxml.DblType(),
     "PFA/Kaz2": ssxml.DblType(),
     "PFA/STDeskew/Applied": ssxml.BoolType(),
-    "PFA/STDeskew/STDSPhasePoly": ssxml.PolyType(2),
+    "PFA/STDeskew/STDSPhasePoly": ssxml.Poly2dType(),
 }
 TRANSCODERS |= {
     "RMA/RMAlgoType": ssxml.TxtType(),
@@ -464,15 +464,15 @@ TRANSCODERS |= {
     "RMA/INCA/TimeCAPoly": ssxml.PolyType(),
     "RMA/INCA/R_CA_SCP": ssxml.DblType(),
     "RMA/INCA/FreqZero": ssxml.DblType(),
-    "RMA/INCA/DRateSFPoly": ssxml.PolyType(2),
-    "RMA/INCA/DopCentroidPoly": ssxml.PolyType(2),
+    "RMA/INCA/DRateSFPoly": ssxml.Poly2dType(),
+    "RMA/INCA/DopCentroidPoly": ssxml.Poly2dType(),
     "RMA/INCA/DopCentroidCOA": ssxml.BoolType(),
 }
 
 # Polynomial subelements
 TRANSCODERS.update(
     {
-        f"{p}/{coord}": ssxml.PolyType(1)
+        f"{p}/{coord}": ssxml.PolyType()
         for p, v in TRANSCODERS.items()
         if isinstance(v, ssxml.XyzPolyType)
         for coord in "XYZ"
@@ -482,7 +482,7 @@ TRANSCODERS.update(
     {
         f"{p}/Coef": ssxml.DblType()
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.PolyType)
+        if isinstance(v, ssxml.PolyNdType)
     }
 )
 

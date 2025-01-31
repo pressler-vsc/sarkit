@@ -62,7 +62,7 @@ def test(session):
 @nox.session
 def test_standards(session):
     session.run_install("pdm", "sync", "--prod", "-G", "dev-test", external=True)
-    session.run("pytest", "tests/standards")
+    session.run("pytest", "tests/core", "tests/standards")
 
 
 @nox.session

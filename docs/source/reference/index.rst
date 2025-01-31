@@ -10,6 +10,7 @@ SARkit API Reference
 API reference for :mod:`sarkit`.
 
 * `sarkit.constants`
+* `sarkit.cphd`
 * `sarkit.processing`
 * `sarkit.standards`
 * `sarkit.verification`
@@ -18,6 +19,7 @@ API reference for :mod:`sarkit`.
    :hidden:
 
     sarkit.constants <constants>
+    sarkit.cphd <cphd>
     sarkit.processing <processing>
     sarkit.standards <standards>
     sarkit.verification <verification>

@@ -1,10 +1,5 @@
 """
-========
-CPHD XML
-========
-
-Functions from CPHD Design & Implementation Description Document.
-
+Functions for interacting with CPHD XML
 """
 
 import copy
@@ -13,7 +8,7 @@ from collections.abc import Sequence
 
 import lxml.etree
 
-import sarkit.standards.cphd.io as cphd_io
+import sarkit.cphd._io as cphd_io
 import sarkit.standards.xml as ssxml
 
 
@@ -311,10 +306,10 @@ TRANSCODERS |= {
 TRANSCODERS |= {
     "Dwell/NumCODTimes": ssxml.IntType(),
     "Dwell/CODTime/Identifier": ssxml.TxtType(),
-    "Dwell/CODTime/CODTimePoly": ssxml.PolyType(2),
+    "Dwell/CODTime/CODTimePoly": ssxml.Poly2dType(),
     "Dwell/NumDwellTimes": ssxml.IntType(),
     "Dwell/DwellTime/Identifier": ssxml.TxtType(),
-    "Dwell/DwellTime/DwellTimePoly": ssxml.PolyType(2),
+    "Dwell/DwellTime/DwellTimePoly": ssxml.Poly2dType(),
 }
 TRANSCODERS |= {
     "ReferenceGeometry/SRP/ECF": ssxml.XyzType(),
@@ -383,11 +378,11 @@ TRANSCODERS |= {
     "Antenna/AntPattern/EB/DCXPoly": ssxml.PolyType(),
     "Antenna/AntPattern/EB/DCYPoly": ssxml.PolyType(),
     "Antenna/AntPattern/EB/UseEBPVP": ssxml.BoolType(),
-    "Antenna/AntPattern/Array/GainPoly": ssxml.PolyType(2),
-    "Antenna/AntPattern/Array/PhasePoly": ssxml.PolyType(2),
+    "Antenna/AntPattern/Array/GainPoly": ssxml.Poly2dType(),
+    "Antenna/AntPattern/Array/PhasePoly": ssxml.Poly2dType(),
     "Antenna/AntPattern/Array/AntGPId": ssxml.TxtType(),
-    "Antenna/AntPattern/Element/GainPoly": ssxml.PolyType(2),
-    "Antenna/AntPattern/Element/PhasePoly": ssxml.PolyType(2),
+    "Antenna/AntPattern/Element/GainPoly": ssxml.Poly2dType(),
+    "Antenna/AntPattern/Element/PhasePoly": ssxml.Poly2dType(),
     "Antenna/AntPattern/Element/AntGPId": ssxml.TxtType(),
     "Antenna/AntPattern/GainPhaseArray/Freq": ssxml.DblType(),
     "Antenna/AntPattern/GainPhaseArray/ArrayId": ssxml.TxtType(),
@@ -515,7 +510,7 @@ TRANSCODERS |= {
 # Polynomial subelements
 TRANSCODERS.update(
     {
-        f"{p}/{coord}": ssxml.PolyType(1)
+        f"{p}/{coord}": ssxml.PolyType()
         for p, v in TRANSCODERS.items()
         if isinstance(v, ssxml.XyzPolyType)
         for coord in "XYZ"
@@ -525,7 +520,7 @@ TRANSCODERS.update(
     {
         f"{p}/Coef": ssxml.DblType()
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.PolyType)
+        if isinstance(v, ssxml.PolyNdType)
     }
 )
 

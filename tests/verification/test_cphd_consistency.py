@@ -10,8 +10,7 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.constants
-import sarkit.standards.cphd.io as cphd_io
-import sarkit.standards.cphd.xml as cphd_xml
+import sarkit.cphd as skcphd
 import sarkit.standards.xml
 from sarkit.verification.cphd_consistency import CphdConsistency, main
 
@@ -23,16 +22,16 @@ good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
 @pytest.fixture(scope="session")
 def example_cphd_file(tmp_path_factory):
     cphd_etree = etree.parse(good_cphd_xml_path)
-    xmlhelp = cphd_xml.XmlHelper(cphd_etree)
+    xmlhelp = skcphd.XmlHelper(cphd_etree)
 
-    cphd_plan = cphd_io.CphdPlan(
-        file_header=cphd_io.CphdFileHeaderFields(
+    cphd_plan = skcphd.CphdPlan(
+        file_header=skcphd.CphdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
         ),
         cphd_xmltree=cphd_etree,
     )
-    pvp_dtype = cphd_io.get_pvp_dtype(cphd_etree)
+    pvp_dtype = skcphd.get_pvp_dtype(cphd_etree)
 
     assert cphd_etree.findtext("./{*}Data/{*}SignalArrayFormat") == "CF8"
     rng = np.random.default_rng(123456)
@@ -86,7 +85,7 @@ def example_cphd_file(tmp_path_factory):
     tmp_cphd = (
         tmp_path_factory.mktemp("data") / good_cphd_xml_path.with_suffix(".cphd").name
     )
-    with open(tmp_cphd, "wb") as f, cphd_io.CphdWriter(f, cphd_plan) as cw:
+    with open(tmp_cphd, "wb") as f, skcphd.CphdWriter(f, cphd_plan) as cw:
         cw.write_pvp("1", pvps)
         cw.write_signal("1", signal)
     assert not main([str(tmp_cphd), "--signal-data"])

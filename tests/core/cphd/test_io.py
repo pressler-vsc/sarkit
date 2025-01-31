@@ -6,18 +6,17 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit.standards.cphd.io as cphd_io
-import sarkit.standards.cphd.xml as cphd_xml
+import sarkit.cphd as skcphd
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def test_version_info():
-    actual_order = [x["version"] for x in cphd_io.VERSION_INFO.values()]
+    actual_order = [x["version"] for x in skcphd.VERSION_INFO.values()]
     expected_order = sorted(actual_order, key=lambda x: x.split("."))
     assert actual_order == expected_order
 
-    for urn, info in cphd_io.VERSION_INFO.items():
+    for urn, info in skcphd.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn
 
 
@@ -47,8 +46,8 @@ dtype_binary_mapping = [
 
 @pytest.mark.parametrize("dtype, format_str", dtype_binary_mapping)
 def test_dtype_binary_format(dtype, format_str):
-    assert cphd_io.dtype_to_binary_format_string(dtype) == format_str
-    assert cphd_io.binary_format_string_to_dtype(format_str) == dtype
+    assert skcphd.dtype_to_binary_format_string(dtype) == format_str
+    assert skcphd.binary_format_string_to_dtype(format_str) == dtype
 
 
 def _random_array(shape, dtype, reshape=True):
@@ -69,7 +68,7 @@ def _random_array(shape, dtype, reshape=True):
 
 
 def _random_support_array(cphd_xmltree, sa_id):
-    xmlhelp = cphd_xml.XmlHelper(cphd_xmltree)
+    xmlhelp = skcphd.XmlHelper(cphd_xmltree)
     data_sa_elem = cphd_xmltree.find(
         f"{{*}}Data/{{*}}SupportArray[{{*}}Identifier='{sa_id}']"
     )
@@ -79,29 +78,29 @@ def _random_support_array(cphd_xmltree, sa_id):
     sa_elem = cphd_xmltree.find(f"./{{*}}SupportArray/*[{{*}}Identifier='{sa_id}']")
     format_str = sa_elem.findtext("{*}ElementFormat")
     return _random_array(
-        (nrows, ncols), cphd_io.binary_format_string_to_dtype(format_str)
+        (nrows, ncols), skcphd.binary_format_string_to_dtype(format_str)
     )
 
 
 def test_roundtrip(tmp_path):
     basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
-    schema = lxml.etree.XMLSchema(file=cphd_io.VERSION_INFO[basis_version]["schema"])
+    schema = lxml.etree.XMLSchema(file=skcphd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
-    xmlhelp = cphd_xml.XmlHelper(basis_etree)
+    xmlhelp = skcphd.XmlHelper(basis_etree)
     channel_ids = [
         x.text for x in basis_etree.findall("./{*}Channel/{*}Parameters/{*}Identifier")
     ]
     assert len(channel_ids) == 1
 
-    signal_dtype = cphd_io.binary_format_string_to_dtype(
+    signal_dtype = skcphd.binary_format_string_to_dtype(
         basis_etree.findtext("./{*}Data/{*}SignalArrayFormat")
     )
     num_vectors = xmlhelp.load("./{*}Data/{*}Channel/{*}NumVectors")
     num_samples = xmlhelp.load(".//{*}Data/{*}Channel/{*}NumSamples")
     basis_signal = _random_array((num_vectors, num_samples), signal_dtype)
 
-    pvps = np.zeros(num_vectors, dtype=cphd_io.get_pvp_dtype(basis_etree))
+    pvps = np.zeros(num_vectors, dtype=skcphd.get_pvp_dtype(basis_etree))
     for f, (dt, _) in pvps.dtype.fields.items():
         pvps[f] = _random_array(num_vectors, dtype=dt, reshape=False)
 
@@ -110,8 +109,8 @@ def test_roundtrip(tmp_path):
         sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
         support_arrays[sa_id] = _random_support_array(basis_etree, sa_id)
 
-    cphd_plan = cphd_io.CphdPlan(
-        file_header=cphd_io.CphdFileHeaderFields(
+    cphd_plan = skcphd.CphdPlan(
+        file_header=skcphd.CphdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
             additional_kvps={"k1": "v1", "k2": "v2"},
@@ -120,13 +119,13 @@ def test_roundtrip(tmp_path):
     )
     out_cphd = tmp_path / "out.cphd"
     with open(out_cphd, "wb") as f:
-        with cphd_io.CphdWriter(f, cphd_plan) as writer:
+        with skcphd.CphdWriter(f, cphd_plan) as writer:
             writer.write_signal(channel_ids[0], basis_signal)
             writer.write_pvp(channel_ids[0], pvps)
             for k, v in support_arrays.items():
                 writer.write_support_array(k, v)
 
-    with open(out_cphd, "rb") as f, cphd_io.CphdReader(f) as reader:
+    with open(out_cphd, "rb") as f, skcphd.CphdReader(f) as reader:
         read_sig, read_pvp = reader.read_channel(channel_ids[0])
         read_support_arrays = {}
         for sa_id in reader.cphd_xmltree.findall("./{*}SupportArray/*/{*}Identifier"):
@@ -169,7 +168,7 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
         em.NumRows("24"),
         em.NumCols("8"),
         em.BytesPerElement(
-            str(cphd_io.binary_format_string_to_dtype("a=CI4;b=CI4;").itemsize)
+            str(skcphd.binary_format_string_to_dtype("a=CI4;b=CI4;").itemsize)
         ),
         em.ArrayByteOffset(
             str(
@@ -197,25 +196,25 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
     if not nodata_in_xml:
         sa_elem.remove(nodata_elem)
 
-    mx = cphd_io.mask_support_array(basis_array, nodata_hex_str)
+    mx = skcphd.mask_support_array(basis_array, nodata_hex_str)
     if not is_masked:
         mx = mx.filled(0)
 
-    cphd_plan = cphd_io.CphdPlan(
-        file_header=cphd_io.CphdFileHeaderFields(
+    cphd_plan = skcphd.CphdPlan(
+        file_header=skcphd.CphdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
         ),
         cphd_xmltree=basis_etree,
     )
     out_cphd = tmp_path / "out.cphd"
-    with open(out_cphd, "wb") as f, cphd_io.CphdWriter(f, cphd_plan) as writer:
+    with open(out_cphd, "wb") as f, skcphd.CphdWriter(f, cphd_plan) as writer:
         if is_masked and not nodata_in_xml:
             with pytest.raises(ValueError, match="nodata.*does not match.*"):
                 writer.write_support_array(sa_id, mx)
             return
         writer.write_support_array(sa_id, mx)
 
-    with open(out_cphd, "rb") as f, cphd_io.CphdReader(f) as reader:
+    with open(out_cphd, "rb") as f, skcphd.CphdReader(f) as reader:
         read_sa = reader.read_support_array(sa_id)
         assert np.array_equal(mx, read_sa)

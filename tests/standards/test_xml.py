@@ -27,7 +27,7 @@ def test_xdt_aware():
 def test_poly(ndim):
     shape = np.arange(3, 3 + ndim)
     coefs = np.arange(np.prod(shape)).reshape(shape)
-    polytype = sarkit.standards.xml.PolyType(ndim)
+    polytype = sarkit.standards.xml.PolyNdType(ndim)
     elem = polytype.make_elem("Poly", coefs)
     assert np.array_equal(polytype.parse_elem(elem), coefs)
 

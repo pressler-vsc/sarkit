@@ -1,8 +1,4 @@
 """
-========
-CPHD I/O
-========
-
 Functions to read and write CPHD files.
 """
 
@@ -10,14 +6,15 @@ import dataclasses
 import importlib.resources
 import logging
 import os
+from typing import Final
 
 import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-SCHEMA_DIR = importlib.resources.files("sarkit.standards.cphd.schemas")
-CPHD_SECTION_TERMINATOR = b"\f\n"
-DEFINED_HEADER_KEYS = {
+SCHEMA_DIR = importlib.resources.files("sarkit.cphd.schemas")
+CPHD_SECTION_TERMINATOR: Final[bytes] = b"\f\n"
+DEFINED_HEADER_KEYS: Final[set] = {
     "XML_BLOCK_SIZE",
     "XML_BLOCK_BYTE_OFFSET",
     "SUPPORT_BLOCK_SIZE",
@@ -31,7 +28,7 @@ DEFINED_HEADER_KEYS = {
 }
 
 # Keys in ascending order
-VERSION_INFO = {
+VERSION_INFO: Final[dict] = {
     "http://api.nsgreg.nga.mil/schema/cphd/1.0.1": {
         "version": "1.0.1",
         "date": "2018-05-21T00:00:00Z",

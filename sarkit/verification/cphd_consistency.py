@@ -31,8 +31,7 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.constants as spc
-import sarkit.standards.cphd.io as cphd_io
-import sarkit.standards.cphd.xml as sc_xml
+import sarkit.cphd as skcphd
 import sarkit.verification.consistency as con
 from sarkit.standards import geocoords
 
@@ -117,7 +116,7 @@ class CphdConsistency(con.ConsistencyChecker):
             etree.tostring(cphdroot)
         )  # handle element or tree -> element
         self.filename = filename
-        self.xmlhelp = sc_xml.XmlHelper(self.cphdroot.getroottree())
+        self.xmlhelp = skcphd.XmlHelper(self.cphdroot.getroottree())
         self.kvp_list = kvp_list
         self.pvps = pvps
 
@@ -130,10 +129,10 @@ class CphdConsistency(con.ConsistencyChecker):
             self.version = version_override or self._version_lookup()
             if self.version is None:
                 raise ValueError("Unable to determine CPHD version from XML namespace")
-            urn = {v["version"]: k for k, v in cphd_io.VERSION_INFO.items()}[
+            urn = {v["version"]: k for k, v in skcphd.VERSION_INFO.items()}[
                 self.version
             ]
-            self.schema = cphd_io.VERSION_INFO[urn]["schema"]
+            self.schema = skcphd.VERSION_INFO[urn]["schema"]
 
         self.check_signal_data = check_signal_data
 
@@ -191,10 +190,10 @@ class CphdConsistency(con.ConsistencyChecker):
                 pvps = None
             except etree.XMLSyntaxError:
                 infile.seek(0, os.SEEK_SET)
-                reader = cphd_io.CphdReader(infile)
+                reader = skcphd.CphdReader(infile)
                 cphdroot = reader.cphd_xmltree
                 infile.seek(0, os.SEEK_SET)
-                _, kvp_list = cphd_io.read_file_header(infile)
+                _, kvp_list = skcphd.read_file_header(infile)
                 pvps = {}
                 for channel_node in cphdroot.findall("./{*}Data/{*}Channel"):
                     channel_id = channel_node.findtext("./{*}Identifier")
@@ -215,7 +214,7 @@ class CphdConsistency(con.ConsistencyChecker):
         this_ns = etree.QName(self.cphdroot).namespace
         if this_ns is None:
             return None
-        for schema_info in cphd_io.VERSION_INFO.values():
+        for schema_info in skcphd.VERSION_INFO.values():
             schema_path = schema_info.get("schema")
             if schema_path is not None and this_ns == etree.parse(
                 schema_path
@@ -1204,7 +1203,7 @@ class CphdConsistency(con.ConsistencyChecker):
             assert self.kvp_list is not None
             assert self.cphdroot.find("./{*}Data/{*}SignalCompressionID") is None
             format_string = self.xmlhelp.load("./{*}Data/{*}SignalArrayFormat")
-            signal_dtype = cphd_io.binary_format_string_to_dtype(format_string)
+            signal_dtype = skcphd.binary_format_string_to_dtype(format_string)
 
             channel_data_node = get_by_id(
                 self.cphdroot, "./{*}Data/{*}Channel", channel_id

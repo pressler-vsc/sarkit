@@ -380,8 +380,8 @@ TRANSCODERS |= {
     "Measurement/PlaneProjection/SampleSpacing": RowColDblType(
         child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/PlaneProjection/TimeCOAPoly": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/PlaneProjection/TimeCOAPoly": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
     "Measurement/PlaneProjection/ProductPlane/RowUnitVector": ssxml.XyzType(
         child_ns="urn:SICommon:1.0"
@@ -395,20 +395,20 @@ TRANSCODERS |= {
     "Measurement/PolynomialProjection/ReferencePoint/Point": RowColDblType(
         child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/PolynomialProjection/RowColToLat": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/PolynomialProjection/RowColToLat": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/PolynomialProjection/RowColToLon": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/PolynomialProjection/RowColToLon": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/PolynomialProjection/RowColToAlt": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/PolynomialProjection/RowColToAlt": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/PolynomialProjection/LatLonToRow": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/PolynomialProjection/LatLonToRow": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/PolynomialProjection/LatLonToCol": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/PolynomialProjection/LatLonToCol": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
     "Measurement/GeographicProjection/ReferencePoint/ECEF": ssxml.XyzType(
         child_ns="urn:SICommon:1.0"
@@ -419,8 +419,8 @@ TRANSCODERS |= {
     "Measurement/GeographicProjection/SampleSpacing": RowColDblType(
         child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/GeographicProjection/TimeCOAPoly": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/GeographicProjection/TimeCOAPoly": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
     "Measurement/CylindricalProjection/ReferencePoint/ECEF": ssxml.XyzType(
         child_ns="urn:SICommon:1.0"
@@ -431,8 +431,8 @@ TRANSCODERS |= {
     "Measurement/CylindricalProjection/SampleSpacing": RowColDblType(
         child_ns="urn:SICommon:1.0"
     ),
-    "Measurement/CylindricalProjection/TimeCOAPoly": ssxml.PolyType(
-        2, child_ns="urn:SICommon:1.0"
+    "Measurement/CylindricalProjection/TimeCOAPoly": ssxml.Poly2dType(
+        child_ns="urn:SICommon:1.0"
     ),
     "Measurement/CylindricalProjection/StripmapDirection": ssxml.XyzType(
         child_ns="urn:SICommon:1.0"
@@ -557,12 +557,12 @@ TRANSCODERS |= {
 }
 TRANSCODERS |= {
     "Radiometric/NoiseLevel/NoiseLevelType": ssxml.TxtType(),
-    "Radiometric/NoiseLevel/NoisePoly": ssxml.PolyType(2),
-    "Radiometric/RCSSFPoly": ssxml.PolyType(2),
-    "Radiometric/SigmaZeroSFPoly": ssxml.PolyType(2),
-    "Radiometric/BetaZeroSFPoly": ssxml.PolyType(2),
+    "Radiometric/NoiseLevel/NoisePoly": ssxml.Poly2dType(),
+    "Radiometric/RCSSFPoly": ssxml.Poly2dType(),
+    "Radiometric/SigmaZeroSFPoly": ssxml.Poly2dType(),
+    "Radiometric/BetaZeroSFPoly": ssxml.Poly2dType(),
     "Radiometric/SigmaZeroSFIncidenceMap": ssxml.TxtType(),
-    "Radiometric/GammaZeroSFPoly": ssxml.PolyType(2),
+    "Radiometric/GammaZeroSFPoly": ssxml.Poly2dType(),
 }
 TRANSCODERS |= {
     "MatchInfo/NumMatchTypes": ssxml.IntType(),
@@ -649,7 +649,7 @@ TRANSCODERS |= {
 # Polynomial subelements
 TRANSCODERS.update(
     {
-        f"{p}/{coord}": ssxml.PolyType(1)
+        f"{p}/{coord}": ssxml.PolyType()
         for p, v in TRANSCODERS.items()
         if isinstance(v, ssxml.XyzPolyType)
         for coord in "XYZ"
@@ -659,7 +659,7 @@ TRANSCODERS.update(
     {
         f"{p}/Coef": ssxml.DblType()
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.PolyType)
+        if isinstance(v, ssxml.PolyNdType)
     }
 )
 

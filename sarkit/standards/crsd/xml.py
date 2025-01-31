@@ -9,13 +9,13 @@ Functions from CRSD Design & Implementation Description Document.
 
 import re
 
-import sarkit.standards.cphd.xml as cphd_xml
+import sarkit.cphd as skcphd
 import sarkit.standards.sicd.xml as sicd_xml
 import sarkit.standards.xml as ssxml
 
-ImageAreaCornerPointsType = cphd_xml.ImageAreaCornerPointsType
-PxpType = cphd_xml.PvpType
-AddedPxpType = cphd_xml.AddedPvpType
+ImageAreaCornerPointsType = skcphd.ImageAreaCornerPointsType
+PxpType = skcphd.PvpType
+AddedPxpType = skcphd.AddedPvpType
 MtxType = sicd_xml.MtxType
 
 
@@ -238,10 +238,10 @@ for d in ("Tx", "Rcv"):
 TRANSCODERS |= {
     "Dwell/NumCODTimes": ssxml.IntType(),
     "Dwell/CODTime/Identifier": ssxml.TxtType(),
-    "Dwell/CODTime/CODTimePoly": ssxml.PolyType(2),
+    "Dwell/CODTime/CODTimePoly": ssxml.Poly2dType(),
     "Dwell/NumDwellTimes": ssxml.IntType(),
     "Dwell/DwellTime/Identifier": ssxml.TxtType(),
-    "Dwell/DwellTime/DwellTimePoly": ssxml.PolyType(2),
+    "Dwell/DwellTime/DwellTimePoly": ssxml.Poly2dType(),
 }
 TRANSCODERS |= {
     "SupportArray/AntGainPhase/Identifier": ssxml.TxtType(),
@@ -406,7 +406,7 @@ TRANSCODERS |= {
 # Polynomial subelements
 TRANSCODERS.update(
     {
-        f"{p}/{coord}": ssxml.PolyType(1)
+        f"{p}/{coord}": ssxml.PolyType()
         for p, v in TRANSCODERS.items()
         if isinstance(v, ssxml.XyzPolyType)
         for coord in "XYZ"
@@ -416,7 +416,7 @@ TRANSCODERS.update(
     {
         f"{p}/Coef": ssxml.DblType()
         for p, v in TRANSCODERS.items()
-        if isinstance(v, ssxml.PolyType)
+        if isinstance(v, ssxml.PolyNdType)
     }
 )
 

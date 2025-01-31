@@ -41,9 +41,9 @@ describe file contents and metadata prior to writing.
      - :py:class:`~sarkit.standards.crsd.CrsdPlan`
      - :py:class:`~sarkit.standards.crsd.CrsdWriter`
    * - CPHD
-     - :py:class:`~sarkit.standards.cphd.CphdReader`
-     - :py:class:`~sarkit.standards.cphd.CphdPlan`
-     - :py:class:`~sarkit.standards.cphd.CphdWriter`
+     - :py:class:`~sarkit.cphd.CphdReader`
+     - :py:class:`~sarkit.cphd.CphdPlan`
+     - :py:class:`~sarkit.cphd.CphdWriter`
    * - SICD
      - :py:class:`~sarkit.standards.sicd.SicdNitfReader`
      - :py:class:`~sarkit.standards.sicd.SicdNitfPlan`
@@ -193,7 +193,7 @@ convenient Python objects.
    * - ⛔ CRSD [Draft] ⛔
      - :py:class:`sarkit.standards.crsd.xml.XmlHelper`
    * - CPHD
-     - :py:class:`sarkit.standards.cphd.xml.XmlHelper`
+     - :py:class:`sarkit.cphd.XmlHelper`
    * - SICD
      - :py:class:`sarkit.standards.sicd.xml.XmlHelper`
    * - SIDD

@@ -33,6 +33,11 @@ def mono_and_bi_proj_metadata(request):
     return ss_proj.MetadataParams.from_xml(etree)
 
 
+@pytest.fixture
+def image_grid_locations():
+    return np.random.default_rng(12345).uniform(size=(3, 4, 5, 2))
+
+
 def test_metadata_params():
     all_attrs = set()
     set_attrs = set()
@@ -251,7 +256,7 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     assert np.array_equal(bad_index, mismatched_index)
 
 
-def test_r_rdot_from_rgazim_rgazcomp(example_proj_metadata):
+def test_r_rdot_from_rgazim_rgazcomp(example_proj_metadata, image_grid_locations):
     example_proj_metadata.IFA = "RGAZCOMP"
     example_proj_metadata.Grid_Type = "RGAZIM"
     example_proj_metadata.AzSF = 2.0
@@ -260,15 +265,17 @@ def test_r_rdot_from_rgazim_rgazcomp(example_proj_metadata):
     )
     r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
         example_proj_metadata,
-        [0, 0],
+        image_grid_locations,
         example_proj_metadata.t_SCP_COA,
         computed_pos_vel,
     )
 
-    assert all([r_tgt_coa, rdot_tgt_coa])
+    assert r_tgt_coa.shape[-1] == 1
+    assert rdot_tgt_coa.shape[-1] == 1
+    assert np.all([r_tgt_coa, rdot_tgt_coa])
 
 
-def test_r_rdot_from_rgzero(example_proj_metadata):
+def test_r_rdot_from_rgzero(example_proj_metadata, image_grid_locations):
     example_proj_metadata.IFA = "RMA"
     example_proj_metadata.Grid_Type = "RGZERO"
     example_proj_metadata.cT_CA = np.array([1.0, 0.0001])
@@ -280,45 +287,51 @@ def test_r_rdot_from_rgzero(example_proj_metadata):
     )
     r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
         example_proj_metadata,
-        [0, 0],
+        image_grid_locations,
         example_proj_metadata.t_SCP_COA,
         computed_pos_vel,
     )
 
-    assert all([r_tgt_coa, rdot_tgt_coa])
+    assert r_tgt_coa.shape[-1] == 1
+    assert rdot_tgt_coa.shape[-1] == 1
+    assert np.all([r_tgt_coa, rdot_tgt_coa])
 
 
-def test_r_rdot_from_xrgycr(mono_and_bi_proj_metadata):
+def test_r_rdot_from_xrgycr(mono_and_bi_proj_metadata, image_grid_locations):
     mono_and_bi_proj_metadata.Grid_Type = "XRGYCR"
     computed_pos_vel = ss_proj.compute_coa_pos_vel(
         mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
     )
     r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
         mono_and_bi_proj_metadata,
-        [0, 0],
+        image_grid_locations,
         mono_and_bi_proj_metadata.t_SCP_COA,
         computed_pos_vel,
     )
 
-    assert all([r_tgt_coa, rdot_tgt_coa])
+    assert r_tgt_coa.shape[-1] == 1
+    assert rdot_tgt_coa.shape[-1] == 1
+    assert np.all([r_tgt_coa, rdot_tgt_coa])
 
 
-def test_r_rdot_from_xctyat(mono_and_bi_proj_metadata):
+def test_r_rdot_from_xctyat(mono_and_bi_proj_metadata, image_grid_locations):
     mono_and_bi_proj_metadata.Grid_Type = "XCTYAT"
     computed_pos_vel = ss_proj.compute_coa_pos_vel(
         mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
     )
     r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
         mono_and_bi_proj_metadata,
-        [0, 0],
+        image_grid_locations,
         mono_and_bi_proj_metadata.t_SCP_COA,
         computed_pos_vel,
     )
 
-    assert all([r_tgt_coa, rdot_tgt_coa])
+    assert r_tgt_coa.shape[-1] == 1
+    assert rdot_tgt_coa.shape[-1] == 1
+    assert np.all([r_tgt_coa, rdot_tgt_coa])
 
 
-def test_r_rdot_from_plane(mono_and_bi_proj_metadata):
+def test_r_rdot_from_plane(mono_and_bi_proj_metadata, image_grid_locations):
     mono_and_bi_proj_metadata.IFA = "RMA"
     mono_and_bi_proj_metadata.Grid_Type = "PLANE"
     mono_and_bi_proj_metadata.cT_CA = np.array([1.0, 0.0001])
@@ -329,9 +342,11 @@ def test_r_rdot_from_plane(mono_and_bi_proj_metadata):
     )
     r_tgt_coa, rdot_tgt_coa = ss_proj.compute_coa_r_rdot(
         mono_and_bi_proj_metadata,
-        [0, 0],
+        image_grid_locations,
         mono_and_bi_proj_metadata.t_SCP_COA,
         computed_pos_vel,
     )
 
-    assert all([r_tgt_coa, rdot_tgt_coa])
+    assert r_tgt_coa.shape[-1] == 1
+    assert rdot_tgt_coa.shape[-1] == 1
+    assert np.all([r_tgt_coa, rdot_tgt_coa])

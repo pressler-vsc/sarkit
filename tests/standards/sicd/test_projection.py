@@ -349,7 +349,9 @@ def test_r_rdot_from_plane(mono_and_bi_proj_metadata, image_grid_locations):
         computed_pos_vel,
     )
 
-    assert all([r_tgt_coa, rdot_tgt_coa])
+    assert r_tgt_coa.shape[-1] == 1
+    assert rdot_tgt_coa.shape[-1] == 1
+    assert np.all([r_tgt_coa, rdot_tgt_coa])
 
 
 @pytest.fixture(
@@ -444,6 +446,3 @@ def test_apo(proj_metadata_with_error):
         )
         assert adjust_proj_set.R_Avg_COA != proj_set.R_Avg_COA
         assert adjust_proj_set.Rdot_Avg_COA != proj_set.Rdot_Avg_COA
-    assert r_tgt_coa.shape[-1] == 1
-    assert rdot_tgt_coa.shape[-1] == 1
-    assert np.all([r_tgt_coa, rdot_tgt_coa])

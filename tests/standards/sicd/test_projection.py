@@ -1,12 +1,14 @@
 import dataclasses
 import pathlib
 
+import lxml.builder
 import lxml.etree
 import numpy as np
 import pytest
 
 import sarkit.standards.geocoords
 import sarkit.standards.sicd.projection as ss_proj
+import sarkit.standards.xml
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -347,6 +349,101 @@ def test_r_rdot_from_plane(mono_and_bi_proj_metadata, image_grid_locations):
         computed_pos_vel,
     )
 
+    assert all([r_tgt_coa, rdot_tgt_coa])
+
+
+@pytest.fixture(
+    params=[
+        DATAPATH / "example-sicd-1.3.0.xml",
+        DATAPATH / "example-sicd-1.4.0.xml",
+    ]
+)
+def proj_metadata_with_error(request):
+    etree = lxml.etree.parse(request.param)
+    root = etree.getroot()
+
+    elem_ns = lxml.etree.QName(root).namespace
+    em = lxml.builder.ElementMaker(namespace=elem_ns, nsmap={None: elem_ns})
+
+    if etree.findtext("{*}CollectionInfo/{*}CollectType") == "MONOSTATIC":
+        root.append(
+            em.ErrorStatistics(
+                em.AdjustableParameterOffsets(
+                    sarkit.standards.xml.XyzType().make_elem(
+                        "ARPPosSCPCOA", [10000, 11000, 12000]
+                    ),
+                    sarkit.standards.xml.XyzType().make_elem(
+                        "ARPVel", [1500, 1600, 1700]
+                    ),
+                    em.TxTimeSCPCOA("10.0"),
+                    em.RcvTimeSCPCOA("11.0"),
+                )
+            )
+        )
+    else:
+        root.append(
+            em.ErrorStatistics(
+                em.BistaticAdjustableParameterOffsets(
+                    em.TxPlatform(
+                        sarkit.standards.xml.XyzType().make_elem(
+                            "APCPosSCPCOA", [10000, 11000, 12000]
+                        ),
+                        sarkit.standards.xml.XyzType().make_elem(
+                            "APCVel", [1500, 1600, 1700]
+                        ),
+                        em.ClockFreqSF("10.0"),
+                        em.TimeSCPCOA("11.0"),
+                    ),
+                    em.RcvPlatform(
+                        sarkit.standards.xml.XyzType().make_elem(
+                            "APCPosSCPCOA", [20000, 21000, 22000]
+                        ),
+                        sarkit.standards.xml.XyzType().make_elem(
+                            "APCVel", [2500, 2600, 2700]
+                        ),
+                        em.ClockFreqSF("20.0"),
+                        em.TimeSCPCOA("21.0"),
+                    ),
+                )
+            )
+        )
+
+    meta = ss_proj.MetadataParams.from_xml(etree)
+    apos = ss_proj.AdjustableParameterOffsets.from_xml(etree)
+
+    return meta, apos
+
+
+def test_apo(proj_metadata_with_error):
+    meta, apos = proj_metadata_with_error
+    proj_set = ss_proj.compute_projection_sets(meta, [0, 0])
+    adjust_proj_set = ss_proj.compute_and_apply_offsets(meta, proj_set, apos)
+
+    # Make sure things that were supposed to change did
+    if meta.is_monostatic():
+        assert adjust_proj_set.t_COA == proj_set.t_COA
+        assert np.all(
+            adjust_proj_set.ARP_COA - proj_set.ARP_COA == [10000, 11000, 12000]
+        )
+        assert np.all(
+            adjust_proj_set.VARP_COA - proj_set.VARP_COA == [1500, 1600, 1700]
+        )
+        assert adjust_proj_set.R_COA != proj_set.R_COA
+        assert adjust_proj_set.Rdot_COA == proj_set.Rdot_COA
+    else:
+        assert adjust_proj_set.t_COA == proj_set.t_COA
+        assert adjust_proj_set.tx_COA - proj_set.tx_COA == pytest.approx(11, abs=0.1)
+        assert adjust_proj_set.tr_COA - proj_set.tr_COA == pytest.approx(21, abs=0.1)
+        assert np.all(adjust_proj_set.Xmt_COA != proj_set.Xmt_COA)
+        assert np.all(
+            adjust_proj_set.VXmt_COA - proj_set.VXmt_COA == [1500, 1600, 1700]
+        )
+        assert np.all(adjust_proj_set.Rcv_COA != proj_set.Rcv_COA)
+        assert np.all(
+            adjust_proj_set.VRcv_COA - proj_set.VRcv_COA == [2500, 2600, 2700]
+        )
+        assert adjust_proj_set.R_Avg_COA != proj_set.R_Avg_COA
+        assert adjust_proj_set.Rdot_Avg_COA != proj_set.Rdot_Avg_COA
     assert r_tgt_coa.shape[-1] == 1
     assert rdot_tgt_coa.shape[-1] == 1
     assert np.all([r_tgt_coa, rdot_tgt_coa])

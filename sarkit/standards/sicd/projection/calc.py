@@ -401,7 +401,7 @@ def r_rdot_from_rgazim_rgazcomp(
     )
 
     # Compute the range and range rate to the target at COA
-    r_tgt_coa = r_scp + rg_tgts
+    r_tgt_coa = (r_scp + rg_tgts)[..., np.newaxis]
     rdot_tgt_coa = rdot_scp + delta_rdot[..., np.newaxis]
     return r_tgt_coa, rdot_tgt_coa
 
@@ -437,8 +437,16 @@ def r_rdot_from_rgzero(
     delta_t_coa = t_coa - t_ca
 
     # Compute the range and range rate relative to the ARP at COA
-    r_tgt_coa = np.sqrt(r_ca**2 + drsf * varp_ca_mag**2 * delta_t_coa**2)
-    rdot_tgt_coa = drsf / r_tgt_coa * varp_ca_mag**2 * delta_t_coa
+    r_tgt_coa = np.sqrt(
+        r_ca[..., np.newaxis] ** 2
+        + drsf[..., np.newaxis] * varp_ca_mag**2 * delta_t_coa[..., np.newaxis] ** 2
+    )
+    rdot_tgt_coa = (
+        drsf[..., np.newaxis]
+        / r_tgt_coa
+        * varp_ca_mag**2
+        * delta_t_coa[..., np.newaxis]
+    )
     return r_tgt_coa, rdot_tgt_coa
 
 
@@ -482,7 +490,9 @@ def r_rdot_from_plane(
 
     # Compute the image plane point for image grid location (xrowTGT, ycolTGT), IP_TGT
     ip_tgt = (
-        proj_metadata.SCP + (x_tgt * proj_metadata.uRow) + (y_tgt * proj_metadata.uCol)
+        proj_metadata.SCP
+        + (x_tgt[..., np.newaxis] * proj_metadata.uRow)
+        + (y_tgt[..., np.newaxis] * proj_metadata.uCol)
     )
 
     # Compute the range and range rate to the image plane point IP_TGT relative to the COA positions and velocities

@@ -42,16 +42,6 @@ def test_image_corners_type():
     )
 
 
-def test_mtx_type():
-    data = np.arange(np.prod(6)).reshape((2, 3))
-    type_obj = sarkit.standards.sicd.xml.MtxType(data.shape)
-    elem = type_obj.make_elem("{faux-ns}MtxNode", data)
-    assert np.array_equal(type_obj.parse_elem(elem), data)
-
-    with pytest.raises(ValueError, match="shape.*does not match expected"):
-        type_obj.set_elem(elem, np.tile(data, 2))
-
-
 def test_transcoders():
     used_transcoders = set()
     no_transcode_leaf = set()

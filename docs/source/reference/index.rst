@@ -11,6 +11,7 @@ API reference for :mod:`sarkit`.
 
 * `sarkit.constants`
 * `sarkit.cphd`
+* `sarkit.crsd`
 * `sarkit.processing`
 * `sarkit.standards`
 * `sarkit.verification`
@@ -21,6 +22,7 @@ API reference for :mod:`sarkit`.
 
     sarkit.constants <constants>
     sarkit.cphd <cphd>
+    sarkit.crsd <crsd>
     sarkit.processing <processing>
     sarkit.standards <standards>
     sarkit.verification <verification>

@@ -24,9 +24,7 @@ import numpy.polynomial.polynomial as npp
 import shapely.geometry as shg
 from lxml import etree
 
-import sarkit.standards.crsd.computations as crsd_comp
-import sarkit.standards.crsd.io as crsd_io
-import sarkit.standards.crsd.xml as sc_xml
+import sarkit.crsd as skcrsd
 import sarkit.verification.consistency as con
 import sarkit.wgs84
 
@@ -109,7 +107,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             etree.tostring(crsdroot)
         )  # handle element or tree -> element
         self.filename = filename
-        self.xmlhelp = sc_xml.XmlHelper(self.crsdroot.getroottree())
+        self.xmlhelp = skcrsd.XmlHelper(self.crsdroot.getroottree())
         self.kvp_list = kvp_list
         self.ppps = ppps
         self.pvps = pvps
@@ -118,8 +116,8 @@ class CrsdConsistency(con.ConsistencyChecker):
         self.crsd_type = etree.QName(self.crsdroot).localname
         if self.version is None:
             raise ValueError("Unable to determine CRSD version from XML namespace")
-        urn = {v["version"]: k for k, v in crsd_io.VERSION_INFO.items()}[self.version]
-        self.schema = crsd_io.VERSION_INFO[urn]["schema"]
+        urn = {v["version"]: k for k, v in skcrsd.VERSION_INFO.items()}[self.version]
+        self.schema = skcrsd.VERSION_INFO[urn]["schema"]
 
         sequence_ids = [
             x.text
@@ -186,10 +184,10 @@ class CrsdConsistency(con.ConsistencyChecker):
                 ppps = None
             except etree.XMLSyntaxError:
                 infile.seek(0, os.SEEK_SET)
-                reader = crsd_io.CrsdReader(infile)
+                reader = skcrsd.CrsdReader(infile)
                 crsdroot = reader.crsd_xmltree
                 infile.seek(0, os.SEEK_SET)
-                _, kvp_list = crsd_io.read_file_header(infile)
+                _, kvp_list = skcrsd.read_file_header(infile)
                 pvps = {}
                 for channel_node in crsdroot.findall("./{*}Data/{*}Receive/{*}Channel"):
                     channel_id = channel_node.findtext("./{*}Identifier")
@@ -214,7 +212,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         this_ns = etree.QName(self.crsdroot).namespace
         if this_ns is None:
             return None
-        for schema_info in crsd_io.VERSION_INFO.values():
+        for schema_info in skcrsd.VERSION_INFO.values():
             schema_path = schema_info.get("schema")
             if schema_path is not None and this_ns == etree.parse(
                 schema_path
@@ -227,7 +225,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         """
         assert self.filename is not None
         assert self.kvp_list is not None
-        with open(self.filename, "rb") as fd, crsd_io.CrsdReader(fd) as reader:
+        with open(self.filename, "rb") as fd, skcrsd.CrsdReader(fd) as reader:
             return reader.read_support_array(sa_id)
 
     def _get_channel_pvps(self, channel_id):
@@ -642,7 +640,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             acy = ppp["TxACY"][ref_pulse_index]
             apc_pos = ppp["TxPos"][ref_pulse_index]
 
-            amph, ampv, phaseh, phasev = crsd_comp.compute_h_v_pol_parameters(
+            amph, ampv, phaseh, phasev = skcrsd.compute_h_v_pol_parameters(
                 apc_pos, acx, acy, ref_point, 1, ampx, ampy, phasex, phasey
             )
             with self.need("H component is correct"):
@@ -1041,7 +1039,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             acy = pvp["RcvACY"][ref_vec_index]
             apc_pos = pvp["RcvPos"][ref_vec_index]
 
-            amph, ampv, phaseh, phasev = crsd_comp.compute_h_v_pol_parameters(
+            amph, ampv, phaseh, phasev = skcrsd.compute_h_v_pol_parameters(
                 apc_pos, acx, acy, ref_point, -1, ampx, ampy, phasex, phasey
             )
             with self.need("H component is correct"):
@@ -1108,7 +1106,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             acy = ppp["TxACY"][pulse_index]
             apc_pos = ppp["TxPos"][pulse_index]
 
-            amph, ampv, phaseh, phasev = crsd_comp.compute_h_v_pol_parameters(
+            amph, ampv, phaseh, phasev = skcrsd.compute_h_v_pol_parameters(
                 apc_pos, acx, acy, ref_point, 1, ampx, ampy, phasex, phasey
             )
             with self.need("H component is correct"):
@@ -1666,7 +1664,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             element_format = self.crsdroot.findtext(
                 f'{{*}}SupportArray//*[{{*}}Identifier="{support_array_id}"]/{{*}}ElementFormat'
             )
-            dtype = crsd_io.binary_format_string_to_dtype(element_format)
+            dtype = skcrsd.binary_format_string_to_dtype(element_format)
             bytes_per_element = int(
                 self.crsdroot.findtext(
                     f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{support_array_id}"]/{{*}}BytesPerElement'
@@ -1711,7 +1709,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 self.crsdroot.findtext("{*}Data/{*}Transmit/{*}NumBytesPPP")
             )
             with self.need("NumBytesPPP matches PPP structure"):
-                assert num_bytes_ppp == crsd_io.get_ppp_dtype(self.crsdroot).itemsize
+                assert num_bytes_ppp == skcrsd.get_ppp_dtype(self.crsdroot).itemsize
 
     def check_ppp_min_offset(self):
         """Minimum offset of any PPP is zero"""
@@ -1774,7 +1772,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 self.crsdroot.findtext("{*}Data/{*}Receive/{*}NumBytesPVP")
             )
             with self.need("NumBytesPVP matches PVP structure"):
-                assert num_bytes_pvp == crsd_io.get_pvp_dtype(self.crsdroot).itemsize
+                assert num_bytes_pvp == skcrsd.get_pvp_dtype(self.crsdroot).itemsize
 
     def check_pvp_min_offset(self):
         """Minimum offset of any PVP is zero"""
@@ -2081,7 +2079,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             xml_offset = int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"])
             with open(self.filename, "rb") as fd:
                 header_and_pad = fd.read(xml_offset)
-            end_of_header = header_and_pad.find(crsd_io.CRSD_SECTION_TERMINATOR)
+            end_of_header = header_and_pad.find(skcrsd.CRSD_SECTION_TERMINATOR)
             with self.need("section terminator exists before XML block"):
                 assert end_of_header > 0
             with self.need("pad between header and XML is zeros"):
@@ -2104,7 +2102,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             with open(self.filename, "rb") as fd:
                 fd.seek(xml_offset + xml_size)
                 with self.need("section terminator at end of XML block"):
-                    assert fd.read(2) == crsd_io.CRSD_SECTION_TERMINATOR
+                    assert fd.read(2) == skcrsd.CRSD_SECTION_TERMINATOR
 
     def check_pad_before_binary_blocks(self):
         """Pad before binary blocks is null bytes"""
@@ -2231,7 +2229,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             signal_dtype_str = self.crsdroot.findtext(
                 "{*}Data/{*}Receive/{*}SignalArrayFormat"
             )
-            signal_dtype = crsd_io.binary_format_string_to_dtype(signal_dtype_str)
+            signal_dtype = skcrsd.binary_format_string_to_dtype(signal_dtype_str)
             num_bytes_samp = signal_dtype.itemsize
             for channel_node in self.crsdroot.findall("{*}Data/{*}Receive/{*}Channel"):
                 array_id = channel_node.findtext("{*}Identifier")
@@ -2341,8 +2339,8 @@ class CrsdConsistency(con.ConsistencyChecker):
             )
             pvp = self._get_channel_pvps(ref_chan)[ref_vec_index]
             ppp = self._get_sequence_ppps(seq_id)[ref_vec_pulse_index]
-            _, (ueast, unor, uup) = crsd_comp.compute_ref_point_parameters(ref_pt)
-            arp_geom = crsd_comp.arp_to_rpt_geometry_xmlnames(
+            _, (ueast, unor, uup) = skcrsd.compute_ref_point_parameters(ref_pt)
+            arp_geom = skcrsd.arp_to_rpt_geometry_xmlnames(
                 ppp["TxPos"],
                 ppp["TxVel"],
                 pvp["RcvPos"],
@@ -2452,8 +2450,8 @@ class CrsdConsistency(con.ConsistencyChecker):
                     float(xml_node.findtext("{*}Time"))
                 )
             ref_pt = self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}ECF")
-            _, (ueast, unor, uup) = crsd_comp.compute_ref_point_parameters(ref_pt)
-            tx_geom = crsd_comp.compute_apc_to_pt_geometry_parameters_xmlnames(
+            _, (ueast, unor, uup) = skcrsd.compute_ref_point_parameters(ref_pt)
+            tx_geom = skcrsd.compute_apc_to_pt_geometry_parameters_xmlnames(
                 ppp["TxPos"], ppp["TxVel"], ref_pt, ueast, unor, uup
             )
             self.verify_refgeom(xml_node, tx_geom)
@@ -2474,8 +2472,8 @@ class CrsdConsistency(con.ConsistencyChecker):
                     float(xml_node.findtext("{*}Time"))
                 )
             ref_pt = self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}ECF")
-            _, (ueast, unor, uup) = crsd_comp.compute_ref_point_parameters(ref_pt)
-            rcv_geom = crsd_comp.compute_apc_to_pt_geometry_parameters_xmlnames(
+            _, (ueast, unor, uup) = skcrsd.compute_ref_point_parameters(ref_pt)
+            rcv_geom = skcrsd.compute_apc_to_pt_geometry_parameters_xmlnames(
                 pvp["RcvPos"], pvp["RcvVel"], ref_pt, ueast, unor, uup
             )
             self.verify_refgeom(xml_node, rcv_geom)

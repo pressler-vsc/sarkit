@@ -1,8 +1,4 @@
 """
-========
-CRSD Computations
-========
-
 Select calculations from the CRSD D&I
 """
 

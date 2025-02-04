@@ -1,8 +1,4 @@
 """
-========
-CRSD I/O
-========
-
 Functions to read and write CRSD files.
 """
 
@@ -10,6 +6,7 @@ import dataclasses
 import importlib.resources
 import logging
 import os
+from typing import Final
 
 import lxml.etree
 import numpy as np
@@ -17,9 +14,9 @@ import numpy.typing as npt
 
 import sarkit.cphd as skcphd
 
-SCHEMA_DIR = importlib.resources.files("sarkit.standards.crsd.schemas")
-CRSD_SECTION_TERMINATOR = b"\f\n"
-DEFINED_HEADER_KEYS = {
+SCHEMA_DIR = importlib.resources.files("sarkit.crsd.schemas")
+CRSD_SECTION_TERMINATOR: Final[bytes] = b"\f\n"
+DEFINED_HEADER_KEYS: Final[set] = {
     "XML_BLOCK_SIZE",
     "XML_BLOCK_BYTE_OFFSET",
     "SUPPORT_BLOCK_SIZE",
@@ -34,7 +31,7 @@ DEFINED_HEADER_KEYS = {
     "RELEASE_INFO",
 }
 
-VERSION_INFO = {
+VERSION_INFO: Final[dict] = {
     "http://api.nsgreg.nga.mil/schema/crsd/1.0.0_NEXT": {
         # TBD
         "version": "1.0",

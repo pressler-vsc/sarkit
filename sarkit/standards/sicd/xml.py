@@ -77,54 +77,6 @@ class ImageCornersType(skxml.ListType):
             self.sub_type.set_elem(icp, coord)
 
 
-class MtxType(skxml.Type):
-    """
-    Transcoder for MTX XML parameter types containing a matrix.
-
-    Attributes
-    ----------
-    shape : 2-tuple of ints
-        Expected shape of the matrix.
-
-    """
-
-    def __init__(self, shape) -> None:
-        self.shape = shape
-
-    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
-        """Returns an array containing the matrix encoded in ``elem``."""
-        shape = tuple(int(elem.get(f"size{d}")) for d in (1, 2))
-        if self.shape != shape:
-            raise ValueError(f"elem {shape=} does not match expected {self.shape}")
-        val = np.zeros(shape)
-        for entry in elem:
-            val[*[int(entry.get(f"index{x}")) - 1 for x in (1, 2)]] = float(entry.text)
-        return val
-
-    def set_elem(self, elem: lxml.etree.Element, val: npt.ArrayLike) -> None:
-        """Set ``elem`` node using ``val``.
-
-        Parameters
-        ----------
-        elem : lxml.etree.Element
-            XML element to set
-        val : array_like
-            matrix of shape= ``shape``
-
-        """
-        mtx = np.asarray(val)
-        if self.shape != mtx.shape:
-            raise ValueError(f"{mtx.shape=} does not match expected {self.shape}")
-        elem[:] = []
-        elem_ns = lxml.etree.QName(elem).namespace
-        ns = f"{{{elem_ns}}}" if elem_ns else ""
-        for d, nd in zip((1, 2), mtx.shape, strict=True):
-            elem.set(f"size{d}", str(nd))
-        for indices, entry in np.ndenumerate(mtx):
-            attribs = {f"index{d + 1}": str(c + 1) for d, c in enumerate(indices)}
-            lxml.etree.SubElement(elem, ns + "Entry", attrib=attribs).text = str(entry)
-
-
 TRANSCODERS: dict[str, skxml.Type] = {
     "CollectionInfo/CollectorName": skxml.TxtType(),
     "CollectionInfo/IlluminatorName": skxml.TxtType(),
@@ -378,11 +330,13 @@ TRANSCODERS |= {
     "ErrorStatistics/Components/IonoError/IonoRgRgRateCC": skxml.DblType(),
     **_decorr_type("ErrorStatistics/Components/IonoError/IonoRangeVertDecorr"),
     "ErrorStatistics/BistaticComponents/PosVelErr/TxFrame": skxml.TxtType(),
-    "ErrorStatistics/BistaticComponents/PosVelErr/TxPVCov": MtxType((6, 6)),
+    "ErrorStatistics/BistaticComponents/PosVelErr/TxPVCov": skxml.MtxType((6, 6)),
     "ErrorStatistics/BistaticComponents/PosVelErr/RcvFrame": skxml.TxtType(),
-    "ErrorStatistics/BistaticComponents/PosVelErr/RcvPVCov": MtxType((6, 6)),
-    "ErrorStatistics/BistaticComponents/PosVelErr/TxRcvPVXCov": MtxType((6, 6)),
-    "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreq": MtxType((4, 4)),
+    "ErrorStatistics/BistaticComponents/PosVelErr/RcvPVCov": skxml.MtxType((6, 6)),
+    "ErrorStatistics/BistaticComponents/PosVelErr/TxRcvPVXCov": skxml.MtxType((6, 6)),
+    "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreq": skxml.MtxType(
+        (4, 4)
+    ),
     **_decorr_type(
         "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreqDecorr/TxTimeDecorr"
     ),
@@ -408,7 +362,7 @@ TRANSCODERS |= {
     "ErrorStatistics/AdjustableParameterOffsets/ARPVel": skxml.XyzType(),
     "ErrorStatistics/AdjustableParameterOffsets/TxTimeSCPCOA": skxml.DblType(),
     "ErrorStatistics/AdjustableParameterOffsets/RcvTimeSCPCOA": skxml.DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/APOError": MtxType((8, 8)),
+    "ErrorStatistics/AdjustableParameterOffsets/APOError": skxml.MtxType((8, 8)),
     "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Rg": skxml.DblType(),
     "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Az": skxml.DblType(),
     "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/RgAz": skxml.DblType(),
@@ -421,7 +375,9 @@ for p in ("Tx", "Rcv"):
         f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/ClockFreqSF": skxml.DblType(),
     }
 TRANSCODERS |= {
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/APOError": MtxType((16, 16)),
+    "ErrorStatistics/BistaticAdjustableParameterOffsets/APOError": skxml.MtxType(
+        (16, 16)
+    ),
     "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvg": skxml.DblType(),
     "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RdotAvg": skxml.DblType(),
     "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvgRdotAvg": skxml.DblType(),
@@ -491,7 +447,7 @@ TRANSCODERS.update(
     {
         f"{p}/Entry": skxml.DblType()
         for p, v in TRANSCODERS.items()
-        if isinstance(v, MtxType)
+        if isinstance(v, skxml.MtxType)
     }
 )
 

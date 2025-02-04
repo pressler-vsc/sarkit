@@ -96,3 +96,13 @@ def test_parameter():
     val = "TestVal"
     elem = skxml.ParameterType().make_elem("{faux-ns}Parameter", (name, val))
     assert skxml.ParameterType().parse_elem(elem) == (name, val)
+
+
+def test_mtx_type():
+    data = np.arange(np.prod(6)).reshape((2, 3))
+    type_obj = skxml.MtxType(data.shape)
+    elem = type_obj.make_elem("{faux-ns}MtxNode", data)
+    assert np.array_equal(type_obj.parse_elem(elem), data)
+
+    with pytest.raises(ValueError, match="shape.*does not match expected"):
+        type_obj.set_elem(elem, np.tile(data, 2))

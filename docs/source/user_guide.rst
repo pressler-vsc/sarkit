@@ -37,9 +37,9 @@ describe file contents and metadata prior to writing.
      - Plan
      - Writer
    * - ⛔ CRSD [Draft] ⛔
-     - :py:class:`~sarkit.standards.crsd.CrsdReader`
-     - :py:class:`~sarkit.standards.crsd.CrsdPlan`
-     - :py:class:`~sarkit.standards.crsd.CrsdWriter`
+     - :py:class:`~sarkit.crsd.CrsdReader`
+     - :py:class:`~sarkit.crsd.CrsdPlan`
+     - :py:class:`~sarkit.crsd.CrsdWriter`
    * - CPHD
      - :py:class:`~sarkit.cphd.CphdReader`
      - :py:class:`~sarkit.cphd.CphdPlan`

@@ -578,6 +578,54 @@ class ParameterType(Type):
         TxtType().set_elem(elem, val[1])
 
 
+class MtxType(Type):
+    """
+    Transcoder for MTX XML parameter types containing a matrix.
+
+    Attributes
+    ----------
+    shape : 2-tuple of ints
+        Expected shape of the matrix.
+
+    """
+
+    def __init__(self, shape) -> None:
+        self.shape = shape
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array containing the matrix encoded in ``elem``."""
+        shape = tuple(int(elem.get(f"size{d}")) for d in (1, 2))
+        if self.shape != shape:
+            raise ValueError(f"elem {shape=} does not match expected {self.shape}")
+        val = np.zeros(shape)
+        for entry in elem:
+            val[*[int(entry.get(f"index{x}")) - 1 for x in (1, 2)]] = float(entry.text)
+        return val
+
+    def set_elem(self, elem: lxml.etree.Element, val: npt.ArrayLike) -> None:
+        """Set ``elem`` node using ``val``.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : array_like
+            matrix of shape= ``shape``
+
+        """
+        mtx = np.asarray(val)
+        if self.shape != mtx.shape:
+            raise ValueError(f"{mtx.shape=} does not match expected {self.shape}")
+        elem[:] = []
+        elem_ns = lxml.etree.QName(elem).namespace
+        ns = f"{{{elem_ns}}}" if elem_ns else ""
+        for d, nd in zip((1, 2), mtx.shape, strict=True):
+            elem.set(f"size{d}", str(nd))
+        for indices, entry in np.ndenumerate(mtx):
+            attribs = {f"index{d + 1}": str(c + 1) for d, c in enumerate(indices)}
+            lxml.etree.SubElement(elem, ns + "Entry", attrib=attribs).text = str(entry)
+
+
 class XmlHelper:
     """
     Base Class for generic XmlHelpers, which provide methods for transcoding data

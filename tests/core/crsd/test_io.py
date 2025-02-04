@@ -3,8 +3,7 @@ import pathlib
 import lxml.etree
 import numpy as np
 
-import sarkit.standards.crsd.io as crsd_io
-import sarkit.standards.crsd.xml as crsd_xml
+import sarkit.crsd as skcrsd
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -12,9 +11,9 @@ DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 def test_roundtrip(tmp_path, caplog):
     basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.0.2024-12-30.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
-    schema = lxml.etree.XMLSchema(file=crsd_io.VERSION_INFO[basis_version]["schema"])
+    schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
-    xmlhelp = crsd_xml.XmlHelper(basis_etree)
+    xmlhelp = skcrsd.XmlHelper(basis_etree)
     channel_ids = [
         x.text for x in basis_etree.findall("./{*}Channel/{*}Parameters/{*}Identifier")
     ]
@@ -38,7 +37,7 @@ def test_roundtrip(tmp_path, caplog):
                 retval[name][~np.isfinite(retval[name])] = 0
         return retval.reshape(shape) if reshape else retval
 
-    signal_dtype = crsd_io.binary_format_string_to_dtype(
+    signal_dtype = skcrsd.binary_format_string_to_dtype(
         basis_etree.findtext("./{*}Data/{*}Receive/{*}SignalArrayFormat")
     )
     num_pulses = xmlhelp.load("./{*}Data/{*}Transmit/{*}TxSequence/{*}NumPulses")
@@ -46,11 +45,11 @@ def test_roundtrip(tmp_path, caplog):
     num_samples = xmlhelp.load("./{*}Data/{*}Receive/{*}Channel/{*}NumSamples")
     basis_signal = _random_array((num_vectors, num_samples), signal_dtype)
 
-    pvps = np.zeros(num_vectors, dtype=crsd_io.get_pvp_dtype(basis_etree))
+    pvps = np.zeros(num_vectors, dtype=skcrsd.get_pvp_dtype(basis_etree))
     for f, (dt, _) in pvps.dtype.fields.items():
         pvps[f] = _random_array(num_vectors, dtype=dt, reshape=False)
 
-    ppps = np.zeros(num_pulses, dtype=crsd_io.get_ppp_dtype(basis_etree))
+    ppps = np.zeros(num_pulses, dtype=skcrsd.get_ppp_dtype(basis_etree))
     for f, (dt, _) in ppps.dtype.fields.items():
         ppps[f] = _random_array(num_pulses, dtype=dt, reshape=False)
 
@@ -62,11 +61,11 @@ def test_roundtrip(tmp_path, caplog):
         format_str = basis_etree.findtext(
             f"./{{*}}SupportArray//{{*}}Identifier[.='{sa_id}']/../{{*}}ElementFormat"
         )
-        dt = crsd_io.binary_format_string_to_dtype(format_str)
+        dt = skcrsd.binary_format_string_to_dtype(format_str)
         support_arrays[sa_id] = _random_array((nrows, ncols), dt)
 
-    crsd_plan = crsd_io.CrsdPlan(
-        file_header=crsd_io.CrsdFileHeaderFields(
+    crsd_plan = skcrsd.CrsdPlan(
+        file_header=skcrsd.CrsdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
             additional_kvps={"k1": "v1", "k2": "v2"},
@@ -75,14 +74,14 @@ def test_roundtrip(tmp_path, caplog):
     )
     out_crsd = tmp_path / "out.crsd"
     with open(out_crsd, "wb") as f:
-        with crsd_io.CrsdWriter(f, crsd_plan) as writer:
+        with skcrsd.CrsdWriter(f, crsd_plan) as writer:
             writer.write_signal(channel_ids[0], basis_signal)
             writer.write_pvp(channel_ids[0], pvps)
             for k, v in support_arrays.items():
                 writer.write_support_array(k, v)
             writer.write_ppp(sequence_ids[0], ppps)
 
-    with open(out_crsd, "rb") as f, crsd_io.CrsdReader(f) as reader:
+    with open(out_crsd, "rb") as f, skcrsd.CrsdReader(f) as reader:
         read_sig, read_pvp = reader.read_channel(channel_ids[0])
         read_support_arrays = {}
         for sa_id in reader.crsd_xmltree.findall("./{*}SupportArray/*/{*}Identifier"):

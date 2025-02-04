@@ -9,8 +9,7 @@ import numpy as np
 import pytest
 from lxml import etree
 
-import sarkit.standards.crsd.io as crsd_io
-import sarkit.standards.crsd.xml as crsd_xml
+import sarkit.crsd as skcrsd
 import sarkit.wgs84
 from sarkit.verification.crsd_consistency import CrsdConsistency, main
 
@@ -69,12 +68,12 @@ def assert_not_failures(crsd_con, pattern):
 @pytest.fixture(scope="session")
 def example_crsdsar_file(tmp_path_factory):
     crsd_etree = etree.parse(good_crsd_xml_path)
-    xmlhelp = crsd_xml.XmlHelper(crsd_etree)
+    xmlhelp = skcrsd.XmlHelper(crsd_etree)
 
-    pvp_dtype = crsd_io.get_pvp_dtype(crsd_etree)
+    pvp_dtype = skcrsd.get_pvp_dtype(crsd_etree)
 
     assert crsd_etree.findtext("./{*}Data/{*}Receive/{*}SignalArrayFormat") == "CI2"
-    signal_dtype = crsd_io.binary_format_string_to_dtype(
+    signal_dtype = skcrsd.binary_format_string_to_dtype(
         crsd_etree.findtext("./{*}Data/{*}Receive/{*}SignalArrayFormat")
     )
     rng = np.random.default_rng(123456)
@@ -88,7 +87,7 @@ def example_crsdsar_file(tmp_path_factory):
     )
 
     pvps = np.zeros((num_vectors), dtype=pvp_dtype)
-    ppps = np.zeros(num_pulses, dtype=crsd_io.get_ppp_dtype(crsd_etree))
+    ppps = np.zeros(num_pulses, dtype=skcrsd.get_ppp_dtype(crsd_etree))
     tx_ref_time = xmlhelp.load("{*}ReferenceGeometry/{*}TxParameters/{*}Time")
     txtime = np.interp(
         np.arange(num_pulses),
@@ -168,14 +167,14 @@ def example_crsdsar_file(tmp_path_factory):
     )
     sequence_id = crsd_etree.findtext("{*}TxSequence/{*}Parameters/{*}Identifier")
     channel_id = crsd_etree.findtext("{*}Channel/{*}Parameters/{*}Identifier")
-    newplan = crsd_io.CrsdPlan(
-        file_header=crsd_io.CrsdFileHeaderFields(
+    newplan = skcrsd.CrsdPlan(
+        file_header=skcrsd.CrsdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
         ),
         crsd_xmltree=crsd_etree,
     )
-    with open(tmp_crsd, "wb") as f, crsd_io.CrsdWriter(f, newplan) as cw:
+    with open(tmp_crsd, "wb") as f, skcrsd.CrsdWriter(f, newplan) as cw:
         cw.write_ppp(sequence_id, ppps)
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
@@ -189,7 +188,7 @@ def _replace_error(crsd_etree, sensor_type):
     retval = copy.deepcopy(sar_error.find("{*}Monostatic"))
     retval.tag = f"{{{elem_ns}}}{sensor_type}Sensor"
     sar_error.addnext(retval)
-    helper = crsd_xml.XmlHelper(crsd_etree)
+    helper = skcrsd.XmlHelper(crsd_etree)
     ndx = {"Tx": 0, "Rcv": 1}[sensor_type]
     helper.set_elem(
         retval.find(".//{*}TimeFreqCov"),
@@ -206,7 +205,7 @@ def _replace_error(crsd_etree, sensor_type):
 
 @pytest.fixture(scope="session")
 def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
-    with open(example_crsdsar_file, "rb") as f, crsd_io.CrsdReader(f) as cr:
+    with open(example_crsdsar_file, "rb") as f, skcrsd.CrsdReader(f) as cr:
         crsd_etree = cr.crsd_xmltree
         sequence_id = crsd_etree.findtext("{*}TxSequence/{*}Parameters/{*}Identifier")
         ppps = cr.read_ppps(sequence_id)
@@ -231,14 +230,14 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
         tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
     )
 
-    new_plan = crsd_io.CrsdPlan(
-        file_header=crsd_io.CrsdFileHeaderFields(
+    new_plan = skcrsd.CrsdPlan(
+        file_header=skcrsd.CrsdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
         ),
         crsd_xmltree=crsd_etree,
     )
-    with open(tmp_crsd, "wb") as f, crsd_io.CrsdWriter(f, new_plan) as cw:
+    with open(tmp_crsd, "wb") as f, skcrsd.CrsdWriter(f, new_plan) as cw:
         cw.write_ppp(sequence_id, ppps)
     assert not main([str(tmp_crsd), "-vvv"])
     yield tmp_crsd
@@ -246,7 +245,7 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
 
 @pytest.fixture(scope="session")
 def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
-    with open(example_crsdsar_file, "rb") as f, crsd_io.CrsdReader(f) as cr:
+    with open(example_crsdsar_file, "rb") as f, skcrsd.CrsdReader(f) as cr:
         crsd_etree = cr.crsd_xmltree
         channel_id = crsd_etree.findtext("{*}Channel/{*}Parameters/{*}Identifier")
         pvps = cr.read_pvps(channel_id)
@@ -291,7 +290,7 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
         int(crsd_etree.findtext("{*}Data/{*}Receive/{*}NumBytesPVP")) - 8
     )
     _replace_error(crsd_etree, "Rcv")
-    new_pvp_dtype = crsd_io.get_pvp_dtype(crsd_etree)
+    new_pvp_dtype = skcrsd.get_pvp_dtype(crsd_etree)
     new_pvps = np.zeros(pvps.shape, new_pvp_dtype)
     for field in new_pvp_dtype.fields:
         new_pvps[field] = pvps[field]
@@ -299,14 +298,14 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
         tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
     )
 
-    newplan = crsd_io.CrsdPlan(
-        file_header=crsd_io.CrsdFileHeaderFields(
+    newplan = skcrsd.CrsdPlan(
+        file_header=skcrsd.CrsdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
         ),
         crsd_xmltree=crsd_etree,
     )
-    with open(tmp_crsd, "wb") as f, crsd_io.CrsdWriter(f, newplan) as cw:
+    with open(tmp_crsd, "wb") as f, skcrsd.CrsdWriter(f, newplan) as cw:
         cw.write_pvp(channel_id, new_pvps)
         cw.write_signal(channel_id, signal)
     assert not main([str(tmp_crsd), "-vvv"])
@@ -944,14 +943,14 @@ def ant_patched_crsd_con(crsd_con, monkeypatch):
                 retval[num_rows // 2, num_cols // 2] = data
             else:
                 data_filler(retval)
-            return crsd_io.mask_support_array(
+            return skcrsd.mask_support_array(
                 retval,
                 crsd_con.crsdroot.findtext(
                     f"{{*}}SupportArray/{{*}}AntGainPhase[{{*}}Identifier='{identifier}']/{{*}}NODATA"
                 ),
             )
 
-        monkeypatch.setattr(crsd_io.CrsdReader, "read_support_array", dummy)
+        monkeypatch.setattr(skcrsd.CrsdReader, "read_support_array", dummy)
         return crsd_con, data
 
     return func

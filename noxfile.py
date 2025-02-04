@@ -104,3 +104,6 @@ def data(session):
     session.run(
         "python", "data/syntax_only/cphd/make_syntax_only_cphd_xmls.py", "--check"
     )
+    session.run(
+        "python", "data/syntax_only/crsd/make_syntax_only_crsd_xmls.py", "--check"
+    )

@@ -56,6 +56,7 @@ class _PixelTypeDict(TypedDict):
     IREP: str
     IREPBANDn: list[str]
     IMODE: str
+    NBPP: int
     dtype: np.dtype
 
 
@@ -64,30 +65,35 @@ PIXEL_TYPES: dict[str, _PixelTypeDict] = {
         "IREP": "MONO",
         "IREPBANDn": ["M"],
         "IMODE": "B",
+        "NBPP": 8,
         "dtype": np.dtype(np.uint8),
     },
     "MONO8LU": {
         "IREP": "MONO",
         "IREPBANDn": ["LU"],
         "IMODE": "B",
+        "NBPP": 8,
         "dtype": np.dtype(np.uint8),
     },
     "MONO16I": {
         "IREP": "MONO",
         "IREPBANDn": ["M"],
         "IMODE": "B",
+        "NBPP": 16,
         "dtype": np.dtype(np.uint16),
     },
     "RGB8LU": {
         "IREP": "RGB/LUT",
         "IREPBANDn": ["LU"],
         "IMODE": "B",
+        "NBPP": 8,
         "dtype": np.dtype(np.uint8),
     },
     "RGB24I": {
         "IREP": "RGB",
         "IREPBANDn": ["R", "G", "B"],
         "IMODE": "P",
+        "NBPP": 8,
         "dtype": np.dtype([("R", np.uint8), ("G", np.uint8), ("B", np.uint8)]),
     },
 }
@@ -565,7 +571,32 @@ class SiddNitfReader:
         ndarray
             SIDD image array
         """
-        return self._nitf_reader.read(index=image_number)
+        self._file.seek(self._initial_offset)
+        xml_helper = sarkit.standards.sidd.xml.XmlHelper(
+            self.images[image_number].sidd_xmltree
+        )
+        shape = xml_helper.load("{*}Measurement/{*}PixelFootprint")
+        dtype = PIXEL_TYPES[xml_helper.load("{*}Display/{*}PixelType")][
+            "dtype"
+        ].newbyteorder(">")
+
+        image_pixels = np.empty(shape, dtype)
+        imseg_sizes = self._nitf_reader.nitf_details.img_segment_sizes[
+            [self._nitf_reader.image_segment_collections[image_number]]
+        ].flatten()
+        imseg_offsets = self._nitf_reader.nitf_details.img_segment_offsets[
+            [self._nitf_reader.image_segment_collections[image_number]]
+        ].flatten()
+        splits = np.cumsum(imseg_sizes // (shape[-1] * dtype.itemsize))[:-1]
+        for split, sz, offset in zip(
+            np.array_split(image_pixels, splits, axis=0), imseg_sizes, imseg_offsets
+        ):
+            this_os = offset - self._file.tell()
+            split[...] = np.fromfile(
+                self._file, dtype, count=sz // dtype.itemsize, offset=this_os
+            ).reshape(split.shape)
+
+        return image_pixels
 
     @property
     def product_support_xmls(self) -> list[SiddNitfPlanProductSupportXmlInfo]:
@@ -702,7 +733,7 @@ class SiddNitfWriter:
                 IMODE=pixel_info["IMODE"],
                 NPPBH=0 if imhdr.ncols > 8192 else imhdr.ncols,
                 NPPBV=0 if imhdr.nrows > 8192 else imhdr.nrows,
-                NBPP=pixel_info["dtype"].itemsize * 8,
+                NBPP=pixel_info["NBPP"],
                 NBPC=1,
                 NBPR=1,
                 IDLVL=imhdr.idlvl,
@@ -809,7 +840,12 @@ class SiddNitfWriter:
             writing_details=writing_details,
         )
 
-    def write_image(self, image_number: int, array: npt.NDArray):
+    def write_image(
+        self,
+        image_number: int,
+        array: npt.NDArray,
+        start: None | tuple[int, int] = None,
+    ):
         """Write product pixel data to a NITF file
 
         Parameters
@@ -818,8 +854,57 @@ class SiddNitfWriter:
             index of SIDD Product image to write
         array : ndarray
             2D array of pixels
+        start : tuple of ints, optional
+            The start index (first_row, first_col) of `array` in the SIDD image.
+            If not given, `array` must be the full SIDD image.
         """
-        self._nitf_writer.write(array, index=image_number)
+
+        xml_helper = sarkit.standards.sidd.xml.XmlHelper(
+            self._nitf_plan.images[image_number].sidd_xmltree
+        )
+        pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
+        if PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
+            raise ValueError(
+                f"Array dtype ({array.dtype}) does not match expected dtype ({PIXEL_TYPES[pixel_type]['dtype']}) "
+                f"for PixelType={pixel_type}"
+            )
+
+        shape = xml_helper.load("{*}Measurement/{*}PixelFootprint")
+
+        if start is None:
+            # require array to be full image
+            if np.any(array.shape != shape):
+                raise ValueError(
+                    f"Array shape {array.shape} does not match SIDD shape {shape}."
+                    "If writing only a portion of the image, use the 'start' argument"
+                )
+            start = (0, 0)
+        startarr = np.asarray(start)
+
+        if not np.issubdtype(startarr.dtype, np.integer):
+            raise ValueError(f"Start index must be integers {startarr=}")
+
+        if np.any(startarr < 0):
+            raise ValueError(f"Start index must be non-negative {startarr=}")
+
+        stop = startarr + array.shape
+        if np.any(stop > shape):
+            raise ValueError(
+                f"array goes beyond end of image. start + array.shape = {stop} image shape={shape}"
+            )
+
+        if pixel_type == "RGB24I":
+            assert array.dtype.names is not None  # placate mypy
+            raw_dtype = array.dtype[array.dtype.names[0]]
+            raw_array = array.view((raw_dtype, 3))
+        else:
+            raw_dtype = PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
+            raw_array = array
+        raw_array = raw_array.astype(raw_dtype.newbyteorder(">"), copy=False)
+        self._nitf_writer.write_raw(
+            raw_array, index=image_number, start_indices=tuple(startarr)
+        )
+
         self._images_written.add(image_number)
 
     def write_legend(self, legend_number, array):

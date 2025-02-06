@@ -35,9 +35,21 @@ def _random_image(sidd_xmltree):
 def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     out_sidd = tmp_path / "out.sidd"
     sicd_xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
-    basis_etree = lxml.etree.parse(sidd_xml)
-    basis_array0 = _random_image(basis_etree)
-    basis_array1 = 255 - basis_array0
+    basis_etree0 = lxml.etree.parse(sidd_xml)
+    basis_array0 = _random_image(basis_etree0)
+
+    basis_etree1 = lxml.etree.parse(sidd_xml)
+    basis_etree1.find("./{*}Display/{*}PixelType").text = "MONO16I"
+    basis_array1 = 2**16 - 1 - basis_array0.astype(np.uint16)
+
+    basis_etree2 = lxml.etree.parse(sidd_xml)
+    basis_etree2.find("./{*}Display/{*}PixelType").text = "RGB24I"
+    basis_array2 = np.empty(basis_array0.shape, siddio.PIXEL_TYPES["RGB24I"]["dtype"])
+    basis_array2["R"] = basis_array0
+    basis_array2["G"] = basis_array0 + 1
+    basis_array2["B"] = basis_array0 - 1
+
+    # TODO MONO8LU and RGB8LU
 
     if force_segmentation:
         monkeypatch.setattr(
@@ -72,7 +84,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         }
     )
     nitf_plan.add_image(
-        basis_etree,
+        basis_etree0,
         is_fields={
             "tgtid": "tgtid",
             "iid2": "iid2",
@@ -125,7 +137,23 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     )
 
     nitf_plan.add_image(
-        basis_etree,
+        basis_etree1,
+        is_fields={
+            "tgtid": "tgtid",
+            "iid2": "iid2",
+            "security": {
+                "clas": "U",
+            },
+        },
+        des_fields={
+            "security": {
+                "clas": "U",
+            },
+        },
+    )
+
+    nitf_plan.add_image(
+        basis_etree2,
         is_fields={
             "tgtid": "tgtid",
             "iid2": "iid2",
@@ -165,10 +193,28 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 
     with out_sidd.open("wb") as file:
         with siddio.SiddNitfWriter(file, nitf_plan) as writer:
-            writer.write_image(0, basis_array0)
-            writer.write_image(1, basis_array1)
+            half_rows, half_cols = np.asarray(basis_array0.shape) // 2
+            writer.write_image(0, basis_array0[:half_rows, :half_cols], start=(0, 0))
+            writer.write_image(
+                0, basis_array0[:half_rows, half_cols:], start=(0, half_cols)
+            )
+            writer.write_image(
+                0, basis_array0[half_rows:, half_cols:], start=(half_rows, half_cols)
+            )
+            writer.write_image(
+                0, basis_array0[half_rows:, :half_cols], start=(half_rows, 0)
+            )
 
-    num_expected_imseg = 2 * int(np.ceil(np.prod(basis_array0.shape) / siddio.LI_MAX))
+            writer.write_image(1, basis_array1)
+            writer.write_image(2, basis_array2)
+
+    def _num_imseg(array):
+        rows_per_seg = int(np.floor(siddio.LI_MAX / array[0].nbytes))
+        return int(np.ceil(array.shape[0] / rows_per_seg))
+
+    num_expected_imseg = (
+        _num_imseg(basis_array0) + _num_imseg(basis_array1) + _num_imseg(basis_array2)
+    )
     if force_segmentation:
         assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
     with out_sidd.open("rb") as file:
@@ -177,11 +223,12 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 
     with out_sidd.open("rb") as file:
         with siddio.SiddNitfReader(file) as reader:
-            assert len(reader.images) == 2
+            assert len(reader.images) == 3
             assert len(reader.sicd_xmls) == 2
             assert len(reader.product_support_xmls) == 2
             read_array0 = reader.read_image(0)
             read_array1 = reader.read_image(1)
+            read_array2 = reader.read_image(2)
             read_xmltree = reader.images[0].sidd_xmltree
             read_sicd_xmltree = reader.sicd_xmls[-1].sicd_xmltree
             read_ps_xmltree0 = reader.product_support_xmls[0].product_support_xmltree
@@ -190,7 +237,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     def _normalized(xmltree):
         return lxml.etree.tostring(xmltree, method="c14n")
 
-    assert _normalized(read_xmltree) == _normalized(basis_etree)
+    assert _normalized(read_xmltree) == _normalized(basis_etree0)
     assert _normalized(read_ps_xmltree0) == _normalized(ps_xmltree0)
     assert _normalized(read_ps_xmltree1) == _normalized(ps_xmltree1)
     assert _normalized(read_sicd_xmltree) == _normalized(sicd_xmltree)
@@ -200,6 +247,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     assert nitf_plan.images[0].des_fields == reader.images[0].des_fields
     assert np.array_equal(basis_array0, read_array0)
     assert np.array_equal(basis_array1, read_array1)
+    assert np.array_equal(basis_array2, read_array2)
 
 
 def test_segmentation():

@@ -2,7 +2,7 @@
 name = "sarkit"
 description = "Suite of SAR-related tools in Python."
 authors = [
-    {name = "National Geospatial-Intelligence Agency"},
+    {name = "Valkyrie Systems Corporation", email = "info@govsco.com"},
 ]
 requires-python = ">=3.11"
 readme = "README.md"

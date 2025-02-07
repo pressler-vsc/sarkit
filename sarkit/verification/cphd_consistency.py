@@ -33,7 +33,7 @@ from lxml import etree
 import sarkit.constants as spc
 import sarkit.cphd as skcphd
 import sarkit.verification.consistency as con
-from sarkit.standards import geocoords
+import sarkit.wgs84
 
 logger = logging.getLogger(__name__)
 
@@ -1650,7 +1650,7 @@ def calc_refgeom_parameters(xml, xmlhelp, pvps):
     )
 
     # (1) See also Section 6.2
-    srp_llh = geocoords.ecf_to_geodetic(srp)
+    srp_llh = sarkit.wgs84.cartesian_to_geodetic(srp)
     srp_lat, srp_lon = np.deg2rad(srp_llh[:2])
 
     ref_surface = xml.find("./{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar")

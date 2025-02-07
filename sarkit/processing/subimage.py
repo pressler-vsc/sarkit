@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 
 import sarkit.standards.sicd.xml as ss_xml
-from sarkit.standards import geocoords
+import sarkit.wgs84
 
 
 def subimage(
@@ -82,7 +82,7 @@ def subimage(
     varp_scp_coa = xml_helper.load("./{*}SCPCOA/{*}ARPVel")
     look = {"L": 1, "R": -1}[xml_helper.load("./{*}SCPCOA/{*}SideOfTrack")]
 
-    ugpn = geocoords.up(scp_llh)
+    ugpn = sarkit.wgs84.up(scp_llh)
 
     spn = look * np.cross(varp_scp_coa, scp - arp_scp_coa)
     uspn = spn / np.linalg.norm(spn)
@@ -113,6 +113,6 @@ def subimage(
     delta_ipp = row_coord[..., np.newaxis] * urow + col_coord[..., np.newaxis] * ucol
     dist_proj = 1 / sf_proj * np.inner(delta_ipp, ugpn)
     gpp = scp + delta_ipp - dist_proj[..., np.newaxis] * uspn
-    gpp_llh = geocoords.ecf_to_geodetic(gpp)
+    gpp_llh = sarkit.wgs84.cartesian_to_geodetic(gpp)
     xml_helper.set("./{*}GeoData/{*}ImageCorners", gpp_llh[:, :-1])
     return array_out, sicd_xmltree_out

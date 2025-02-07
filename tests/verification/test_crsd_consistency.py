@@ -11,7 +11,7 @@ from lxml import etree
 
 import sarkit.standards.crsd.io as crsd_io
 import sarkit.standards.crsd.xml as crsd_xml
-from sarkit.standards import geocoords
+import sarkit.wgs84
 from sarkit.verification.crsd_consistency import CrsdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
@@ -1482,7 +1482,7 @@ def test_scene_iarp_not_near_earth(crsd_con):
     crsd_con.crsdroot.find("{*}SceneCoordinates/{*}IARP/{*}LLH/{*}HAE").text = "5e5"
     llh = crsd_con.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}LLH")
     crsd_con.xmlhelp.set(
-        "{*}SceneCoordinates/{*}IARP/{*}ECF", geocoords.geodetic_to_ecf(llh)
+        "{*}SceneCoordinates/{*}IARP/{*}ECF", sarkit.wgs84.geodetic_to_cartesian(llh)
     )
     crsd_con.check("check_scene_iarp", allow_prefix=True)
     assert_failures(crsd_con, "near Earth's surface")
@@ -1535,10 +1535,10 @@ def _replace_plane_with_hae(crsd_con):
     iarp_ecf = crsd_con.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}ECF")
     iarp_llh = crsd_con.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}LLH")
     hae_iax = np.deg2rad(
-        (geocoords.ecf_to_geodetic(iarp_ecf + plane_iax) - iarp_llh)[:2]
+        (sarkit.wgs84.cartesian_to_geodetic(iarp_ecf + plane_iax) - iarp_llh)[:2]
     )
     hae_iay = np.deg2rad(
-        (geocoords.ecf_to_geodetic(iarp_ecf + plane_iay) - iarp_llh)[:2]
+        (sarkit.wgs84.cartesian_to_geodetic(iarp_ecf + plane_iay) - iarp_llh)[:2]
     )
     elem_ns = etree.QName(crsd_con.crsdroot).namespace
     hae_node = etree.Element(f"{{{elem_ns}}}HAE")
@@ -2379,12 +2379,12 @@ def test_assert_iac_matches_ecf_hae(crsd_con):
     )
     pt_llh = iarp_llh.copy()
     pt_llh[:2] += 10 * iaxll
-    pt_ecf = geocoords.geodetic_to_ecf(pt_llh)
+    pt_ecf = sarkit.wgs84.geodetic_to_cartesian(pt_llh)
     crsd_con.assert_iac_matches_ecf([10, 0], pt_ecf)
 
     pt_llh2 = iarp_llh.copy()
     pt_llh2[:2] += 10 * iayll
-    pt_ecf2 = geocoords.geodetic_to_ecf(pt_llh2)
+    pt_ecf2 = sarkit.wgs84.geodetic_to_cartesian(pt_llh2)
     crsd_con.assert_iac_matches_ecf([0, 10], pt_ecf2)
     with pytest.raises(AssertionError):
         crsd_con.assert_iac_matches_ecf([10, 0], iarp_ecf)

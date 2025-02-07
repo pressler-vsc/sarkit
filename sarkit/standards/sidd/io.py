@@ -26,7 +26,6 @@ import sarkit._nitf.nitf_elements.image
 import sarkit._nitf.nitf_elements.nitf_head
 import sarkit._nitf.nitf_elements.security
 import sarkit._nitf.utils
-import sarkit.standards.geocoords
 import sarkit.standards.sicd.io as sicdio
 import sarkit.standards.sidd.xml
 

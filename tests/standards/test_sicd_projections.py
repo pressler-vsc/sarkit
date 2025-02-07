@@ -4,9 +4,9 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit.standards.geocoords
 import sarkit.standards.sicd
 import sarkit.standards.sicd.xml as ss_xml
+import sarkit.wgs84
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -123,7 +123,7 @@ def test_image_to_constant_hae_surface(sicd_xml):
     assert delta_hae_max.shape == im_coords.shape[:-1]
 
     # Check that points are on the surface
-    surf_coords_llh = sarkit.standards.geocoords.ecf_to_geodetic(surf_coords)
+    surf_coords_llh = sarkit.wgs84.cartesian_to_geodetic(surf_coords)
     assert surf_coords_llh == pytest.approx(scp_hae, abs=1e-3)
     assert success
 

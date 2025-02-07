@@ -11,7 +11,6 @@ Interacting with SAR data in standard formats.
    crsd
    crsd.xml
    crsd.io
-   geocoords
    sicd
    sicd.xml
    sicd.io

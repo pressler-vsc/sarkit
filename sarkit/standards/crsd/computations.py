@@ -9,12 +9,12 @@ Select calculations from the CRSD D&I
 import numpy as np
 import numpy.typing as npt
 
-import sarkit.standards.geocoords
+import sarkit.wgs84
 
 
 def compute_ref_point_parameters(rpt: npt.ArrayLike):
     """Computes the reference point parameters as in CRSD D&I 8.2"""
-    rpt_llh = sarkit.standards.geocoords.ecf_to_geodetic(rpt)
+    rpt_llh = sarkit.wgs84.cartesian_to_geodetic(rpt)
     rpt_lat = rpt_llh[..., 0]
     rpt_lon = rpt_llh[..., 1]
     ueast = np.stack(

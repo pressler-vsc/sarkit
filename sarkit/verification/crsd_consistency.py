@@ -28,7 +28,7 @@ import sarkit.standards.crsd.computations as crsd_comp
 import sarkit.standards.crsd.io as crsd_io
 import sarkit.standards.crsd.xml as sc_xml
 import sarkit.verification.consistency as con
-from sarkit.standards import geocoords
+import sarkit.wgs84
 
 logger = logging.getLogger(__name__)
 
@@ -714,7 +714,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 )
             with self.want("TxPos is near Earth"):
                 assert np.linalg.norm(ppp["TxPos"], axis=-1) == con.Approx(
-                    geocoords._A, rtol=0.5
+                    sarkit.wgs84.SEMI_MAJOR_AXIS, rtol=0.5
                 )
 
     @per_sequence
@@ -1283,7 +1283,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 )
             with self.want("RcvPos is near Earth"):
                 assert np.linalg.norm(pvp["RcvPos"], axis=-1) == con.Approx(
-                    geocoords._A, rtol=0.5
+                    sarkit.wgs84.SEMI_MAJOR_AXIS, rtol=0.5
                 )
 
     @per_channel
@@ -1440,7 +1440,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         """IARP is consistent and near Earth's surface"""
         iarp_ecf = self.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}ECF")
         iarp_llh = self.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}LLH")
-        iarp_llh_ecf = geocoords.geodetic_to_ecf(iarp_llh)
+        iarp_llh_ecf = sarkit.wgs84.geodetic_to_cartesian(iarp_llh)
         with self.need("IARP ECF matches LLH"):
             assert np.linalg.norm(iarp_ecf - iarp_llh_ecf) < 1
         with self.want("IARP is near Earth's surface"):
@@ -1486,10 +1486,10 @@ class CrsdConsistency(con.ConsistencyChecker):
             iarp_llh = self.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}LLH")
             uiax_pt = iarp_llh.copy()
             uiax_pt[:2] += np.rad2deg(uiax)
-            uiax_ecf = geocoords.geodetic_to_ecf(uiax_pt) - iarp_ecf
+            uiax_ecf = sarkit.wgs84.geodetic_to_cartesian(uiax_pt) - iarp_ecf
             uiay_pt = iarp_llh.copy()
             uiay_pt[:2] += np.rad2deg(uiay)
-            uiay_ecf = geocoords.geodetic_to_ecf(uiay_pt) - iarp_ecf
+            uiay_ecf = sarkit.wgs84.geodetic_to_cartesian(uiay_pt) - iarp_ecf
 
             # looser tols on HAE unit vectors because the transformation depends on scale
             with self.need("uIAXLL is unit length in ECF"):
@@ -1509,7 +1509,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         # lay out the XY corners in clockwise order
         xy_lim_corners = [x1y1, [x1y1[0], x2y2[1]], x2y2, [x2y2[0], x1y1[1]]]
         xy_lim_ecf = [self.iac_to_ecf(xy) for xy in xy_lim_corners]
-        xy_lim_llh = geocoords.ecf_to_geodetic(xy_lim_ecf)
+        xy_lim_llh = sarkit.wgs84.cartesian_to_geodetic(xy_lim_ecf)
         # find which IACP most closely corresponds to the first XY corner
         num_roll = np.argmin(np.linalg.norm(xy_lim_llh[0, :2] - iacps))
         # make first xy_lim_llh correspond with first IACP
@@ -2508,7 +2508,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             )
             llh_coord = iarp_llh.copy()
             llh_coord[:2] += uiax_ll * iac_coord[0] + uiay_ll * iac_coord[1]
-            return geocoords.geodetic_to_ecf(llh_coord)
+            return sarkit.wgs84.geodetic_to_cartesian(llh_coord)
 
     def verify_refgeom(self, xml_node, geom):
         """Verifies that the XML node matches the calculated values in geom"""

@@ -6,8 +6,8 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit.standards.geocoords
 import sarkit.standards.sicd.projection as ss_proj
+import sarkit.wgs84
 import sarkit.xmlhelp
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
@@ -239,7 +239,7 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
         hae0,
     )
     assert success
-    spp_llh = sarkit.standards.geocoords.ecf_to_geodetic(spp_tgt)
+    spp_llh = sarkit.wgs84.cartesian_to_geodetic(spp_tgt)
     assert spp_llh[..., 2] == pytest.approx(hae0, abs=1e-6)
 
     bad_index = (1, 2, 3)

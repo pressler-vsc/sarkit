@@ -5,7 +5,7 @@ import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
 import sarkit.constants
-import sarkit.standards.geocoords
+import sarkit.wgs84
 
 from . import params
 
@@ -1260,7 +1260,7 @@ def r_rdot_to_constant_hae_surface(
             )
 
         # Convert from ECEF to WGS 84 geodetic
-        gpp_llh = sarkit.standards.geocoords.ecf_to_geodetic(gpp[above_threshold, :])
+        gpp_llh = sarkit.wgs84.cartesian_to_geodetic(gpp[above_threshold, :])
 
         # Compute unit vector in increasing height direction and height difference at GPP.
         u_up[above_threshold, :] = _calc_up(gpp_llh[..., 0], gpp_llh[..., 1])
@@ -1302,13 +1302,13 @@ def r_rdot_to_constant_hae_surface(
     slp = gpp - (delta_hae[..., np.newaxis] * u_spn) / sf
 
     # Convert SLP from ECEF to geodetic
-    slp_llh = sarkit.standards.geocoords.ecf_to_geodetic(slp)
+    slp_llh = sarkit.wgs84.cartesian_to_geodetic(slp)
 
     # Assign surface point spp by adjusting HAE to be on HAE0 surface.
     spp_llh = slp_llh.copy()
     spp_llh[..., 2] = hae0
 
     # Convert SPP from geodetic to ECEF
-    spp_tgt = sarkit.standards.geocoords.geodetic_to_ecf(spp_llh)
+    spp_tgt = sarkit.wgs84.geodetic_to_cartesian(spp_llh)
 
     return spp_tgt, delta_hae, success

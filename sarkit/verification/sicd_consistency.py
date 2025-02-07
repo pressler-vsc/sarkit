@@ -33,8 +33,8 @@ import sarkit.standards.sicd.io as ss_io
 import sarkit.standards.sicd.projection as ss_proj
 import sarkit.standards.sicd.xml as ss_xml
 import sarkit.verification.consistency as con
+import sarkit.wgs84
 from sarkit._nitf.nitf import NITFDetails
-from sarkit.standards import geocoords
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def _uvecs_in_ground(xmlhelp):
     col_uvect = xmlhelp.load("./{*}Grid/{*}Col/{*}UVectECF")
 
     scp_llh = xmlhelp.load("./{*}GeoData/{*}SCP/{*}LLH")
-    u_up = geocoords.up(scp_llh)
+    u_up = sarkit.wgs84.up(scp_llh)
     scale_factor = np.dot(spn, u_up)
 
     row_in_ground = row_uvect - np.dot(row_uvect, u_up) * spn / scale_factor
@@ -448,7 +448,7 @@ class SicdConsistency(con.ConsistencyChecker):
         num_rows = self.xmlhelp.load("./{*}ImageData/{*}NumRows")
 
         icp_nodes = self.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
-        icp_ecef = geocoords.geodetic_to_ecf(
+        icp_ecef = sarkit.wgs84.geodetic_to_cartesian(
             np.concatenate((icp_nodes, np.zeros((4, 1))), axis=1)
         )
 
@@ -465,7 +465,7 @@ class SicdConsistency(con.ConsistencyChecker):
         iscp_ecef[num_is - 1][2] = icp_ecef[2]
         iscp_ecef[num_is - 1][3] = icp_ecef[3]
 
-        iscp_ll = geocoords.ecf_to_geodetic(iscp_ecef)[:, :, :2]  # Lat, Lon
+        iscp_ll = sarkit.wgs84.cartesian_to_geodetic(iscp_ecef)[:, :, :2]  # Lat, Lon
 
         def _dms_to_dd(dms_str):
             direction = dms_str[-1]
@@ -802,7 +802,7 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_scp_ecf_llh(self) -> None:
         """SCP ECF and LLH positions match."""
-        computed_ecf = geocoords.geodetic_to_ecf(
+        computed_ecf = sarkit.wgs84.geodetic_to_cartesian(
             self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}LLH")
         )
         scp_ecf = self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}ECF")
@@ -827,7 +827,7 @@ class SicdConsistency(con.ConsistencyChecker):
         urow_gnd, ucol_gnd = _uvecs_in_ground(self.xmlhelp)
 
         for (lat, lon), icp_coord in zip(icp_nodes, icp_coords):
-            icp_converted_ecf = geocoords.geodetic_to_ecf(
+            icp_converted_ecf = sarkit.wgs84.geodetic_to_cartesian(
                 [
                     lat,
                     lon,
@@ -876,7 +876,7 @@ class SicdConsistency(con.ConsistencyChecker):
     def _away_from_earth(self, vector):
         """Helper to check if a vector points away from earth."""
         scp_llh = self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}LLH")
-        local_up = geocoords.up(scp_llh)
+        local_up = sarkit.wgs84.up(scp_llh)
 
         with self.need("Vector points away from earth"):
             assert np.dot(local_up, vector) > con.Approx(0)
@@ -1150,9 +1150,9 @@ class SicdConsistency(con.ConsistencyChecker):
                 assert np.array_equal(np.sort(indices), np.arange(1, 5))
 
             acps_llh = self.xmlhelp.load_elem(area.find("./{*}Corner"))
-            acps_ecf = geocoords.geodetic_to_ecf(acps_llh)
-            u_east = geocoords.east(acps_llh[1])
-            u_north = geocoords.north(acps_llh[1])
+            acps_ecf = sarkit.wgs84.geodetic_to_cartesian(acps_llh)
+            u_east = sarkit.wgs84.east(acps_llh[1])
+            u_north = sarkit.wgs84.north(acps_llh[1])
 
             vertices = [
                 (np.dot(v, u_east), np.dot(v, u_north))

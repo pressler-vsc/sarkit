@@ -14,6 +14,7 @@ API reference for :mod:`sarkit`.
 * `sarkit.processing`
 * `sarkit.standards`
 * `sarkit.verification`
+* `sarkit.wgs84`
 * `sarkit.xmlhelp`
 
 .. toctree::
@@ -24,4 +25,5 @@ API reference for :mod:`sarkit`.
     sarkit.processing <processing>
     sarkit.standards <standards>
     sarkit.verification <verification>
+    sarkit.wgs84 <wgs84>
     sarkit.xmlhelp <xmlhelp>

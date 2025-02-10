@@ -9,8 +9,8 @@ from sarkit import _version
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "sarkit"
-copyright = "2024, National Geospatial-Intelligence Agency"
-author = "National Geospatial-Intelligence Agency"
+copyright = "2024-%Y, Valkyrie Systems Corporation"
+author = "Valkyrie Systems Corporation"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -42,7 +42,6 @@ suppress_warnings = [
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_logo = "_static/sarkit_logo.png"
-html_favicon = "_static/nga_favicon.ico"
 
 html_theme_options = {
     "navigation_depth": -1,

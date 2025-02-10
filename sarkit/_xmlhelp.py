@@ -1,62 +1,10 @@
 """
-===================================
-XML helpers (:mod:`sarkit.xmlhelp`)
-===================================
-
-The parsed XML element tree is a fundamental component of SARkit interfaces for the NGA
-SAR standards that use XML as their primary metadata container.
-:py:mod:`sarkit.xmlhelp` contains classes and functions that make it easier to interact
-with element trees using more convenient datatypes.
-
-XML Helper
-==========
-
-.. autosummary::
-   :toctree: generated/
-
-   XmlHelper
-
-simpleType Transcoders
-======================
-
-.. autosummary::
-   :toctree: generated/
-
-   Type
-   BoolType
-   DblType
-   EnuType
-   HexType
-   IntType
-   TxtType
-   XdtType
-
-complexType Transcoders
-=======================
-
-.. autosummary::
-   :toctree: generated/
-
-   SequenceType
-   ArrayType
-   ListType
-   CmplxType
-   LatLonHaeType
-   LatLonType
-   LineSampType
-   ParameterType
-   Poly2dType
-   PolyNdType
-   PolyType
-   RowColType
-   XyType
-   XyzPolyType
-   XyzType
-
+Common XML Helper functionality
 """
 
 import abc
 import datetime
+import inspect
 import re
 from collections.abc import Sequence
 from typing import Any
@@ -64,6 +12,15 @@ from typing import Any
 import lxml.etree
 import numpy as np
 import numpy.typing as npt
+
+
+def inheritdocstring(cls):
+    """Decorator for inheriting docstring from parent class(es)"""
+    for base in inspect.getmro(cls):
+        if base.__doc__ is not None:
+            cls.__doc__ = base.__doc__
+            break
+    return cls
 
 
 class Type:

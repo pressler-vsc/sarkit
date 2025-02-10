@@ -9,9 +9,9 @@ Functions from CRSD Design & Implementation Description Document.
 
 import re
 
+import sarkit._xmlhelp as skxml
 import sarkit.cphd as skcphd
 import sarkit.standards.sicd.xml as sicd_xml
-import sarkit.xmlhelp as skxml
 
 ImageAreaCornerPointsType = skcphd.ImageAreaCornerPointsType
 PxpType = skcphd.PvpType

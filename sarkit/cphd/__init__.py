@@ -53,6 +53,7 @@ XML Metadata
    PvpType
    AddedPvpType
    ImageAreaCornerPointsType
+   ParameterType
 
 Constants
 =========
@@ -66,7 +67,7 @@ Constants
    * - ``CPHD_SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
    * - ``TRANSCODERS``
-     - `dict` of {name: `sarkit.xmlhelp.Type`}
+     - `dict` of {name: transcoder}
 
 References
 ==========
@@ -94,24 +95,6 @@ CPHD 1.1.0
    https://nsgreg.nga.mil/doc/view?i=5421
 """
 
-from sarkit.xmlhelp import (
-    BoolType,
-    DblType,
-    EnuType,
-    HexType,
-    IntType,
-    LatLonHaeType,
-    LatLonType,
-    LineSampType,
-    Poly2dType,
-    PolyType,
-    TxtType,
-    XdtType,
-    XyType,
-    XyzPolyType,
-    XyzType,
-)
-
 from ._io import (
     CPHD_SECTION_TERMINATOR,
     DEFINED_HEADER_KEYS,
@@ -129,9 +112,25 @@ from ._io import (
 from ._xml import (
     TRANSCODERS,
     AddedPvpType,
+    BoolType,
+    DblType,
+    EnuType,
+    HexType,
     ImageAreaCornerPointsType,
+    IntType,
+    LatLonHaeType,
+    LatLonType,
+    LineSampType,
+    ParameterType,
+    Poly2dType,
+    PolyType,
     PvpType,
+    TxtType,
+    XdtType,
     XmlHelper,
+    XyType,
+    XyzPolyType,
+    XyzType,
 )
 
 __all__ = [
@@ -153,6 +152,7 @@ __all__ = [
     "LatLonHaeType",
     "LatLonType",
     "LineSampType",
+    "ParameterType",
     "Poly2dType",
     "PolyType",
     "PvpType",

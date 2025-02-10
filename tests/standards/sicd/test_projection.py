@@ -6,9 +6,9 @@ import lxml.etree
 import numpy as np
 import pytest
 
+import sarkit._xmlhelp as skxml
 import sarkit.standards.sicd.projection as ss_proj
 import sarkit.wgs84
-import sarkit.xmlhelp
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -371,10 +371,8 @@ def proj_metadata_with_error(request):
         root.append(
             em.ErrorStatistics(
                 em.AdjustableParameterOffsets(
-                    sarkit.xmlhelp.XyzType().make_elem(
-                        "ARPPosSCPCOA", [10000, 11000, 12000]
-                    ),
-                    sarkit.xmlhelp.XyzType().make_elem("ARPVel", [1500, 1600, 1700]),
+                    skxml.XyzType().make_elem("ARPPosSCPCOA", [10000, 11000, 12000]),
+                    skxml.XyzType().make_elem("ARPVel", [1500, 1600, 1700]),
                     em.TxTimeSCPCOA("10.0"),
                     em.RcvTimeSCPCOA("11.0"),
                 )
@@ -385,22 +383,18 @@ def proj_metadata_with_error(request):
             em.ErrorStatistics(
                 em.BistaticAdjustableParameterOffsets(
                     em.TxPlatform(
-                        sarkit.xmlhelp.XyzType().make_elem(
+                        skxml.XyzType().make_elem(
                             "APCPosSCPCOA", [10000, 11000, 12000]
                         ),
-                        sarkit.xmlhelp.XyzType().make_elem(
-                            "APCVel", [1500, 1600, 1700]
-                        ),
+                        skxml.XyzType().make_elem("APCVel", [1500, 1600, 1700]),
                         em.ClockFreqSF("10.0"),
                         em.TimeSCPCOA("11.0"),
                     ),
                     em.RcvPlatform(
-                        sarkit.xmlhelp.XyzType().make_elem(
+                        skxml.XyzType().make_elem(
                             "APCPosSCPCOA", [20000, 21000, 22000]
                         ),
-                        sarkit.xmlhelp.XyzType().make_elem(
-                            "APCVel", [2500, 2600, 2700]
-                        ),
+                        skxml.XyzType().make_elem("APCVel", [2500, 2600, 2700]),
                         em.ClockFreqSF("20.0"),
                         em.TimeSCPCOA("21.0"),
                     ),

@@ -16,8 +16,8 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
+import sarkit._xmlhelp as skxml
 import sarkit.standards.sicd.xml as sicdxml
-import sarkit.xmlhelp as skxml
 
 
 class AngleMagnitudeType(skxml.ArrayType):

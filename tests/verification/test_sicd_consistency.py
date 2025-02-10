@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from lxml import etree
 
+import sarkit._xmlhelp as skxml
 import sarkit.standards.sicd.io as sicd_io
-import sarkit.xmlhelp
 from sarkit.verification.sicd_consistency import SicdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
@@ -83,7 +83,7 @@ def test_smoketest(xml_file):
 
 
 def test_main_schema_override():
-    good_schema = sarkit.standards.sicd.io.VERSION_INFO["urn:SICD:1.2.1"]["schema"]
+    good_schema = sicd_io.VERSION_INFO["urn:SICD:1.2.1"]["schema"]
     with pytest.raises(
         RuntimeError, match="--version must be specified if using --schema"
     ):
@@ -546,7 +546,7 @@ def test_rgazcomp_polys(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
             em.AzSF("0.0"),
-            sarkit.xmlhelp.PolyType().make_elem("KazPoly", np.zeros(4)),
+            skxml.PolyType().make_elem("KazPoly", np.zeros(4)),
         )
     )
     sicd_con.check("check_rgazcomp_polys")
@@ -560,7 +560,7 @@ def test_rgazcomp_ifa(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
             em.AzSF("0.0"),
-            sarkit.xmlhelp.PolyType().make_elem("KazPoly", np.zeros(4)),
+            skxml.PolyType().make_elem("KazPoly", np.zeros(4)),
         )
     )
 
@@ -579,7 +579,7 @@ def test_pfa_polys(sicd_con, em, poly_to_invalidate):
     sicd_con.sicdroot.find("./{*}PFA").append(
         em.STDeskew(
             em.Applied("true"),
-            sarkit.xmlhelp.Poly2dType().make_elem("STDSPhasePoly", np.zeros((2, 3))),
+            skxml.Poly2dType().make_elem("STDSPhasePoly", np.zeros((2, 3))),
         )
     )
     sicd_con.check("check_pfa_polys")
@@ -635,13 +635,11 @@ def sicd_con_bad_inca(sicd_con, em):
             em.RMAlgoType("RG_DOP"),
             em.ImageType("INCA"),
             em.INCA(
-                sarkit.xmlhelp.PolyType().make_elem("TimeCAPoly", np.ones(4)),
+                skxml.PolyType().make_elem("TimeCAPoly", np.ones(4)),
                 em.R_CA_SCP("10000.0"),
                 em.FreqZero("0.0"),
-                sarkit.xmlhelp.Poly2dType().make_elem("DRateSFPoly", np.ones((4, 3))),
-                sarkit.xmlhelp.Poly2dType().make_elem(
-                    "DopCentroidPoly", np.ones((5, 4))
-                ),
+                skxml.Poly2dType().make_elem("DRateSFPoly", np.ones((4, 3))),
+                skxml.Poly2dType().make_elem("DopCentroidPoly", np.ones((5, 4))),
                 em.DopCentroidCOA("false"),
             ),
         )

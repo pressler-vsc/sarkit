@@ -15,7 +15,6 @@ API reference for :mod:`sarkit`.
 * `sarkit.standards`
 * `sarkit.verification`
 * `sarkit.wgs84`
-* `sarkit.xmlhelp`
 
 .. toctree::
    :hidden:
@@ -26,4 +25,3 @@ API reference for :mod:`sarkit`.
     sarkit.standards <standards>
     sarkit.verification <verification>
     sarkit.wgs84 <wgs84>
-    sarkit.xmlhelp <xmlhelp>

@@ -7,7 +7,6 @@ import pytest
 
 import sarkit.standards.sicd.io
 import sarkit.standards.sicd.xml
-import sarkit.xmlhelp
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 

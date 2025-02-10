@@ -11,13 +11,6 @@ CLI
 .. autoprogram:: sarkit.verification.crsd_consistency:_parser()
    :prog: crsd_consistency.py
 
-Consistency Object
-==================
-
-.. autosummary::
-
-    CrsdConsistency
-
 """
 
 import argparse
@@ -25,7 +18,6 @@ import functools
 import logging
 import os
 import re
-from typing import Optional
 
 import numpy as np
 import numpy.polynomial.polynomial as npp
@@ -102,8 +94,6 @@ class CrsdConsistency(con.ConsistencyChecker):
         numpy structured array of PPPs
     pvps : dict[str, np.ndarray], optional
         numpy structured array of PVPs
-    check_signal_data : bool, optional
-        Should the signal array be checked for invalid values
     """
 
     def __init__(
@@ -113,7 +103,6 @@ class CrsdConsistency(con.ConsistencyChecker):
         kvp_list=None,
         ppps=None,
         pvps=None,
-        check_signal_data=False,
     ):
         super().__init__()
         self.crsdroot = etree.fromstring(
@@ -132,7 +121,6 @@ class CrsdConsistency(con.ConsistencyChecker):
         urn = {v["version"]: k for k, v in crsd_io.VERSION_INFO.items()}[self.version]
         self.schema = crsd_io.VERSION_INFO[urn]["schema"]
 
-        self.check_signal_data = check_signal_data
         sequence_ids = [
             x.text
             for x in self.crsdroot.findall(
@@ -178,7 +166,6 @@ class CrsdConsistency(con.ConsistencyChecker):
     @staticmethod
     def from_file(
         filename: str,
-        check_signal_data: Optional[bool] = False,
     ) -> "CrsdConsistency":
         """Create a CrsdConsistency object from a CRSD file.
 
@@ -186,8 +173,6 @@ class CrsdConsistency(con.ConsistencyChecker):
         ----------
         filename : str
             Path to CRSD file or CRSD XML file
-        check_signal_data : bool, optional
-            Should the signal array be checked for invalid values
 
         Returns
         -------
@@ -222,7 +207,6 @@ class CrsdConsistency(con.ConsistencyChecker):
             kvp_list=kvp_list,
             ppps=ppps,
             pvps=pvps,
-            check_signal_data=check_signal_data,
         )
 
     def _version_lookup(self):
@@ -2547,54 +2531,17 @@ def _parser():
         description="Analyze a CRSD and display inconsistencies"
     )
     parser.add_argument("file_name")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        default=0,
-        action="count",
-        help="Increase verbosity (can be specified more than once >4 doesn't help)",
-    )
-    parser.add_argument(
-        "--array-limit",
-        type=int,
-        default=10,
-        help="Number of array elements above which arrays are abbreviated",
-    )
-    parser.add_argument(
-        "--signal-data",
-        action="store_true",
-        help="Check the signal data for NaN and +/- Inf",
-    )
-    parser.add_argument(
-        "--ignore",
-        action="append",
-        metavar="PATTERN",
-        help=(
-            "Skip any check matching PATTERN at the beginning of its name. Can be specified more than"
-            " once."
-        ),
-    )
+    CrsdConsistency.add_cli_args(parser)
     return parser
 
 
 def main(args=None):
     config = _parser().parse_args(args)
-    np.set_printoptions(threshold=config.array_limit)
 
     crsd_con = CrsdConsistency.from_file(
         filename=config.file_name,
-        check_signal_data=config.signal_data,
     )
-    crsd_con.check(ignore_patterns=config.ignore)
-    failures = crsd_con.failures()
-    crsd_con.print_result(
-        fail_detail=config.verbose >= 1,
-        include_passed_asserts=config.verbose >= 2,
-        include_passed_checks=config.verbose >= 3,
-        skip_detail=config.verbose >= 4,
-    )
-
-    return bool(failures)
+    return crsd_con.run_cli(config)
 
 
 if __name__ == "__main__":  # pragma: no cover

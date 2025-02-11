@@ -1,10 +1,5 @@
 """
-========
-Subimage
-========
-
 Extract a subimage (chip) from a SICD
-
 """
 
 import copy
@@ -17,7 +12,7 @@ import sarkit.standards.sicd.xml as ss_xml
 import sarkit.wgs84
 
 
-def subimage(
+def sicd_subimage(
     array: npt.NDArray,
     sicd_xmltree: lxml.etree.ElementTree,
     first_row: int,

@@ -4,7 +4,7 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit.processing.deskew
+import sarkit.processing as skproc
 import sarkit.standards.sicd.xml as ss_xml
 
 sicd_xml_path = (
@@ -33,7 +33,7 @@ def test_deskew_smoke(dim):
     pixels_in = _fake_pixels(xml_in)
 
     # no-ops when DeltaKCOAPoly is not present
-    pixels_out, xml_out = sarkit.processing.deskew.deskew(pixels_in, xml_in, dim)
+    pixels_out, xml_out = skproc.sicd_deskew(pixels_in, xml_in, dim)
     xmlhelp_out = ss_xml.XmlHelper(xml_out)
     assert np.allclose(pixels_in, pixels_out)
     assert not np.count_nonzero(
@@ -41,7 +41,7 @@ def test_deskew_smoke(dim):
     )
 
     # no-ops when DeltaKCOAPoly is 0
-    pixels_out2, xml_out2 = sarkit.processing.deskew.deskew(pixels_out, xml_out, dim)
+    pixels_out2, xml_out2 = skproc.sicd_deskew(pixels_out, xml_out, dim)
     xmlhelp_out2 = ss_xml.XmlHelper(xml_out2)
     assert np.allclose(pixels_out, pixels_out2)
     assert not np.count_nonzero(
@@ -52,7 +52,7 @@ def test_deskew_smoke(dim):
 def test_deskew_nonzero_poly():
     xml_in = lxml.etree.parse(sicd_xml_path)
     pixels_in = _fake_pixels(xml_in)
-    pixels_out, xml_out = sarkit.processing.deskew.deskew(pixels_in, xml_in, "Row")
+    pixels_out, xml_out = skproc.sicd_deskew(pixels_in, xml_in, "Row")
     xml_helper = ss_xml.XmlHelper(xml_out)
     output_row_deltakcoapoly = xml_helper.load("./{*}Grid/{*}Row/{*}DeltaKCOAPoly")
     assert not np.count_nonzero(output_row_deltakcoapoly)

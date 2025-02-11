@@ -1,10 +1,5 @@
 """
-======
-Deskew
-======
-
 Deskew (apply phase polynomial) to SICDs.
-
 """
 
 import copy
@@ -80,7 +75,7 @@ def _get_delta_kcoa_poly(xml_helper, axis):
     return delta_k_coa_poly
 
 
-def get_deskew_phase_poly(
+def sicd_get_deskew_phase_poly(
     sicd_xmltree: lxml.etree.ElementTree, axis: str
 ) -> npt.NDArray:
     """Return phase polynomial for deskew
@@ -104,7 +99,7 @@ def get_deskew_phase_poly(
     return npp.polyint(delta_k_coa_poly, axis=axis_index) * sign
 
 
-def apply_phase_poly(
+def sicd_apply_phase_poly(
     array: npt.NDArray, phase_poly: npt.NDArray, sicd_xmltree: lxml.etree.ElementTree
 ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
     """Metadata aware phase poly application
@@ -144,7 +139,7 @@ def apply_phase_poly(
     return array_out, sicd_xmltree_out
 
 
-def deskew(
+def sicd_deskew(
     array: npt.NDArray, sicd_xmltree: lxml.etree.ElementTree, axis: str
 ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
     """Deskew complex data array
@@ -165,8 +160,8 @@ def deskew(
     sicd_xmltree_deskew : lxml.etree.ElementTree
         Updated SICD XML ElementTree
     """
-    phase_poly = get_deskew_phase_poly(sicd_xmltree, axis)
-    array_deskew, sicd_xmltree_deskew = apply_phase_poly(
+    phase_poly = sicd_get_deskew_phase_poly(sicd_xmltree, axis)
+    array_deskew, sicd_xmltree_deskew = sicd_apply_phase_poly(
         array, phase_poly, sicd_xmltree
     )
 

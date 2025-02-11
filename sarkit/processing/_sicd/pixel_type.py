@@ -1,10 +1,5 @@
 """
-==========
-Pixel Type
-==========
-
 Change the pixel type of SICDs.
-
 """
 
 import copy
@@ -43,7 +38,7 @@ def _re16i_im16i_to_re32f_im32f(array, xml_helper):
     return out_array
 
 
-def as_re32f_im32f(
+def sicd_as_re32f_im32f(
     array: npt.NDArray, sicd_xmltree: lxml.etree.ElementTree
 ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
     """Converts a SICD to RE32F_IM32F pixel type.
@@ -83,7 +78,7 @@ def as_re32f_im32f(
     return out_array, sicd_xmltree_out
 
 
-def as_re16i_im16i(
+def sicd_as_re16i_im16i(
     array: npt.NDArray, sicd_xmltree: lxml.etree.ElementTree
 ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
     """Converts a SICD to RE16I_IM16I pixel type.
@@ -144,7 +139,7 @@ def as_re16i_im16i(
     return out_array, sicd_xmltree_out
 
 
-def as_amp8i_phs8i(
+def sicd_as_amp8i_phs8i(
     array: npt.NDArray, sicd_xmltree: lxml.etree.ElementTree, lut: npt.NDArray
 ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
     """Converts a SICD to AMP8I_PHS8I pixel type.
@@ -181,7 +176,7 @@ def as_amp8i_phs8i(
         lut, xml_helper_in.load("./{*}ImageData/{*}AmpTable")
     ):
         return array, sicd_xmltree
-    array, sicd_xmltree_out = as_re32f_im32f(array, sicd_xmltree)
+    array, sicd_xmltree_out = sicd_as_re32f_im32f(array, sicd_xmltree)
     xml_helper = ss_xml.XmlHelper(sicd_xmltree_out)
     out_array = np.empty(array.shape, ss_io.PIXEL_TYPES["AMP8I_PHS8I"]["dtype"])
     lut2 = ((lut[1:] + lut[:-1]) / 2) ** 2

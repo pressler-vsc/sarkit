@@ -1,4 +1,3 @@
-import functools
 import pathlib
 
 import lxml.etree
@@ -6,7 +5,6 @@ import numpy as np
 import pytest
 
 import sarkit._nitf.nitf
-import sarkit.processing.pixel_type
 import sarkit.standards.sicd.io
 import sarkit.standards.sicd.xml
 
@@ -21,10 +19,10 @@ def _random_image(sicd_xmltree):
 
     assert sicd_xmltree.findtext("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
 
-    arr = np.random.default_rng().random(
-        shape, dtype=np.float32
-    ) + 1j * np.random.default_rng().random(shape, dtype=np.float32)
-    return arr.astype(arr.dtype.newbyteorder(">"))
+    components = (
+        2 * np.random.default_rng().random(shape + (2,), dtype=np.float32)
+    ) - 1
+    return components.astype(">f4").view(">c8").squeeze()
 
 
 @pytest.mark.parametrize(
@@ -40,15 +38,24 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
     out_sicd = tmp_path / "out.sicd"
     basis_etree = lxml.etree.parse(sicd_xml)
     basis_array = _random_image(basis_etree)
-    converter = {
-        "RE32F_IM32F": sarkit.processing.pixel_type.as_re32f_im32f,
-        "RE16I_IM16I": sarkit.processing.pixel_type.as_re16i_im16i,
-        "AMP8I_PHS8I": functools.partial(
-            sarkit.processing.pixel_type.as_amp8i_phs8i,
-            lut=np.histogram_bin_edges(np.abs(basis_array), 256)[:-1],
-        ),
-    }[pixel_type]
-    basis_array, basis_etree = converter(basis_array, basis_etree)
+
+    dtype = sarkit.standards.sicd.io.PIXEL_TYPES[pixel_type]["dtype"]
+    if pixel_type == "RE16I_IM16I":
+        basis_array = (
+            (np.iinfo(dtype["real"]).max * basis_array.view(basis_array.real.dtype))
+            .astype(dtype["real"])
+            .view(dtype)
+        )
+    if pixel_type == "AMP8I_PHS8I":
+        basis_array = (
+            (
+                np.iinfo(dtype["amp"]).max
+                * np.abs(basis_array.view(basis_array.real.dtype))
+            )
+            .astype(dtype["amp"])
+            .view(dtype)
+        )
+    basis_etree.find("{*}ImageData/{*}PixelType").text = pixel_type
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(
         file=sarkit.standards.sicd.io.VERSION_INFO[basis_version]["schema"]

@@ -179,7 +179,7 @@ def example_crsdsar_file(tmp_path_factory):
         cw.write_ppp(sequence_id, ppps)
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
-    assert not main([str(tmp_crsd), "--signal-data", "-vvv"])
+    assert not main([str(tmp_crsd), "-vvv"])
     yield tmp_crsd
 
 
@@ -240,7 +240,7 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
     )
     with open(tmp_crsd, "wb") as f, crsd_io.CrsdWriter(f, new_plan) as cw:
         cw.write_ppp(sequence_id, ppps)
-    assert not main([str(tmp_crsd), "--signal-data", "-vvv"])
+    assert not main([str(tmp_crsd), "-vvv"])
     yield tmp_crsd
 
 
@@ -309,7 +309,7 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
     with open(tmp_crsd, "wb") as f, crsd_io.CrsdWriter(f, newplan) as cw:
         cw.write_pvp(channel_id, new_pvps)
         cw.write_signal(channel_id, signal)
-    assert not main([str(tmp_crsd), "--signal-data", "-vvv"])
+    assert not main([str(tmp_crsd), "-vvv"])
     yield tmp_crsd
 
 

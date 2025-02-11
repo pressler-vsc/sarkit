@@ -7,9 +7,11 @@ Common functionality for verifying files for internal consistency.
 
 """
 
+import argparse
 import ast
 import contextlib
 import linecache
+import os
 import re
 import sys
 import textwrap
@@ -384,8 +386,9 @@ class ConsistencyChecker(object):
 
     def print_result(
         self,
+        *,
         include_passed_asserts: bool = True,
-        color: bool = True,
+        color: None | bool = None,
         include_passed_checks: bool = False,
         width: int = 120,
         skip_detail: bool = False,
@@ -398,8 +401,9 @@ class ConsistencyChecker(object):
         ----------
         include_passed_asserts : bool
             Print asserts which passed
-        color : bool
-            Colorize the output
+        color : bool, optional
+            Colorize the output. If ``None``, checks for presence of ``NO_COLOR`` environment variable and when absent
+            colorizes if stdout is tty(-like).
         include_passed_checks : bool
             Print checks which passed
         width : int
@@ -412,6 +416,10 @@ class ConsistencyChecker(object):
             Include details of passes
         """
 
+        if color is None:
+            color = (
+                sys.stdout.isatty() and "NO_COLOR" not in os.environ
+            )  # https://no-color.org
         to_print = {}
         for k, v in self._all_check_results.items():
             if include_passed_checks or not v["passed"]:
@@ -472,6 +480,52 @@ class ConsistencyChecker(object):
                             print(message)
             else:
                 print("{}---: No test performed".format(" " * indent))
+
+    @staticmethod
+    def add_cli_args(parser):
+        """Add CLI args used by `run_cli` to an argparser"""
+        parser.add_argument(
+            "--ignore",
+            action="extend",
+            nargs="+",
+            metavar="PATTERN",
+            help=(
+                "Skip any check matching PATTERN at the beginning of its name. "
+                "Can be specified more than once."
+            ),
+        )
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            default=0,
+            action="count",
+            help="Increase verbosity (can be specified more than once >4 doesn't help)",
+        )
+        parser.add_argument(
+            "--array-limit",
+            type=int,
+            default=10,
+            help="Number of array elements above which arrays are abbreviated",
+        )
+        parser.add_argument(
+            "--color",
+            action=argparse.BooleanOptionalAction,
+            dest="color",
+            help="colorize output",
+        )
+
+    def run_cli(self, config):
+        """Run checks and print results using args from `add_cli_args`"""
+        with np.printoptions(threshold=config.array_limit):
+            self.check(ignore_patterns=config.ignore)
+            self.print_result(
+                fail_detail=config.verbose >= 1,
+                include_passed_asserts=config.verbose >= 2,
+                include_passed_checks=config.verbose >= 3,
+                skip_detail=config.verbose >= 4,
+                color=config.color,
+            )
+            return bool(self.failures())
 
 
 class Approx:

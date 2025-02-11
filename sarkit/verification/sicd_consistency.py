@@ -11,13 +11,6 @@ CLI
 .. autoprogram:: sarkit.verification.sicd_consistency:_parser()
    :prog: sicd_consistency.py
 
-Consistency Object
-==================
-
-.. autosummary::
-
-    SicdConsistency
-
 """
 
 import argparse
@@ -1899,13 +1892,6 @@ def _parser():
     )
     parser.add_argument("file_name")
     parser.add_argument(
-        "-v",
-        "--verbose",
-        default=0,
-        action="count",
-        help="Increase verbosity (can be specified more than once; >4 doesn't help)",
-    )
-    parser.add_argument(
         "--schema",
         type=pathlib.Path,
         help="Use a supplied schema file (attempts version-specific schema if omitted)",
@@ -1918,16 +1904,7 @@ def _parser():
             "Attempts auto-detection if omitted. Required if using --schema"
         ),
     )
-    parser.add_argument(
-        "--ignore",
-        action="extend",
-        nargs="+",
-        metavar="PATTERN",
-        help=(
-            "Skip any check matching PATTERN at the beginning of its name. "
-            "Can be specified more than once."
-        ),
-    )
+    SicdConsistency.add_cli_args(parser)
     return parser
 
 
@@ -1940,16 +1917,7 @@ def main(args=None):
     sicd_con = SicdConsistency.from_file(
         filename=config.file_name, schema=config.schema, version=config.version
     )
-    sicd_con.check(ignore_patterns=config.ignore)
-    failures = sicd_con.failures()
-    sicd_con.print_result(
-        fail_detail=config.verbose >= 1,
-        include_passed_asserts=config.verbose >= 2,
-        include_passed_checks=config.verbose >= 3,
-        skip_detail=config.verbose >= 4,
-    )
-
-    return bool(failures)
+    return sicd_con.run_cli(config)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -5,14 +5,14 @@ import numpy as np
 import pytest
 
 import sarkit._nitf.nitf
-import sarkit.standards.sidd.io as siddio
-import sarkit.standards.sidd.xml
+import sarkit.sidd as sksidd
+import sarkit.sidd._io
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def _random_image(sidd_xmltree):
-    xml_helper = sarkit.standards.sidd.xml.XmlHelper(sidd_xmltree)
+    xml_helper = sksidd.XmlHelper(sidd_xmltree)
     rows = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Row")
     cols = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Col")
     shape = (rows, cols)
@@ -41,10 +41,10 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 
     if force_segmentation:
         monkeypatch.setattr(
-            siddio, "LI_MAX", basis_array0.nbytes // 5
+            sarkit.sidd._io, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
 
-    nitf_plan = siddio.SiddNitfPlan(
+    nitf_plan = sksidd.SiddNitfPlan(
         header_fields={
             "ostaid": "ostaid",
             "ftitle": "ftitle",
@@ -164,11 +164,13 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     )
 
     with out_sidd.open("wb") as file:
-        with siddio.SiddNitfWriter(file, nitf_plan) as writer:
+        with sksidd.SiddNitfWriter(file, nitf_plan) as writer:
             writer.write_image(0, basis_array0)
             writer.write_image(1, basis_array1)
 
-    num_expected_imseg = 2 * int(np.ceil(np.prod(basis_array0.shape) / siddio.LI_MAX))
+    num_expected_imseg = 2 * int(
+        np.ceil(np.prod(basis_array0.shape) / sarkit.sidd._io.LI_MAX)
+    )
     if force_segmentation:
         assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
     with out_sidd.open("rb") as file:
@@ -176,7 +178,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         assert num_expected_imseg == len(nitf_details.img_headers)
 
     with out_sidd.open("rb") as file:
-        with siddio.SiddNitfReader(file) as reader:
+        with sksidd.SiddNitfReader(file) as reader:
             assert len(reader.images) == 2
             assert len(reader.sicd_xmls) == 2
             assert len(reader.product_support_xmls) == 2
@@ -205,7 +207,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 def test_segmentation():
     """From Figure 2.5-6 SIDD 1.0 Multiple Input Image - Multiple Product Images Requiring Segmentation"""
     sidd_xmltree = lxml.etree.parse(DATAPATH / "example-sidd-3.0.0.xml")
-    xml_helper = sarkit.standards.sidd.xml.XmlHelper(sidd_xmltree)
+    xml_helper = sksidd.XmlHelper(sidd_xmltree)
     assert xml_helper.load("./{*}Display/{*}PixelType") == "MONO8I"
 
     # Tweak SIDD size to force three image segments
@@ -216,7 +218,7 @@ def test_segmentation():
     num_rows = iloc_max * 2 + last_rows
     xml_helper.set("./{*}Measurement/{*}PixelFootprint/{*}Row", num_rows)
     xml_helper.set("./{*}Measurement/{*}PixelFootprint/{*}Col", num_cols)
-    fhdr_numi, fhdr_li, imhdrs = sarkit.standards.sidd.io.segmentation_algorithm(
+    fhdr_numi, fhdr_li, imhdrs = sksidd.segmentation_algorithm(
         [sidd_xmltree, sidd_xmltree]
     )
 
@@ -225,7 +227,7 @@ def test_segmentation():
     # image segment due to ILOC. This implements a scheme similar to SICD wherein "RRRRR" of ILOC matches
     # the NROWs in the previous segment.
     expected_imhdrs = [
-        siddio.SegmentationImhdr(
+        sksidd.SegmentationImhdr(
             iid1="SIDD001001",
             idlvl=1,
             ialvl=0,
@@ -233,7 +235,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
         ),
-        siddio.SegmentationImhdr(
+        sksidd.SegmentationImhdr(
             iid1="SIDD001002",
             idlvl=2,
             ialvl=1,
@@ -241,7 +243,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
         ),
-        siddio.SegmentationImhdr(
+        sksidd.SegmentationImhdr(
             iid1="SIDD001003",
             idlvl=3,
             ialvl=2,
@@ -249,7 +251,7 @@ def test_segmentation():
             nrows=last_rows,
             ncols=num_cols,
         ),
-        siddio.SegmentationImhdr(
+        sksidd.SegmentationImhdr(
             iid1="SIDD002001",
             idlvl=4,
             ialvl=0,
@@ -257,7 +259,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
         ),
-        siddio.SegmentationImhdr(
+        sksidd.SegmentationImhdr(
             iid1="SIDD002002",
             idlvl=5,
             ialvl=4,
@@ -265,7 +267,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
         ),
-        siddio.SegmentationImhdr(
+        sksidd.SegmentationImhdr(
             iid1="SIDD002003",
             idlvl=6,
             ialvl=5,
@@ -281,11 +283,9 @@ def test_segmentation():
 
 
 def test_version_info():
-    actual_order = [
-        x["version"] for x in sarkit.standards.sidd.io.VERSION_INFO.values()
-    ]
+    actual_order = [x["version"] for x in sksidd.VERSION_INFO.values()]
     expected_order = sorted(actual_order, key=lambda x: x.split("."))
     assert actual_order == expected_order
 
-    for urn, info in sarkit.standards.sidd.io.VERSION_INFO.items():
+    for urn, info in sksidd.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn

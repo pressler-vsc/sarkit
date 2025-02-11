@@ -12,8 +12,5 @@ Interacting with SAR data in standard formats.
    sicd.xml
    sicd.io
    sicd.projection
-   sidd
-   sidd.xml
-   sidd.io
 
 """

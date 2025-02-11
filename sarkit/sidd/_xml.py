@@ -1,10 +1,5 @@
 """
-========
-SIDD XML
-========
-
-Functions from SIDD Volume 1 Design & Implementation Description Document.
-
+Functions for interacting with SIDD XML
 """
 
 import numbers

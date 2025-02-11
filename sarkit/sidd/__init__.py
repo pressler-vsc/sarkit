@@ -1,7 +1,7 @@
 """
-======================================
-Sensor Independent Derived Data (SIDD)
-======================================
+====================================================
+Sensor Independent Derived Data (:mod:`sarkit.sidd`)
+====================================================
 
 Python reference implementations of the suite of NGA.STND.0025 standardization
 documents that define the Sensor Independent Derived Data (SIDD) format.
@@ -12,34 +12,57 @@ Supported Versions
 * `SIDD 2.0`_
 * `SIDD 3.0`_
 
-Functions
-=========
-
-Reading and Writing
--------------------
+Data Structure & File Format
+============================
 
 .. autosummary::
    :toctree: generated/
 
-   SiddNitfReader
-   SiddNitfWriter
-
-I/O Helpers
------------
-
-.. autosummary::
-   :toctree: generated/
-
-   SiddNitfPlan
-   SiddNitfSecurityFields
    SiddNitfHeaderFields
+   SiddNitfSecurityFields
    SiddNitfImageSegmentFields
    SiddNitfDESegmentFields
+   SiddNitfReader
+   SiddNitfPlan
    SiddNitfPlanProductImageInfo
    SiddNitfPlanLegendInfo
    SiddNitfPlanDedInfo
    SiddNitfPlanProductSupportXmlInfo
    SiddNitfPlanSicdXmlInfo
+   SiddNitfWriter
+   SegmentationImhdr
+   segmentation_algorithm
+
+XML Metadata
+============
+
+.. autosummary::
+   :toctree: generated/
+
+   XmlHelper
+   AngleMagnitudeType
+   FilterCoefficientType
+   ImageCornersType
+   IntListType
+   RangeAzimuthType
+   RowColDblType
+   SfaPointType
+
+Constants
+=========
+
+.. list-table::
+
+   * - ``VERSION_INFO``
+     - `dict` of {xml namespace: version-specific information}
+   * - ``PIXEL_TYPES``
+     - `dict` of {PixelType: pixel-type-specific information}
+   * - ``LI_MAX``
+     - maximum NITF image segment length in bytes (:math:`10^{10}-2`)
+   * - ``ILOC_MAX``
+     - maximum number of rows contained in a NITF image segment (99,999)
+   * - ``TRANSCODERS``
+     - `dict` of {name: transcoder}
 
 References
 ==========
@@ -70,7 +93,12 @@ SIDD 3.0
 
 """
 
-from .io import (
+from ._io import (
+    ILOC_MAX,
+    LI_MAX,
+    PIXEL_TYPES,
+    VERSION_INFO,
+    SegmentationImhdr,
     SiddNitfDESegmentFields,
     SiddNitfHeaderFields,
     SiddNitfImageSegmentFields,
@@ -83,10 +111,36 @@ from .io import (
     SiddNitfReader,
     SiddNitfSecurityFields,
     SiddNitfWriter,
+    segmentation_algorithm,
 )
 
-# IO
+# TODO: all of the other transcoder types
+from ._xml import (
+    TRANSCODERS,
+    AngleMagnitudeType,
+    FilterCoefficientType,
+    ImageCornersType,
+    IntListType,
+    RangeAzimuthType,
+    RowColDblType,
+    SfaPointType,
+    XmlHelper,
+)
+
 __all__ = [
+    "ILOC_MAX",
+    "LI_MAX",
+    "PIXEL_TYPES",
+    "TRANSCODERS",
+    "VERSION_INFO",
+    "AngleMagnitudeType",
+    "FilterCoefficientType",
+    "ImageCornersType",
+    "IntListType",
+    "RangeAzimuthType",
+    "RowColDblType",
+    "SegmentationImhdr",
+    "SfaPointType",
     "SiddNitfDESegmentFields",
     "SiddNitfHeaderFields",
     "SiddNitfImageSegmentFields",
@@ -99,4 +153,6 @@ __all__ = [
     "SiddNitfReader",
     "SiddNitfSecurityFields",
     "SiddNitfWriter",
+    "XmlHelper",
+    "segmentation_algorithm",
 ]

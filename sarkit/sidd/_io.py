@@ -1,10 +1,5 @@
 """
-========
-SIDD I/O
-========
-
-Functions from SIDD Volume 2 NITF File Format Description Document
-
+Functions to read and write SIDD files.
 """
 
 import collections
@@ -14,7 +9,7 @@ import importlib
 import itertools
 import logging
 import warnings
-from typing import Self, TypedDict
+from typing import Final, Self, TypedDict
 
 import lxml.etree
 import numpy as np
@@ -26,17 +21,19 @@ import sarkit._nitf.nitf_elements.image
 import sarkit._nitf.nitf_elements.nitf_head
 import sarkit._nitf.nitf_elements.security
 import sarkit._nitf.utils
+import sarkit.sidd._xml
 import sarkit.standards.sicd.io as sicdio
-import sarkit.standards.sidd.xml
 
 logger = logging.getLogger(__name__)
 
-SPECIFICATION_IDENTIFIER = "SIDD Volume 1 Design & Implementation Description Document"
+SPECIFICATION_IDENTIFIER: Final[str] = (
+    "SIDD Volume 1 Design & Implementation Description Document"
+)
 
-SCHEMA_DIR = importlib.resources.files("sarkit.standards.sidd.schemas")
+SCHEMA_DIR = importlib.resources.files("sarkit.sidd.schemas")
 
 # Keys in ascending order
-VERSION_INFO = {
+VERSION_INFO: Final[dict] = {
     "urn:SIDD:2.0.0": {
         "version": "3.0",
         "date": "2019-05-31T00:00:00Z",
@@ -58,7 +55,7 @@ class _PixelTypeDict(TypedDict):
     dtype: np.dtype
 
 
-PIXEL_TYPES: dict[str, _PixelTypeDict] = {
+PIXEL_TYPES: Final[dict[str, _PixelTypeDict]] = {
     "MONO8I": {
         "IREP": "MONO",
         "IREPBANDn": ["M"],
@@ -91,8 +88,8 @@ PIXEL_TYPES: dict[str, _PixelTypeDict] = {
     },
 }
 
-LI_MAX = 9_999_999_998
-ILOC_MAX = 99_999
+LI_MAX: Final[int] = 9_999_999_998
+ILOC_MAX: Final[int] = 99_999
 
 
 # SICD implementation happens to match, reuse it
@@ -660,7 +657,7 @@ class SiddNitfWriter:
             current_start_row += imhdr.nrows
 
             imageinfo = self._nitf_plan.images[image_num]
-            xml_helper = sarkit.standards.sidd.xml.XmlHelper(imageinfo.sidd_xmltree)
+            xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.sidd_xmltree)
             pixel_info = PIXEL_TYPES[xml_helper.load("./{*}Display/{*}PixelType")]
 
             icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
@@ -728,7 +725,7 @@ class SiddNitfWriter:
         des_managers = []
         for imageinfo in self._nitf_plan.images:
             xmlns = lxml.etree.QName(imageinfo.sidd_xmltree.getroot()).namespace
-            xml_helper = sarkit.standards.sidd.xml.XmlHelper(imageinfo.sidd_xmltree)
+            xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.sidd_xmltree)
             icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
             desshlpg = ""
             for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
@@ -895,7 +892,7 @@ def segmentation_algorithm(
     imhdr = []
 
     for k, sidd_xmltree in enumerate(sidd_xmltrees):
-        xml_helper = sarkit.standards.sidd.xml.XmlHelper(sidd_xmltree)
+        xml_helper = sarkit.sidd._xml.XmlHelper(sidd_xmltree)
         pixel_info = PIXEL_TYPES[xml_helper.load("./{*}Display/{*}PixelType")]
         num_rows_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Row")
         num_cols_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Col")

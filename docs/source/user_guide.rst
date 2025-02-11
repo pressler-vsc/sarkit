@@ -49,9 +49,9 @@ describe file contents and metadata prior to writing.
      - :py:class:`~sarkit.standards.sicd.SicdNitfPlan`
      - :py:class:`~sarkit.standards.sicd.SicdNitfWriter`
    * - SIDD
-     - :py:class:`~sarkit.standards.sidd.SiddNitfReader`
-     - :py:class:`~sarkit.standards.sidd.SiddNitfPlan`
-     - :py:class:`~sarkit.standards.sidd.SiddNitfWriter`
+     - :py:class:`~sarkit.sidd.SiddNitfReader`
+     - :py:class:`~sarkit.sidd.SiddNitfPlan`
+     - :py:class:`~sarkit.sidd.SiddNitfWriter`
 
 
 Reading
@@ -197,7 +197,7 @@ convenient Python objects.
    * - SICD
      - :py:class:`sarkit.standards.sicd.xml.XmlHelper`
    * - SIDD
-     - :py:class:`sarkit.standards.sidd.xml.XmlHelper`
+     - :py:class:`sarkit.sidd.XmlHelper`
 
 XML Helpers
 -----------

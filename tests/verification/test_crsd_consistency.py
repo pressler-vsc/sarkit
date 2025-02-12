@@ -11,7 +11,7 @@ from lxml import etree
 
 import sarkit.crsd as skcrsd
 import sarkit.wgs84
-from sarkit.verification.crsd_consistency import CrsdConsistency, main
+from sarkit.verification._crsd_consistency import CrsdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 

@@ -281,14 +281,19 @@ SARkit provides checkers that can be used to identify inconsistencies in SAR sta
 .. list-table::
 
    * - Format
-     - Consistency Checker
+     - Consistency class
+     - Command
    * - ⛔ CRSD [Draft] ⛔
-     - :py:class:`~sarkit.verification.crsd_consistency`
+     - :py:class:`sarkit.verification.CrsdConsistency`
+     - :ref:`crsd-consistency-cli`
    * - CPHD
-     - :py:class:`~sarkit.verification.cphd_consistency`
+     - :py:class:`sarkit.verification.CphdConsistency`
+     - :ref:`cphd-consistency-cli`
    * - SICD
-     - :py:class:`~sarkit.verification.sicd_consistency`
+     - :py:class:`sarkit.verification.SicdConsistency`
+     - :ref:`sicd-consistency-cli`
    * - SIDD
+     - To be added
      - To be added
 
 Each consistency checker provides a command line interface for checking SAR data/metadata files.
@@ -296,21 +301,21 @@ When there are no inconsistencies, no output is produced.
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency good.sicd
+   $ sicd-consistency good.sicd
    $
 
 The same command can be used to run a subset of the checks against the XML.
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency good.sicd.xml
+   $ sicd-consistency good.sicd.xml
    $
 
 When a file is inconsistent, failed checks are printed.
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency bad.sicd
+   $ sicd-consistency bad.sicd
    check_image_formation_timeline: Checks that the slow time span for data processed to form
    the image is within collect.
       [Error] Need: 0 <= TStartProc < TEndProc <= CollectDuration
@@ -329,7 +334,7 @@ For example:
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency good.sicd -vvv
+   $ sicd-consistency good.sicd -vvv
    check_against_schema: Checks against schema.
       [Pass] Need: XML passes schema
       [Pass] Need: Schema available for checking xml whose root tag = {urn:SICD:1.2.1}SICD

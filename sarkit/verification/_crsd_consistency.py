@@ -1,16 +1,5 @@
 """
-==================================================
-Compensated Radar Signal Data (CRSD) Consistency
-==================================================
-
 Functionality for verifying CRSD files for internal consistency.
-
-CLI
-===
-
-.. autoprogram:: sarkit.verification.crsd_consistency:_parser()
-   :prog: crsd_consistency.py
-
 """
 
 import argparse
@@ -25,7 +14,7 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.crsd as skcrsd
-import sarkit.verification.consistency as con
+import sarkit.verification._consistency as con
 import sarkit.wgs84
 
 logger = logging.getLogger(__name__)
@@ -165,7 +154,7 @@ class CrsdConsistency(con.ConsistencyChecker):
     def from_file(
         filename: str,
     ) -> "CrsdConsistency":
-        """Create a CrsdConsistency object from a CRSD file.
+        """Create a CrsdConsistency object from a file
 
         Parameters
         ----------
@@ -174,7 +163,7 @@ class CrsdConsistency(con.ConsistencyChecker):
 
         Returns
         -------
-        CrsdConsistency class
+        CrsdConsistency
         """
         with open(filename, "rb") as infile:
             try:
@@ -2528,7 +2517,7 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a CRSD and display inconsistencies"
     )
-    parser.add_argument("file_name")
+    parser.add_argument("file_name", help="CRSD or CRSD XML to check")
     CrsdConsistency.add_cli_args(parser)
     return parser
 

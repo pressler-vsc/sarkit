@@ -8,7 +8,7 @@ from lxml import etree
 
 import sarkit._xmlhelp as skxml
 import sarkit.standards.sicd.io as sicd_io
-from sarkit.verification.sicd_consistency import SicdConsistency, main
+from sarkit.verification._sicd_consistency import SicdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 

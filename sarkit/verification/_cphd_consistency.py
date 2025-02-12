@@ -1,16 +1,5 @@
 """
-==================================================
-Compensated Phase History Data (CPHD) Consistency
-==================================================
-
 Functionality for verifying CPHD files for internal consistency.
-
-CLI
-===
-
-.. autoprogram:: sarkit.verification.cphd_consistency:_parser()
-   :prog: cphd_consistency.py
-
 """
 
 import argparse
@@ -32,7 +21,7 @@ from lxml import etree
 
 import sarkit.constants as spc
 import sarkit.cphd as skcphd
-import sarkit.verification.consistency as con
+import sarkit.verification._consistency as con
 import sarkit.wgs84
 
 logger = logging.getLogger(__name__)
@@ -166,12 +155,12 @@ class CphdConsistency(con.ConsistencyChecker):
         version: Optional[str] = None,
         check_signal_data: Optional[bool] = False,
     ) -> "CphdConsistency":
-        """Create a CphdConsistency object from a CPHD file.
+        """Create a CphdConsistency object from a file
 
         Parameters
         ----------
         filename : str
-            Path to CPHD file
+            Path to CPHD file or CPHD XML file
         schema : str, optional
             Path to CPHD XML Schema. If None, tries to find a version-specific schema
         version : str, optional
@@ -181,7 +170,7 @@ class CphdConsistency(con.ConsistencyChecker):
 
         Returns
         -------
-        CphdConsistency class
+        CphdConsistency
         """
         with open(filename, "rb") as infile:
             try:
@@ -1924,7 +1913,7 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a CPHD and display inconsistencies"
     )
-    parser.add_argument("file_name")
+    parser.add_argument("file_name", help="CPHD or CPHD XML to check")
     parser.add_argument(
         "--schema",
         type=pathlib.Path,

@@ -1,10 +1,5 @@
 """
-===========
-Consistency
-===========
-
 Common functionality for verifying files for internal consistency.
-
 """
 
 import argparse

@@ -11,7 +11,7 @@ from lxml import etree
 
 import sarkit.constants
 import sarkit.cphd as skcphd
-from sarkit.verification.cphd_consistency import CphdConsistency, main
+from sarkit.verification._cphd_consistency import CphdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 

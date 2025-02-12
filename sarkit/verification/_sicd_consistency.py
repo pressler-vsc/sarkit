@@ -1,16 +1,5 @@
 """
-==================================================
-Sensor Independent Complex Data (SICD) Consistency
-==================================================
-
 Functionality for verifying SICD files for internal consistency.
-
-CLI
-===
-
-.. autoprogram:: sarkit.verification.sicd_consistency:_parser()
-   :prog: sicd_consistency.py
-
 """
 
 import argparse
@@ -32,7 +21,7 @@ import sarkit.standards.sicd as ss_std
 import sarkit.standards.sicd.io as ss_io
 import sarkit.standards.sicd.projection as ss_proj
 import sarkit.standards.sicd.xml as ss_xml
-import sarkit.verification.consistency as con
+import sarkit.verification._consistency as con
 import sarkit.wgs84
 from sarkit._nitf.nitf import NITFDetails
 
@@ -182,9 +171,6 @@ def per_grid_dim(method):
 class SicdConsistency(con.ConsistencyChecker):
     """Check SICD file structure and metadata for internal consistency
 
-    This class can be used to perform and log comparisons. Each comparison
-    can be logged as either an ``'Error'`` or a ``'Warning'``.
-
     Parameters
     ----------
     sicdroot : lxml.etree.Element or lxml.etree.ElementTree
@@ -245,12 +231,12 @@ class SicdConsistency(con.ConsistencyChecker):
         schema: Optional[str] = None,
         version: Optional[str] = None,
     ) -> "SicdConsistency":
-        """Create SicdConsistency class from a file
+        """Create a SicdConsistency object from a file
 
         Parameters
         ----------
         filename : str
-            Path of the file used to create the class.  Can be either XML or nitf.
+            Path to SICD file or SICD XML file
         schema : str, optional
             Path to SICD XML Schema (Bypass auto selection of SICD schema)
         version : str, optional
@@ -258,7 +244,7 @@ class SicdConsistency(con.ConsistencyChecker):
 
         Returns
         -------
-        SicdConsistency class
+        SicdConsistency
         """
         with open(filename, "rb") as infile:
             try:
@@ -1890,7 +1876,7 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a SICD and display inconsistencies"
     )
-    parser.add_argument("file_name")
+    parser.add_argument("file_name", help="SICD or SICD XML to check")
     parser.add_argument(
         "--schema",
         type=pathlib.Path,

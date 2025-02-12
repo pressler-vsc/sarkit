@@ -40,13 +40,32 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
-   AngleMagnitudeType
+   BoolType
+   DblType
+   EnuType
+   IntType
+   TxtType
+   XdtType
+   ParameterType
    FilterCoefficientType
-   ImageCornersType
    IntListType
+   SfaPointType
+
+Transcoders with children in the ``urn:SICommon:1.0`` namespace.
+
+.. autosummary::
+   :toctree: generated/
+
+   XyzType
+   AngleMagnitudeType
+   LatLonType
+   PolyCoef1dType
+   PolyCoef2dType
    RangeAzimuthType
    RowColDblType
-   SfaPointType
+   RowColIntType
+   XyzPolyType
+   ImageCornersType
 
 Constants
 =========
@@ -113,18 +132,29 @@ from ._io import (
     SiddNitfWriter,
     segmentation_algorithm,
 )
-
-# TODO: all of the other transcoder types
 from ._xml import (
     TRANSCODERS,
     AngleMagnitudeType,
+    BoolType,
+    DblType,
+    EnuType,
     FilterCoefficientType,
     ImageCornersType,
     IntListType,
+    IntType,
+    LatLonType,
+    ParameterType,
+    PolyCoef1dType,
+    PolyCoef2dType,
     RangeAzimuthType,
     RowColDblType,
+    RowColIntType,
     SfaPointType,
+    TxtType,
+    XdtType,
     XmlHelper,
+    XyzPolyType,
+    XyzType,
 )
 
 __all__ = [
@@ -134,11 +164,20 @@ __all__ = [
     "TRANSCODERS",
     "VERSION_INFO",
     "AngleMagnitudeType",
+    "BoolType",
+    "DblType",
+    "EnuType",
     "FilterCoefficientType",
     "ImageCornersType",
     "IntListType",
+    "IntType",
+    "LatLonType",
+    "ParameterType",
+    "PolyCoef1dType",
+    "PolyCoef2dType",
     "RangeAzimuthType",
     "RowColDblType",
+    "RowColIntType",
     "SegmentationImhdr",
     "SfaPointType",
     "SiddNitfDESegmentFields",
@@ -153,6 +192,10 @@ __all__ = [
     "SiddNitfReader",
     "SiddNitfSecurityFields",
     "SiddNitfWriter",
+    "TxtType",
+    "XdtType",
     "XmlHelper",
+    "XyzPolyType",
+    "XyzType",
     "segmentation_algorithm",
 ]

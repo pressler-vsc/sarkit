@@ -436,7 +436,7 @@ class LatLonHaeType(ArrayType):
 
 class RowColType(ArrayType):
     """
-    Transcoder for XML parameter types containing scalar Row and Col components.
+    Transcoder for XML parameter types containing scalar, integer Row and Col components.
 
     Parameters
     ----------

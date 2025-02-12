@@ -11,7 +11,7 @@ DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 def test_anglemagnitude():
     data = np.random.default_rng().random((2,))
     elem = lxml.etree.Element("{faux-ns}AngleMagnitude")
-    type_obj = sksidd.AngleMagnitudeType(child_ns="urn:SICommon:1.0")
+    type_obj = sksidd.AngleMagnitudeType()
     type_obj.set_elem(elem, data)
     assert np.array_equal(type_obj.parse_elem(elem), data)
 
@@ -53,7 +53,7 @@ def test_image_corners_type():
 def test_rangeazimuth():
     data = np.random.default_rng().random((2,))
     elem = lxml.etree.Element("{faux-ns}RangeAzimuth")
-    type_obj = sksidd.RangeAzimuthType(child_ns="urn:SICommon:1.0")
+    type_obj = sksidd.RangeAzimuthType()
     type_obj.set_elem(elem, data)
     assert np.array_equal(type_obj.parse_elem(elem), data)
 
@@ -61,7 +61,7 @@ def test_rangeazimuth():
 def test_rowcoldble():
     data = np.random.default_rng().random((2,))
     elem = lxml.etree.Element("{faux-ns}RowColDbl")
-    type_obj = sksidd.RowColDblType(child_ns="urn:SICommon:1.0")
+    type_obj = sksidd.RowColDblType()
     type_obj.set_elem(elem, data)
     assert np.array_equal(type_obj.parse_elem(elem), data)
 

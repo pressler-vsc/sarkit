@@ -1,10 +1,10 @@
+import itertools
 import pathlib
 
 import lxml
 import numpy as np
 import pytest
 
-import sarkit._nitf.nitf
 import sarkit.standards.sidd.io as siddio
 import sarkit.standards.sidd.xml
 
@@ -193,18 +193,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 
     with out_sidd.open("wb") as file:
         with siddio.SiddNitfWriter(file, nitf_plan) as writer:
-            half_rows, half_cols = np.asarray(basis_array0.shape) // 2
-            writer.write_image(0, basis_array0[:half_rows, :half_cols], start=(0, 0))
-            writer.write_image(
-                0, basis_array0[:half_rows, half_cols:], start=(0, half_cols)
-            )
-            writer.write_image(
-                0, basis_array0[half_rows:, half_cols:], start=(half_rows, half_cols)
-            )
-            writer.write_image(
-                0, basis_array0[half_rows:, :half_cols], start=(half_rows, 0)
-            )
-
+            writer.write_image(0, basis_array0)
             writer.write_image(1, basis_array1)
             writer.write_image(2, basis_array2)
 
@@ -218,8 +207,9 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     if force_segmentation:
         assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
     with out_sidd.open("rb") as file:
-        nitf_details = sarkit._nitf.nitf.NITFDetails(file)
-        assert num_expected_imseg == len(nitf_details.img_headers)
+        ntf = sarkit._nitf_io.Nitf()
+        ntf.load(file)
+        assert num_expected_imseg == len(ntf["ImageSegments"])
 
     with out_sidd.open("rb") as file:
         with siddio.SiddNitfReader(file) as reader:
@@ -269,6 +259,40 @@ def test_segmentation():
     )
 
     assert fhdr_numi == 6
+
+    def _parse_dms(dms_str):
+        lat_deg = int(dms_str[0:2])
+        lat_min = int(dms_str[2:4])
+        lat_sec = int(dms_str[4:6])
+        sign = {"S": -1, "N": 1}[dms_str[6]]
+        lat = sign * (lat_deg + lat_min / 60.0 + lat_sec / 3600.0)
+
+        lon_deg = int(dms_str[7:10])
+        lon_min = int(dms_str[10:12])
+        lon_sec = int(dms_str[12:14])
+        sign = {"W": -1, "E": 1}[dms_str[14]]
+        lon = sign * (lon_deg + lon_min / 60.0 + lon_sec / 3600.0)
+        return lat, lon
+
+    outer_corners_ll = [
+        _parse_dms(imhdrs[0].igeolo[:15]),
+        _parse_dms(imhdrs[0].igeolo[15:30]),
+        _parse_dms(imhdrs[-1].igeolo[30:45]),
+        _parse_dms(imhdrs[-1].igeolo[45:60]),
+    ]
+    icp_latlon = xml_helper.load("./{*}GeoData/{*}ImageCorners")
+    np.testing.assert_allclose(outer_corners_ll, icp_latlon, atol=0.5 / 3600)
+
+    groups = itertools.groupby(imhdrs, key=lambda x: x.iid1[:7])
+    for _, group_headers in groups:
+        headers = list(group_headers)
+        for idx in range(len(headers) - 1):
+            assert headers[idx].igeolo[45:] == headers[idx + 1].igeolo[:15]
+            assert headers[idx].igeolo[30:45] == headers[idx + 1].igeolo[15:30]
+
+    for imhdr in imhdrs:
+        imhdr.igeolo = ""
+
     # SIDD segmentation algorithm (2.4.2.1 in 1.0/2.0/3.0) would lead to overlaps of the last partial
     # image segment due to ILOC. This implements a scheme similar to SICD wherein "RRRRR" of ILOC matches
     # the NROWs in the previous segment.
@@ -280,6 +304,7 @@ def test_segmentation():
             iloc="0" * 10,
             nrows=iloc_max,
             ncols=num_cols,
+            igeolo="",
         ),
         siddio.SegmentationImhdr(
             iid1="SIDD001002",
@@ -288,6 +313,7 @@ def test_segmentation():
             iloc=f"{iloc_max:05d}{0:05d}",
             nrows=iloc_max,
             ncols=num_cols,
+            igeolo="",
         ),
         siddio.SegmentationImhdr(
             iid1="SIDD001003",
@@ -296,6 +322,7 @@ def test_segmentation():
             iloc=f"{iloc_max:05d}{0:05d}",
             nrows=last_rows,
             ncols=num_cols,
+            igeolo="",
         ),
         siddio.SegmentationImhdr(
             iid1="SIDD002001",
@@ -304,6 +331,7 @@ def test_segmentation():
             iloc="0" * 10,
             nrows=iloc_max,
             ncols=num_cols,
+            igeolo="",
         ),
         siddio.SegmentationImhdr(
             iid1="SIDD002002",
@@ -312,6 +340,7 @@ def test_segmentation():
             iloc=f"{iloc_max:05d}{0:05d}",
             nrows=iloc_max,
             ncols=num_cols,
+            igeolo="",
         ),
         siddio.SegmentationImhdr(
             iid1="SIDD002003",
@@ -320,11 +349,13 @@ def test_segmentation():
             iloc=f"{iloc_max:05d}{0:05d}",
             nrows=last_rows,
             ncols=num_cols,
+            igeolo="",
         ),
     ]
     expected_fhdr_li = [imhdr.nrows * imhdr.ncols for imhdr in expected_imhdrs]
 
     assert expected_fhdr_li == fhdr_li
+
     assert expected_imhdrs == imhdrs
 
 

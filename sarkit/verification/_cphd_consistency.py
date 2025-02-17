@@ -19,10 +19,10 @@ import numpy.polynomial.polynomial as npp
 import shapely.geometry as shg
 from lxml import etree
 
-import sarkit.constants as spc
 import sarkit.cphd as skcphd
 import sarkit.verification._consistency as con
 import sarkit.wgs84
+from sarkit import _constants
 
 logger = logging.getLogger(__name__)
 
@@ -898,7 +898,7 @@ class CphdConsistency(con.ConsistencyChecker):
             rdot_xmt_srp = calc_rdot(pvp["TxPos"], pvp["TxVel"], pvp["SRPPos"])
             rdot_rcv_srp = calc_rdot(pvp["RcvPos"], pvp["RcvVel"], pvp["SRPPos"])
             rdot_avg_srp = 0.5 * (rdot_xmt_srp + rdot_rcv_srp)
-            afdop_expected = rdot_avg_srp * (-2 / spc.c)
+            afdop_expected = rdot_avg_srp * (-2 / _constants.c)
             mask = np.logical_and(
                 np.isfinite(afdop_expected), np.isfinite(pvp["aFDOP"])
             )
@@ -948,7 +948,7 @@ class CphdConsistency(con.ConsistencyChecker):
             fx_c = 0.5 * (pvp["FX1"] + pvp["FX2"])
             tx_lfmrates = self._get_channel_tx_lfmrates(channel_node)
             with np.errstate(divide="ignore"):
-                derived_fx_rate = fx_c * 2 / (spc.c * pvp["aFRR1"])
+                derived_fx_rate = fx_c * 2 / (_constants.c * pvp["aFRR1"])
             mask = np.isfinite(derived_fx_rate)
             assert mask.any()
             derived_fx_matches_tx_lfmrates = np.isclose(
@@ -969,7 +969,7 @@ class CphdConsistency(con.ConsistencyChecker):
             pvp = self._get_channel_pvps(channel_id)
             tx_lfmrates = self._get_channel_tx_lfmrates(channel_node)
             with np.errstate(divide="ignore"):
-                derived_fx_rate = 2 / (spc.c * pvp["aFRR2"])
+                derived_fx_rate = 2 / (_constants.c * pvp["aFRR2"])
             mask = np.isfinite(derived_fx_rate)
             assert mask.any()
             derived_fx_matches_tx_lfmrates = np.isclose(

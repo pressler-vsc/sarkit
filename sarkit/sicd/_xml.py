@@ -13,9 +13,9 @@ import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
 import sarkit._xmlhelp as skxml
-import sarkit.constants
 import sarkit.sicd._io as sicd_io
 import sarkit.sicd.projection as ss_proj
+from sarkit import _constants
 
 
 # The following transcoders happen to share common implementation across several standards
@@ -683,10 +683,10 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
     if not pre_1_4 and not params.is_monostatic():
         assert params.Xmt_Poly is not None
         assert params.Rcv_Poly is not None
-        tx_coa = t_coa - (1 / sarkit.constants.speed_of_light) * np.linalg.norm(
+        tx_coa = t_coa - (1 / _constants.speed_of_light) * np.linalg.norm(
             npp.polyval(t_coa, params.Xmt_Poly) - scp
         )
-        tr_coa = t_coa + (1 / sarkit.constants.speed_of_light) * np.linalg.norm(
+        tr_coa = t_coa + (1 / _constants.speed_of_light) * np.linalg.norm(
             npp.polyval(t_coa, params.Rcv_Poly) - scp
         )
 

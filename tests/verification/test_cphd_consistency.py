@@ -9,8 +9,8 @@ import shapely.affinity
 import shapely.geometry as shg
 from lxml import etree
 
-import sarkit.constants
 import sarkit.cphd as skcphd
+from sarkit import _constants
 from sarkit.verification._cphd_consistency import CphdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
@@ -71,7 +71,7 @@ def example_cphd_file(tmp_path_factory):
 
     pvps["RcvTime"] = (
         pvps["TxTime"]
-        + 2.0 * xmlhelp.load(".//{*}SlantRange") / sarkit.constants.speed_of_light
+        + 2.0 * xmlhelp.load(".//{*}SlantRange") / _constants.speed_of_light
     )
     pvps["RcvPos"] = np.polynomial.polynomial.polyval(pvps["RcvTime"], arppoly).T
     pvps["RcvVel"] = np.polynomial.polynomial.polyval(

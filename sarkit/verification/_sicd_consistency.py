@@ -16,11 +16,11 @@ import numpy.polynomial.polynomial as npp
 import shapely.geometry as shg
 from lxml import etree
 
-import sarkit.constants
 import sarkit.sicd as sksicd
 import sarkit.sicd.projection as sicdproj
 import sarkit.verification._consistency as con
 import sarkit.wgs84
+from sarkit import _constants
 from sarkit._nitf.nitf import NITFDetails
 
 logger = logging.getLogger(__name__)
@@ -141,7 +141,7 @@ def _compute_pfa_min_max_fx(xmlhelp):
         kap = np.sqrt(krg**2 + kaz**2)
         theta = np.arctan2(kaz, krg)
 
-        return sarkit.constants.c / 2.0 / npp.polyval(theta, ksf) * kap
+        return _constants.c / 2.0 / npp.polyval(theta, ksf) * kap
 
     min_fx = min(_k_rect_to_fx(krg1, kaz) for kaz in [kaz1, kaz2])
     max_fx = max(_k_rect_to_fx(krg2, kaz) for kaz in [kaz1, kaz2])

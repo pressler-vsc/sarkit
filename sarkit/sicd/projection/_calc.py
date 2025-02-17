@@ -4,8 +4,8 @@ import numpy as np
 import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
-import sarkit.constants
 import sarkit.wgs84
+from sarkit import _constants
 
 from . import _params as params
 
@@ -161,7 +161,7 @@ def compute_coa_pos_vel(
     assert proj_metadata.Xmt_Poly is not None
     x0 = _xyzpolyval(t_coa, proj_metadata.Xmt_Poly)
     r_x0 = np.linalg.norm(x0 - grp_coa)
-    tx_coa = t_coa - r_x0 / sarkit.constants.speed_of_light
+    tx_coa = t_coa - r_x0 / _constants.speed_of_light
 
     # Compute transmit APC position and velocity
     xmt_coa = _xyzpolyval(tx_coa, proj_metadata.Xmt_Poly)
@@ -170,7 +170,7 @@ def compute_coa_pos_vel(
     # Compute receive time
     r0 = _xyzpolyval(t_coa, proj_metadata.Rcv_Poly)
     r_r0 = np.linalg.norm(r0 - grp_coa)
-    tr_coa = t_coa + r_r0 / sarkit.constants.speed_of_light
+    tr_coa = t_coa + r_r0 / _constants.speed_of_light
 
     # Compute receive APC position and velocity
     assert proj_metadata.Rcv_Poly is not None
@@ -562,7 +562,7 @@ def compute_and_apply_offsets(
             + apo_input_set.delta_VARP * (init_proj_set.t_COA - proj_metadata.t_SCP_COA)
         )
         delta_R_ARP = (  # noqa N806
-            sarkit.constants.speed_of_light
+            _constants.speed_of_light
             / 2
             * (apo_input_set.delta_tr_SCP_COA - apo_input_set.delta_tx_SCP_COA)
         )
@@ -618,10 +618,10 @@ def compute_and_apply_offsets(
         * (init_proj_set.tr_COA + delta_tr_COA - proj_metadata.t_SCP_COA)
     )
     delta_R_Avg_COA = (  # noqa N806
-        sarkit.constants.speed_of_light / 2 * (delta_tr_COA - delta_tx_COA)
+        _constants.speed_of_light / 2 * (delta_tr_COA - delta_tx_COA)
     )
     delta_Rdot_Avg_COA = (  # noqa N806
-        sarkit.constants.speed_of_light / 2 * (T_Clk_R_SF - T_Clk_X_SF)
+        _constants.speed_of_light / 2 * (T_Clk_R_SF - T_Clk_X_SF)
     )
 
     return params.ProjectionSets(

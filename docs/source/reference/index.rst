@@ -7,9 +7,9 @@ SARkit API Reference
 :Release: |version|
 :Date: |today|
 
-API reference for :mod:`sarkit`.
+API reference for ``sarkit``.
 
-* `sarkit.constants`
+* :py:mod:`sarkit`
 * `sarkit.cphd`
 * `sarkit.crsd`
 * `sarkit.processing`
@@ -24,7 +24,7 @@ API reference for :mod:`sarkit`.
 .. toctree::
    :hidden:
 
-    sarkit.constants <constants>
+    sarkit <sarkit>
     sarkit.cphd <cphd>
     sarkit.crsd <crsd>
     sarkit.processing <processing>

@@ -21,8 +21,9 @@ import sarkit._nitf.nitf_elements.image
 import sarkit._nitf.nitf_elements.nitf_head
 import sarkit._nitf.nitf_elements.security
 import sarkit._nitf.utils
+import sarkit.sicd as sksicd
+import sarkit.sicd._io
 import sarkit.sidd._xml
-import sarkit.standards.sicd.io as sicdio
 
 logger = logging.getLogger(__name__)
 
@@ -93,13 +94,13 @@ ILOC_MAX: Final[int] = 99_999
 
 
 # SICD implementation happens to match, reuse it
-class SiddNitfSecurityFields(sicdio.SicdNitfSecurityFields):
-    __doc__ = sicdio.SicdNitfSecurityFields.__doc__
+class SiddNitfSecurityFields(sksicd.SicdNitfSecurityFields):
+    __doc__ = sksicd.SicdNitfSecurityFields.__doc__
 
 
 # SICD implementation happens to match, reuse it
-class SiddNitfHeaderFields(sicdio.SicdNitfHeaderFields):
-    __doc__ = sicdio.SicdNitfHeaderFields.__doc__
+class SiddNitfHeaderFields(sksicd.SicdNitfHeaderFields):
+    __doc__ = sksicd.SicdNitfHeaderFields.__doc__
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -142,8 +143,8 @@ class SiddNitfImageSegmentFields:
 
 
 # SICD implementation happens to match, reuse it
-class SiddNitfDESegmentFields(sicdio.SicdNitfDESegmentFields):
-    __doc__ = sicdio.SicdNitfDESegmentFields.__doc__
+class SiddNitfDESegmentFields(sksicd.SicdNitfDESegmentFields):
+    __doc__ = sksicd.SicdNitfDESegmentFields.__doc__
 
 
 @dataclasses.dataclass
@@ -247,11 +248,11 @@ class SiddNitfPlanSicdXmlInfo:
     """
 
     sicd_xmltree: lxml.etree.ElementTree
-    des_fields: sicdio.SicdNitfDESegmentFields
+    des_fields: sksicd.SicdNitfDESegmentFields
 
     def __post_init__(self):
         if isinstance(self.des_fields, dict):
-            self.des_fields = sicdio.SicdNitfDESegmentFields(**self.des_fields)
+            self.des_fields = sksicd.SicdNitfDESegmentFields(**self.des_fields)
 
 
 class SiddNitfPlan:
@@ -375,7 +376,7 @@ class SiddNitfPlan:
     def add_sicd_xml(
         self,
         sicd_xmltree: lxml.etree.ElementTree,
-        des_fields: sicdio.SicdNitfDESegmentFields,
+        des_fields: sksicd.SicdNitfDESegmentFields,
     ) -> int:
         """Add a SICD XML to the plan
 
@@ -530,7 +531,7 @@ class SiddNitfReader:
                         # No matching product image, treat it as a product support XML
                         self.plan.add_product_support_xml(xmltree, nitf_de_fields)
                 elif "SICD" in xmltree.getroot().tag:
-                    nitf_de_fields = sicdio.SicdNitfDESegmentFields._from_header(
+                    nitf_de_fields = sksicd.SicdNitfDESegmentFields._from_header(
                         des_header
                     )
                     self.plan.add_sicd_xml(xmltree, nitf_de_fields)
@@ -783,7 +784,7 @@ class SiddNitfWriter:
         # SICD XML DES
         for sicd_xml_info in self._nitf_plan.sicd_xmls:
             des_managers.append(
-                sicdio._create_des_manager(
+                sarkit.sicd._io._create_des_manager(
                     sicd_xml_info.sicd_xmltree, sicd_xml_info.des_fields
                 )
             )

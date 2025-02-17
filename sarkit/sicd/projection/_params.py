@@ -8,7 +8,7 @@ import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
 
-import sarkit.standards.sicd.xml as ss_xml
+import sarkit.sicd._xml as ss_xml
 
 
 def _get_rcv_poly(xmlhelp):

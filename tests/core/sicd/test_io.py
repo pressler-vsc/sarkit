@@ -5,14 +5,13 @@ import numpy as np
 import pytest
 
 import sarkit._nitf.nitf
-import sarkit.standards.sicd.io
-import sarkit.standards.sicd.xml
+import sarkit.sicd as sksicd
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def _random_image(sicd_xmltree):
-    xml_helper = sarkit.standards.sicd.xml.XmlHelper(sicd_xmltree)
+    xml_helper = sksicd.XmlHelper(sicd_xmltree)
     rows = xml_helper.load("./{*}ImageData/{*}NumRows")
     cols = xml_helper.load("./{*}ImageData/{*}NumCols")
     shape = (rows, cols)
@@ -39,7 +38,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
     basis_etree = lxml.etree.parse(sicd_xml)
     basis_array = _random_image(basis_etree)
 
-    dtype = sarkit.standards.sicd.io.PIXEL_TYPES[pixel_type]["dtype"]
+    dtype = sksicd.PIXEL_TYPES[pixel_type]["dtype"]
     if pixel_type == "RE16I_IM16I":
         basis_array = (
             (np.iinfo(dtype["real"]).max * basis_array.view(basis_array.real.dtype))
@@ -57,12 +56,10 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
         )
     basis_etree.find("{*}ImageData/{*}PixelType").text = pixel_type
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
-    schema = lxml.etree.XMLSchema(
-        file=sarkit.standards.sicd.io.VERSION_INFO[basis_version]["schema"]
-    )
+    schema = lxml.etree.XMLSchema(file=sksicd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
 
-    nitf_plan = sarkit.standards.sicd.io.SicdNitfPlan(
+    nitf_plan = sksicd.SicdNitfPlan(
         sicd_xmltree=basis_etree,
         header_fields={
             "ostaid": "ostaid",
@@ -141,7 +138,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
         },
     )
     with out_sicd.open("wb") as f:
-        with sarkit.standards.sicd.io.SicdNitfWriter(f, nitf_plan) as writer:
+        with sksicd.SicdNitfWriter(f, nitf_plan) as writer:
             half_rows, half_cols = np.asarray(basis_array.shape) // 2
             writer.write_image(basis_array[:half_rows, :half_cols], start=(0, 0))
             writer.write_image(
@@ -154,7 +151,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
                 basis_array[half_rows:, :half_cols], start=(half_rows, 0)
             )
 
-    with out_sicd.open("rb") as f, sarkit.standards.sicd.io.SicdNitfReader(f) as reader:
+    with out_sicd.open("rb") as f, sksicd.SicdNitfReader(f) as reader:
         read_array = reader.read_image()
 
     schema.assertValid(reader.sicd_xmltree)
@@ -191,7 +188,7 @@ def test_nitfheaderfields_from_header():
     header.ONAME = "oname"
     header.OPHONE = "ophone"
 
-    fields = sarkit.standards.sicd.io.SicdNitfHeaderFields._from_header(header)
+    fields = sksicd.SicdNitfHeaderFields._from_header(header)
     assert fields.ostaid == header.OSTAID
     assert fields.ftitle == header.FTITLE
     assert fields.security.clas == header.Security.CLAS
@@ -241,7 +238,7 @@ def test_nitfimagesegmentfields_from_header():
     header.Security.SRDT = ""
     header.Security.CTLN = "ctln_h"
 
-    fields = sarkit.standards.sicd.io.SicdNitfImageSegmentFields._from_header(header)
+    fields = sksicd.SicdNitfImageSegmentFields._from_header(header)
     assert fields.isorce == header.ISORCE
     assert fields.icom == comments
     assert fields.security.clas == header.Security.CLAS
@@ -285,7 +282,7 @@ def test_nitfdesegmentfields_from_header():
     header.Security.SRDT = ""
     header.Security.CTLN = "ctln_h"
 
-    fields = sarkit.standards.sicd.io.SicdNitfDESegmentFields._from_header(header)
+    fields = sksicd.SicdNitfDESegmentFields._from_header(header)
     assert fields.desshrp == header.UserHeader.DESSHRP
     assert fields.desshli == header.UserHeader.DESSHLI
     assert fields.desshlin == header.UserHeader.DESSHLIN
@@ -308,11 +305,9 @@ def test_nitfdesegmentfields_from_header():
 
 
 def test_version_info():
-    actual_order = [
-        x["version"] for x in sarkit.standards.sicd.io.VERSION_INFO.values()
-    ]
+    actual_order = [x["version"] for x in sksicd.VERSION_INFO.values()]
     expected_order = sorted(actual_order, key=lambda x: x.split("."))
     assert actual_order == expected_order
 
-    for urn, info in sarkit.standards.sicd.io.VERSION_INFO.items():
+    for urn, info in sksicd.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn

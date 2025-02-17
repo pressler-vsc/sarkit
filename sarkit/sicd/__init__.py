@@ -1,7 +1,7 @@
 """
-======================================
-Sensor Independent Complex Data (SICD)
-======================================
+====================================================
+Sensor Independent Complex Data (:mod:`sarkit.sicd`)
+====================================================
 
 Python reference implementations of the suite of NGA.STND.0024 standardization
 documents that define the Sensor Independent Complex Data (SICD) format.
@@ -14,32 +14,51 @@ Supported Versions
 * `SICD 1.3.0`_
 * `SICD 1.4.0`_
 
-Functions
-=========
-
-Reading and Writing
--------------------
+Data Structure & File Format
+============================
 
 .. autosummary::
    :toctree: generated/
 
-   SicdNitfReader
-   SicdNitfWriter
-
-I/O Helpers
------------
-
-.. autosummary::
-   :toctree: generated/
-
-   SicdNitfPlan
-   SicdNitfSecurityFields
    SicdNitfHeaderFields
+   SicdNitfSecurityFields
    SicdNitfImageSegmentFields
    SicdNitfDESegmentFields
+   SicdNitfReader
+   SicdNitfPlan
+   SicdNitfWriter
 
-Processing
-----------
+XML Metadata
+============
+
+.. autosummary::
+   :toctree: generated/
+
+   XmlHelper
+   TxtType
+   EnuType
+   BoolType
+   IntType
+   DblType
+   XdtType
+   RowColType
+   CmplxType
+   XyzType
+   LatLonHaeType
+   LatLonType
+   PolyType
+   Poly2dType
+   XyzPolyType
+   MtxType
+   ParameterType
+   ImageCornersType
+   compute_scp_coa
+
+Projections
+===========
+For most of the functions from SICD Volume 3, see the `sarkit.sicd.projection` namespace.
+
+In the `sarkit.sicd` namespace, there are convenience functions that operate on parsed SICD XML trees:
 
 .. autosummary::
    :toctree: generated/
@@ -47,6 +66,18 @@ Processing
     image_to_ground_plane
     image_to_constant_hae_surface
     scene_to_image
+
+Constants
+=========
+
+.. list-table::
+
+   * - ``VERSION_INFO``
+     - `dict` of {xml namespace: version-specific information}
+   * - ``PIXEL_TYPES``
+     - `dict` of {PixelType: pixel-type-specific information}
+   * - ``TRANSCODERS``
+     - `dict` of {name: transcoder}
 
 References
 ==========
@@ -136,7 +167,9 @@ SICD 1.4.0
    https://nsgreg.nga.mil/doc/view?i=5538
 """
 
-from .io import (
+from ._io import (
+    PIXEL_TYPES,
+    VERSION_INFO,
     SicdNitfDESegmentFields,
     SicdNitfHeaderFields,
     SicdNitfImageSegmentFields,
@@ -145,14 +178,51 @@ from .io import (
     SicdNitfSecurityFields,
     SicdNitfWriter,
 )
-from .projection.derived import (
+from ._xml import (
+    TRANSCODERS,
+    BoolType,
+    CmplxType,
+    DblType,
+    EnuType,
+    ImageCornersType,
+    IntType,
+    LatLonHaeType,
+    LatLonType,
+    MtxType,
+    ParameterType,
+    Poly2dType,
+    PolyType,
+    RowColType,
+    TxtType,
+    XdtType,
+    XmlHelper,
+    XyzPolyType,
+    XyzType,
+    compute_scp_coa,
+)
+from .projection._derived import (
     image_to_constant_hae_surface,
     image_to_ground_plane,
     scene_to_image,
 )
 
-# IO
 __all__ = [
+    "PIXEL_TYPES",
+    "TRANSCODERS",
+    "VERSION_INFO",
+    "BoolType",
+    "CmplxType",
+    "DblType",
+    "EnuType",
+    "ImageCornersType",
+    "IntType",
+    "LatLonHaeType",
+    "LatLonType",
+    "MtxType",
+    "ParameterType",
+    "Poly2dType",
+    "PolyType",
+    "RowColType",
     "SicdNitfDESegmentFields",
     "SicdNitfHeaderFields",
     "SicdNitfImageSegmentFields",
@@ -160,10 +230,12 @@ __all__ = [
     "SicdNitfReader",
     "SicdNitfSecurityFields",
     "SicdNitfWriter",
-]
-
-# Projections
-__all__ += [
+    "TxtType",
+    "XdtType",
+    "XmlHelper",
+    "XyzPolyType",
+    "XyzType",
+    "compute_scp_coa",
     "image_to_constant_hae_surface",
     "image_to_ground_plane",
     "scene_to_image",

@@ -1,10 +1,5 @@
 """
-========
-SICD I/O
-========
-
-Functions from SICD Volume 2 File Format Description Document
-
+Functions to read and write SICD files.
 """
 
 import dataclasses
@@ -12,7 +7,7 @@ import datetime
 import importlib.resources
 import itertools
 import warnings
-from typing import Any, Self
+from typing import Any, Final, Self
 
 import lxml.etree
 import numpy as np
@@ -24,14 +19,16 @@ import sarkit._nitf.nitf_elements.image
 import sarkit._nitf.nitf_elements.nitf_head
 import sarkit._nitf.nitf_elements.security
 import sarkit._nitf.utils
-import sarkit.standards.sicd.xml
+import sarkit.sicd._xml as sicd_xml
 
-SPECIFICATION_IDENTIFIER = "SICD Volume 1 Design & Implementation Description Document"
+SPECIFICATION_IDENTIFIER: Final[str] = (
+    "SICD Volume 1 Design & Implementation Description Document"
+)
 
-SCHEMA_DIR = importlib.resources.files("sarkit.standards.sicd.schemas")
+SCHEMA_DIR = importlib.resources.files("sarkit.sicd.schemas")
 
 # Keys in ascending order
-VERSION_INFO = {
+VERSION_INFO: Final[dict] = {
     "urn:SICD:1.1.0": {
         "version": "1.1",
         "date": "2014-09-30T00:00:00Z",
@@ -55,7 +52,7 @@ VERSION_INFO = {
 }
 
 
-PIXEL_TYPES: dict[str, dict[str, Any]] = {
+PIXEL_TYPES: Final[dict[str, dict[str, Any]]] = {
     "RE32F_IM32F": {
         "bytes": 8,
         "pvtype": "R",
@@ -510,7 +507,7 @@ class SicdNitfReader:
 def _create_des_manager(sicd_xmltree, des_fields):
     """DES Manager for SICD XML DES"""
     xmlns = lxml.etree.QName(sicd_xmltree.getroot()).namespace
-    xml_helper = sarkit.standards.sicd.xml.XmlHelper(sicd_xmltree)
+    xml_helper = sicd_xml.XmlHelper(sicd_xmltree)
     now_dt = datetime.datetime.now(datetime.timezone.utc)
 
     icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
@@ -590,7 +587,7 @@ class SicdNitfWriter:
         if not schema.validate(sicd_xmltree):
             warnings.warn(str(schema.error_log))
 
-        xml_helper = sarkit.standards.sicd.xml.XmlHelper(sicd_xmltree)
+        xml_helper = sicd_xml.XmlHelper(sicd_xmltree)
         rows = xml_helper.load("./{*}ImageData/{*}NumRows")
         cols = xml_helper.load("./{*}ImageData/{*}NumCols")
         pixel_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
@@ -712,7 +709,7 @@ class SicdNitfWriter:
                 f"for PixelType={pixel_type}"
             )
 
-        xml_helper = sarkit.standards.sicd.xml.XmlHelper(self._nitf_plan.sicd_xmltree)
+        xml_helper = sicd_xml.XmlHelper(self._nitf_plan.sicd_xmltree)
         rows = xml_helper.load("./{*}ImageData/{*}NumRows")
         cols = xml_helper.load("./{*}ImageData/{*}NumCols")
         sicd_shape = np.asarray((rows, cols))

@@ -4,7 +4,8 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-from . import calc, params
+from . import _calc as calc
+from . import _params as params
 
 
 def image_to_ground_plane(

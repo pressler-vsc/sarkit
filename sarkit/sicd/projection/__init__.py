@@ -1,9 +1,9 @@
 """
-=========================================================
-SICD Projection (:mod:`sarkit.standards.sicd.projection`)
-=========================================================
+===============================================
+SICD Projection (:mod:`sarkit.sicd.projection`)
+===============================================
 
-Sub-package for objects and methods that implement the exploitation processing
+Objects and methods that implement the exploitation processing
 described in SICD Volume 3 Image Projections Description Document.
 
 Data Classes
@@ -96,7 +96,7 @@ Precise R/Rdot to Constant HAE Surface Projection
    r_rdot_to_constant_hae_surface
 """
 
-from .calc import (
+from ._calc import (
     compute_and_apply_offsets,
     compute_coa_pos_vel,
     compute_coa_r_rdot,
@@ -113,7 +113,7 @@ from .calc import (
     r_rdot_to_ground_plane_mono,
     scene_to_image,
 )
-from .params import (
+from ._params import (
     AdjustableParameterOffsets,
     CoaPosVels,
     MetadataParams,

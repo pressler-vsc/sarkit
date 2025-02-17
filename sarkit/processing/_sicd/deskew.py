@@ -10,7 +10,7 @@ import numpy as np
 import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
-import sarkit.standards.sicd.xml as ss_xml
+import sarkit.sicd as sksicd
 
 
 @numba.njit(parallel=True)
@@ -92,7 +92,7 @@ def sicd_get_deskew_phase_poly(
     phase_poly : ndarray
         Array of phase polynomial coefficients
     """
-    xml_helper = ss_xml.XmlHelper(sicd_xmltree)
+    xml_helper = sksicd.XmlHelper(sicd_xmltree)
     axis_index = {"Row": 0, "Col": 1}[axis]
     delta_k_coa_poly = _get_delta_kcoa_poly(xml_helper, axis)
     sign = xml_helper.load(f"./{{*}}Grid/{{*}}{axis}/{{*}}Sgn")
@@ -121,7 +121,7 @@ def sicd_apply_phase_poly(
         Updated SICD XML ElementTree
     """
     sicd_xmltree_out = copy.deepcopy(sicd_xmltree)
-    xml_helper = ss_xml.XmlHelper(sicd_xmltree_out)
+    xml_helper = sksicd.XmlHelper(sicd_xmltree_out)
     row_ss = xml_helper.load("./{*}Grid/{*}Row/{*}SS")
     row_0 = (
         xml_helper.load("./{*}ImageData/{*}FirstRow")

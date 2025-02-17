@@ -17,10 +17,8 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.constants
-import sarkit.standards.sicd as ss_std
-import sarkit.standards.sicd.io as ss_io
-import sarkit.standards.sicd.projection as ss_proj
-import sarkit.standards.sicd.xml as ss_xml
+import sarkit.sicd as sksicd
+import sarkit.sicd.projection as sicdproj
 import sarkit.verification._consistency as con
 import sarkit.wgs84
 from sarkit._nitf.nitf import NITFDetails
@@ -195,7 +193,7 @@ class SicdConsistency(con.ConsistencyChecker):
         self.sicdroot = etree.fromstring(
             etree.tostring(sicdroot)
         )  # handle element or tree -> element
-        self.xmlhelp = ss_xml.XmlHelper(self.sicdroot.getroottree())
+        self.xmlhelp = sksicd.XmlHelper(self.sicdroot.getroottree())
 
         if schema_override:
             if version_override is None:
@@ -206,8 +204,10 @@ class SicdConsistency(con.ConsistencyChecker):
             self.version = version_override or self._version_lookup()
             if self.version is None:
                 raise ValueError("Unable to determine SICD version from XML namespace")
-            urn = {v["version"]: k for k, v in ss_io.VERSION_INFO.items()}[self.version]
-            self.schema = ss_io.VERSION_INFO[urn]["schema"]
+            urn = {v["version"]: k for k, v in sksicd.VERSION_INFO.items()}[
+                self.version
+            ]
+            self.schema = sksicd.VERSION_INFO[urn]["schema"]
 
         self.ntf = ntf
 
@@ -296,7 +296,7 @@ class SicdConsistency(con.ConsistencyChecker):
         this_ns = etree.QName(self.sicdroot).namespace
         if this_ns is None:
             return None
-        for schema_info in ss_io.VERSION_INFO.values():
+        for schema_info in sksicd.VERSION_INFO.values():
             schema_path = schema_info.get("schema")
             if schema_path is not None and this_ns == etree.parse(
                 schema_path
@@ -317,7 +317,9 @@ class SicdConsistency(con.ConsistencyChecker):
     def check_nitf_imseg(self) -> None:
         """Check NITF Image SubHeaders"""
         collect_start = self.xmlhelp.load("./{*}Timeline/{*}CollectStart")
-        pixel_info = ss_io.PIXEL_TYPES[self.xmlhelp.load("./{*}ImageData/{*}PixelType")]
+        pixel_info = sksicd.PIXEL_TYPES[
+            self.xmlhelp.load("./{*}ImageData/{*}PixelType")
+        ]
         expected_nbpp = pixel_info["bytes"] * 8 / 2
         with self.precondition():
             assert self.ntf is not None
@@ -381,7 +383,7 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def _segmentation(self):
         """Section 3.2.1 Image Segment Parameters and Equations"""
-        bytes_per_pixel = ss_io.PIXEL_TYPES[
+        bytes_per_pixel = sksicd.PIXEL_TYPES[
             self.xmlhelp.load("./{*}ImageData/{*}PixelType")
         ]["bytes"]
         is_size_max = 9_999_999_998
@@ -1167,8 +1169,10 @@ class SicdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert plane is not None
             # compute scene center and slant plane normal
-            proj_metadata = ss_proj.MetadataParams.from_xml(self.sicdroot.getroottree())
-            spn = ss_proj.compute_scp_coa_slant_plane_normal(proj_metadata)
+            proj_metadata = sicdproj.MetadataParams.from_xml(
+                self.sicdroot.getroottree()
+            )
+            spn = sicdproj.compute_scp_coa_slant_plane_normal(proj_metadata)
 
             # extract the reference plane
             ref_ecf = self.xmlhelp.load_elem(plane.find("./{*}RefPt/{*}ECF"))
@@ -1178,7 +1182,7 @@ class SicdConsistency(con.ConsistencyChecker):
 
             scp_ecf = self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}ECF")
             if np.abs(np.dot(scp_ecf - ref_ecf, zdir)) > 0.1:
-                gcp, _, success = ss_std.image_to_ground_plane(
+                gcp, _, success = sksicd.image_to_ground_plane(
                     self.sicdroot.getroottree(), [0, 0], ref_ecf, zdir
                 )
                 assert success
@@ -1502,9 +1506,9 @@ class SicdConsistency(con.ConsistencyChecker):
         newroot = copy.deepcopy(self.sicdroot)
         newroot.replace(
             newroot.find(".//{*}SCPCOA"),
-            ss_xml.compute_scp_coa(self.sicdroot.getroottree()),
+            sksicd.compute_scp_coa(self.sicdroot.getroottree()),
         )
-        expected_xmlhelp = ss_xml.XmlHelper(newroot.getroottree())
+        expected_xmlhelp = sksicd.XmlHelper(newroot.getroottree())
 
         def _compare_children(actual_parent, expected_parent):
             with self.need(f"{actual_parent.tag} contains only expected elements"):

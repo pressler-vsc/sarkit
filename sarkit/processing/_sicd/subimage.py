@@ -8,7 +8,7 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-import sarkit.standards.sicd.xml as ss_xml
+import sarkit.sicd as sksicd
 import sarkit.wgs84
 
 
@@ -48,7 +48,7 @@ def sicd_subimage(
         Updated SICD XML ElementTree
     """
     sicd_xmltree_out = copy.deepcopy(sicd_xmltree)
-    xml_helper = ss_xml.XmlHelper(sicd_xmltree_out)
+    xml_helper = sksicd.XmlHelper(sicd_xmltree_out)
     first_row_abs = first_row + xml_helper.load("./{*}ImageData/{*}FirstRow")
     first_col_abs = first_col + xml_helper.load("./{*}ImageData/{*}FirstCol")
 

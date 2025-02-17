@@ -5,7 +5,7 @@ import pytest
 from lxml import etree
 
 import sarkit.processing as skproc
-import sarkit.standards.sicd.xml as ss_xml
+import sarkit.sicd as sksicd
 
 good_sicd_xml_path = (
     pathlib.Path(__file__).absolute().parent / "../../data" / "example-sicd-1.2.1.xml"
@@ -21,7 +21,7 @@ def good_xml():
 
 @pytest.fixture(scope="module")
 def complex_array(good_xml):
-    xml_helper = ss_xml.XmlHelper(good_xml)
+    xml_helper = sksicd.XmlHelper(good_xml)
     num_rows = xml_helper.load("./{*}ImageData/{*}NumRows")
     num_cols = xml_helper.load("./{*}ImageData/{*}NumCols")
     shape = (num_rows, num_cols)
@@ -35,7 +35,7 @@ def complex_array(good_xml):
 
 
 def test_subimage_smoke(complex_array, good_xml):
-    xmlhelp_in = ss_xml.XmlHelper(good_xml)
+    xmlhelp_in = sksicd.XmlHelper(good_xml)
     first_row = 10
     first_col = 13
     num_rows = 11
@@ -43,7 +43,7 @@ def test_subimage_smoke(complex_array, good_xml):
     out_arr, out_xml = skproc.sicd_subimage(
         complex_array, good_xml, first_row, first_col, num_rows, num_cols
     )
-    xmlhelp_out = ss_xml.XmlHelper(out_xml)
+    xmlhelp_out = sksicd.XmlHelper(out_xml)
 
     assert np.array_equal(
         out_arr,

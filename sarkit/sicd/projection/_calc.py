@@ -7,7 +7,7 @@ import numpy.typing as npt
 import sarkit.constants
 import sarkit.wgs84
 
-from . import params
+from . import _params as params
 
 
 def _xyzpolyval(x, c):

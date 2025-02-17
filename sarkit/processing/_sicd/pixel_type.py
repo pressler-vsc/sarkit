@@ -8,8 +8,7 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-import sarkit.standards.sicd.io as ss_io
-import sarkit.standards.sicd.xml as ss_xml
+import sarkit.sicd as sksicd
 
 
 def _max_abs(array):
@@ -61,7 +60,7 @@ def sicd_as_re32f_im32f(
     """
     input_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
 
-    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
+    if sksicd.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
         raise TypeError(
             f"{array.dtype=} does not match ImageData/PixelType={input_type}"
         )
@@ -70,7 +69,7 @@ def sicd_as_re32f_im32f(
         return array, sicd_xmltree
 
     sicd_xmltree_out = copy.deepcopy(sicd_xmltree)
-    xml_helper = ss_xml.XmlHelper(sicd_xmltree_out)
+    xml_helper = sksicd.XmlHelper(sicd_xmltree_out)
     if sicd_xmltree.findtext("./{*}ImageData/{*}PixelType") == "RE16I_IM16I":
         out_array = _re16i_im16i_to_re32f_im32f(array, xml_helper)
     elif sicd_xmltree.findtext("./{*}ImageData/{*}PixelType") == "AMP8I_PHS8I":
@@ -101,7 +100,7 @@ def sicd_as_re16i_im16i(
     """
     input_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
 
-    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
+    if sksicd.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
         raise TypeError(
             f"{array.dtype=} does not match ImageData/PixelType={input_type}"
         )
@@ -110,7 +109,7 @@ def sicd_as_re16i_im16i(
         return array, sicd_xmltree
 
     sicd_xmltree_out = copy.deepcopy(sicd_xmltree)
-    xml_helper = ss_xml.XmlHelper(sicd_xmltree_out)
+    xml_helper = sksicd.XmlHelper(sicd_xmltree_out)
     if xml_helper.load("./{*}ImageData/{*}PixelType") == "AMP8I_PHS8I":
         array = _amp8i_phs8i_to_re32f_im32f(array, xml_helper)
     array_f32 = array.reshape(array.shape + (1,)).view(array.real.dtype)
@@ -120,7 +119,7 @@ def sicd_as_re16i_im16i(
     out_array = (
         np.round(array_f32 * scale)
         .astype(np.int16)
-        .view(ss_io.PIXEL_TYPES["RE16I_IM16I"]["dtype"])
+        .view(sksicd.PIXEL_TYPES["RE16I_IM16I"]["dtype"])
         .reshape(array.shape)
     )
     for sf in ["RCS", "SigmaZero", "BetaZero", "GammaZero"]:
@@ -164,21 +163,21 @@ def sicd_as_amp8i_phs8i(
     """
     input_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
 
-    if ss_io.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
+    if sksicd.PIXEL_TYPES[input_type]["dtype"] != array.dtype.newbyteorder("="):
         raise TypeError(
             f"{array.dtype=} does not match ImageData/PixelType={input_type}"
         )
 
     if lut.size != 256:
         raise ValueError("lut must be size 256")
-    xml_helper_in = ss_xml.XmlHelper(sicd_xmltree)
+    xml_helper_in = sksicd.XmlHelper(sicd_xmltree)
     if input_type == "AMP8I_PHS8I" and np.array_equal(
         lut, xml_helper_in.load("./{*}ImageData/{*}AmpTable")
     ):
         return array, sicd_xmltree
     array, sicd_xmltree_out = sicd_as_re32f_im32f(array, sicd_xmltree)
-    xml_helper = ss_xml.XmlHelper(sicd_xmltree_out)
-    out_array = np.empty(array.shape, ss_io.PIXEL_TYPES["AMP8I_PHS8I"]["dtype"])
+    xml_helper = sksicd.XmlHelper(sicd_xmltree_out)
+    out_array = np.empty(array.shape, sksicd.PIXEL_TYPES["AMP8I_PHS8I"]["dtype"])
     lut2 = ((lut[1:] + lut[:-1]) / 2) ** 2
     out_array["amp"] = np.digitize(array.real**2 + array.imag**2, lut2)
     out_array["phase"] = np.round(np.angle(array) / (2 * np.pi) * 256) % 256

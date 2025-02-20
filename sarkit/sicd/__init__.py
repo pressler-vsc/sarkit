@@ -27,6 +27,8 @@ Data Structure & File Format
    SicdNitfReader
    SicdNitfPlan
    SicdNitfWriter
+   image_segment_sizing_calculations
+   SizingImhdr
 
 XML Metadata
 ============

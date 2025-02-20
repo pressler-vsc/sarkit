@@ -55,14 +55,14 @@ def lint(session):
 
 @nox.session
 def test(session):
-    for next_session in ("test_standards", "test_processing", "test_verification"):
+    for next_session in ("test_core", "test_processing", "test_verification"):
         session.notify(next_session)
 
 
 @nox.session
-def test_standards(session):
+def test_core(session):
     session.run_install("pdm", "sync", "--prod", "-G", "dev-test", external=True)
-    session.run("pytest", "tests/standards")
+    session.run("pytest", "tests/core")
 
 
 @nox.session
@@ -103,4 +103,7 @@ def data(session):
     )
     session.run(
         "python", "data/syntax_only/cphd/make_syntax_only_cphd_xmls.py", "--check"
+    )
+    session.run(
+        "python", "data/syntax_only/crsd/make_syntax_only_crsd_xmls.py", "--check"
     )

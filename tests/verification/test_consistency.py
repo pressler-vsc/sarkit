@@ -3,14 +3,11 @@ import sys
 
 import pytest
 
-import sarkit.verification.consistency as con
+import sarkit.verification._consistency as con
 
 
 class DummyConsistency(con.ConsistencyChecker):
     """A ConsistencyChecker used for unit testing and code coverage"""
-
-    def __init__(self):
-        super(DummyConsistency, self).__init__()
 
     def check_need_pass(self):
         with self.need("need pass"):

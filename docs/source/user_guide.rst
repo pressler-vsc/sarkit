@@ -19,7 +19,7 @@ Some features require additional dependencies which can be installed using packa
 
 .. code-block:: shell-session
 
-   $ python -m pip install sarkit  # Install basics dependencies
+   $ python -m pip install sarkit  # Install core dependencies
    $ python -m pip install sarkit[processing]  # Install processing dependencies
    $ python -m pip install sarkit[verification]  # Install verification dependencies
    $ python -m pip install sarkit[all]  # Install all dependencies
@@ -37,21 +37,21 @@ describe file contents and metadata prior to writing.
      - Plan
      - Writer
    * - ⛔ CRSD [Draft] ⛔
-     - :py:class:`~sarkit.standards.crsd.CrsdReader`
-     - :py:class:`~sarkit.standards.crsd.CrsdPlan`
-     - :py:class:`~sarkit.standards.crsd.CrsdWriter`
+     - :py:class:`~sarkit.crsd.CrsdReader`
+     - :py:class:`~sarkit.crsd.CrsdPlan`
+     - :py:class:`~sarkit.crsd.CrsdWriter`
    * - CPHD
-     - :py:class:`~sarkit.standards.cphd.CphdReader`
-     - :py:class:`~sarkit.standards.cphd.CphdPlan`
-     - :py:class:`~sarkit.standards.cphd.CphdWriter`
+     - :py:class:`~sarkit.cphd.CphdReader`
+     - :py:class:`~sarkit.cphd.CphdPlan`
+     - :py:class:`~sarkit.cphd.CphdWriter`
    * - SICD
-     - :py:class:`~sarkit.standards.sicd.SicdNitfReader`
-     - :py:class:`~sarkit.standards.sicd.SicdNitfPlan`
-     - :py:class:`~sarkit.standards.sicd.SicdNitfWriter`
+     - :py:class:`~sarkit.sicd.SicdNitfReader`
+     - :py:class:`~sarkit.sicd.SicdNitfPlan`
+     - :py:class:`~sarkit.sicd.SicdNitfWriter`
    * - SIDD
-     - :py:class:`~sarkit.standards.sidd.SiddNitfReader`
-     - :py:class:`~sarkit.standards.sidd.SiddNitfPlan`
-     - :py:class:`~sarkit.standards.sidd.SiddNitfWriter`
+     - :py:class:`~sarkit.sidd.SiddNitfReader`
+     - :py:class:`~sarkit.sidd.SiddNitfPlan`
+     - :py:class:`~sarkit.sidd.SiddNitfWriter`
 
 
 Reading
@@ -71,7 +71,7 @@ is often a small fraction of the size of a SAR data file.
    import lxml.etree
    import numpy as np
 
-   import sarkit.standards.sicd.io as sarkit_sicd
+   import sarkit.sicd as sksicd
 
    tmpdir = tempfile.TemporaryDirectory()
    tmppath = pathlib.Path(tmpdir.name)
@@ -79,13 +79,13 @@ is often a small fraction of the size of a SAR data file.
    sec = {"security": {"clas": "U"}}
    parser = lxml.etree.XMLParser(remove_blank_text=True)
    example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml", parser)
-   sicd_plan = sarkit_sicd.SicdNitfPlan(
+   sicd_plan = sksicd.SicdNitfPlan(
        sicd_xmltree=example_sicd_xmltree,
        header_fields={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
        is_fields={"isorce": "this sensor"} | sec,
        des_fields=sec,
    )
-   with open(example_sicd, "wb") as f, sarkit_sicd.SicdNitfWriter(f, sicd_plan):
+   with open(example_sicd, "wb") as f, sksicd.SicdNitfWriter(f, sicd_plan):
        pass  # don't currently care about the pixels
 
 
@@ -95,7 +95,7 @@ is often a small fraction of the size of a SAR data file.
 
 .. doctest::
 
-   >>> with example_sicd.open("rb") as f, sarkit_sicd.SicdNitfReader(f) as reader:
+   >>> with example_sicd.open("rb") as f, sksicd.SicdNitfReader(f) as reader:
    ...     pixels = reader.read_image()
    ...     pixels.shape
    (5727, 2362)
@@ -125,7 +125,7 @@ Plans can be built from their components:
 
 .. doctest::
 
-   >>> plan_a = sarkit_sicd.SicdNitfPlan(
+   >>> plan_a = sksicd.SicdNitfPlan(
    ...     sicd_xmltree=example_sicd_xmltree,
    ...     header_fields={"ostaid": "my location", "security": {"clas": "U"}},
    ...     is_fields={"isorce": "my sensor", "security": {"clas": "U"}},
@@ -150,7 +150,7 @@ Similar to reading, instantiating a writer sets up the file while data is writte
 .. doctest::
 
    >>> written_sicd = tmppath / "written.sicd"
-   >>> with written_sicd.open("wb") as f, sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
+   >>> with written_sicd.open("wb") as f, sksicd.SicdNitfWriter(f, plan_b) as writer:
    ...     writer.write_image(pixels)
 
    >>> with written_sicd.open("rb") as f:
@@ -162,7 +162,7 @@ SARkit sanity checks some aspects on write but it is up to the user to ensure co
 .. doctest::
 
    >>> bad_sicd = tmppath / "bad.sicd"
-   >>> with bad_sicd.open("wb") as f, sarkit_sicd.SicdNitfWriter(f, plan_b) as writer:
+   >>> with bad_sicd.open("wb") as f, sksicd.SicdNitfWriter(f, plan_b) as writer:
    ...     writer.write_image(pixels.view(np.uint8))
    Traceback (most recent call last):
    ValueError: Array dtype (uint8) does not match expected dtype (complex64) for PixelType=RE32F_IM32F
@@ -191,29 +191,28 @@ convenient Python objects.
    * - Format
      - XML Helper
    * - ⛔ CRSD [Draft] ⛔
-     - :py:class:`sarkit.standards.crsd.xml.XmlHelper`
+     - :py:class:`sarkit.crsd.XmlHelper`
    * - CPHD
-     - :py:class:`sarkit.standards.cphd.xml.XmlHelper`
+     - :py:class:`sarkit.cphd.XmlHelper`
    * - SICD
-     - :py:class:`sarkit.standards.sicd.xml.XmlHelper`
+     - :py:class:`sarkit.sicd.XmlHelper`
    * - SIDD
-     - :py:class:`sarkit.standards.sidd.xml.XmlHelper`
-
+     - :py:class:`sarkit.sidd.XmlHelper`
 
 XML Helpers
 -----------
 
-XMLHelpers are instantiated with an `lxml.etree.ElementTree` which can then be manipulated using set and load methods.
+XmlHelpers are instantiated with an `lxml.etree.ElementTree` which can then be manipulated using set and load methods.
 
 .. doctest::
 
-   >>> import sarkit.standards.sicd.xml
-   >>> xmlhelp = sarkit.standards.sicd.xml.XmlHelper(reader.sicd_xmltree)
+   >>> import sarkit.sicd as sksicd
+   >>> xmlhelp = sksicd.XmlHelper(reader.sicd_xmltree)
    >>> xmlhelp.load(".//{*}ModeType")
    'SPOTLIGHT'
 
-:py:class:`~sarkit.standards.xml.XmlHelper.load_elem` and :py:class:`~sarkit.standards.xml.XmlHelper.set_elem` can be
-used when you already have an element object:
+:py:class:`~sarkit.sicd.XmlHelper.load_elem` and :py:class:`~sarkit.sicd.XmlHelper.set_elem`
+can be used when you already have an element object:
 
 .. doctest::
 
@@ -230,8 +229,9 @@ used when you already have an element object:
      <Coef exponent1="1" exponent2="1">4.4</Coef>
    </TimeCOAPoly>
 
-:py:class:`~sarkit.standards.xml.XmlHelper.load` / :py:class:`~sarkit.standards.xml.XmlHelper.set` are shortcuts for
-``find`` + :py:class:`~sarkit.standards.xml.XmlHelper.load_elem` / :py:class:`~sarkit.standards.xml.XmlHelper.set_elem`:
+:py:class:`~sarkit.sicd.XmlHelper.load` / :py:class:`~sarkit.sicd.XmlHelper.set` are
+shortcuts for ``find`` + :py:class:`~sarkit.sicd.XmlHelper.load_elem` /
+:py:class:`~sarkit.sicd.XmlHelper.set_elem`:
 
 .. doctest::
 
@@ -266,7 +266,7 @@ Select parent nodes also have them when a straightforward mapping is apparent (e
    # this parent node does not have a transcoder
    >>> xmlhelp.load("{*}CollectionInfo")
    Traceback (most recent call last):
-   sarkit.standards.xml.NotTranscodableError: CollectionInfo is not transcodable
+   LookupError: CollectionInfo is not transcodable
 
 
 .. _consistency_checking:
@@ -281,14 +281,19 @@ SARkit provides checkers that can be used to identify inconsistencies in SAR sta
 .. list-table::
 
    * - Format
-     - Consistency Checker
+     - Consistency class
+     - Command
    * - ⛔ CRSD [Draft] ⛔
-     - :py:class:`~sarkit.verification.crsd_consistency`
+     - :py:class:`sarkit.verification.CrsdConsistency`
+     - :ref:`crsd-consistency-cli`
    * - CPHD
-     - :py:class:`~sarkit.verification.cphd_consistency`
+     - :py:class:`sarkit.verification.CphdConsistency`
+     - :ref:`cphd-consistency-cli`
    * - SICD
-     - :py:class:`~sarkit.verification.sicd_consistency`
+     - :py:class:`sarkit.verification.SicdConsistency`
+     - :ref:`sicd-consistency-cli`
    * - SIDD
+     - To be added
      - To be added
 
 Each consistency checker provides a command line interface for checking SAR data/metadata files.
@@ -296,21 +301,21 @@ When there are no inconsistencies, no output is produced.
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency good.sicd
+   $ sicd-consistency good.sicd
    $
 
 The same command can be used to run a subset of the checks against the XML.
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency good.sicd.xml
+   $ sicd-consistency good.sicd.xml
    $
 
 When a file is inconsistent, failed checks are printed.
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency bad.sicd
+   $ sicd-consistency bad.sicd
    check_image_formation_timeline: Checks that the slow time span for data processed to form
    the image is within collect.
       [Error] Need: 0 <= TStartProc < TEndProc <= CollectDuration
@@ -329,7 +334,7 @@ For example:
 
 .. code-block:: shell-session
 
-   $ python -m sarkit.verification.sicd_consistency good.sicd -vvv
+   $ sicd-consistency good.sicd -vvv
    check_against_schema: Checks against schema.
       [Pass] Need: XML passes schema
       [Pass] Need: Schema available for checking xml whose root tag = {urn:SICD:1.2.1}SICD

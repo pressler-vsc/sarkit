@@ -6,9 +6,8 @@ import numpy as np
 import pytest
 from lxml import etree
 
-import sarkit.standards.sicd.io as sicd_io
-import sarkit.standards.xml
-from sarkit.verification.sicd_consistency import SicdConsistency, main
+import sarkit.sicd as sksicd
+from sarkit.verification._sicd_consistency import SicdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -22,13 +21,13 @@ def example_sicd_file(tmp_path_factory):
         tmp_path_factory.mktemp("data") / good_sicd_xml_path.with_suffix(".sicd").name
     )
     sec = {"security": {"clas": "U"}}
-    sicd_plan = sicd_io.SicdNitfPlan(
+    sicd_plan = sksicd.SicdNitfPlan(
         sicd_xmltree=sicd_etree,
         header_fields={"ostaid": "nowhere"} | sec,
         is_fields={"isorce": "this sensor"} | sec,
         des_fields=sec,
     )
-    with open(tmp_sicd, "wb") as f, sicd_io.SicdNitfWriter(f, sicd_plan):
+    with open(tmp_sicd, "wb") as f, sksicd.SicdNitfWriter(f, sicd_plan):
         pass  # don't currently care about the pixels
     assert not main([str(tmp_sicd)])
     yield tmp_sicd
@@ -83,7 +82,7 @@ def test_smoketest(xml_file):
 
 
 def test_main_schema_override():
-    good_schema = sarkit.standards.sicd.io.VERSION_INFO["urn:SICD:1.2.1"]["schema"]
+    good_schema = sksicd.VERSION_INFO["urn:SICD:1.2.1"]["schema"]
     with pytest.raises(
         RuntimeError, match="--version must be specified if using --schema"
     ):
@@ -546,7 +545,7 @@ def test_rgazcomp_polys(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
             em.AzSF("0.0"),
-            sarkit.standards.xml.PolyType(1).make_elem("KazPoly", np.zeros(4)),
+            sksicd.PolyType().make_elem("KazPoly", np.zeros(4)),
         )
     )
     sicd_con.check("check_rgazcomp_polys")
@@ -560,7 +559,7 @@ def test_rgazcomp_ifa(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
             em.AzSF("0.0"),
-            sarkit.standards.xml.PolyType(1).make_elem("KazPoly", np.zeros(4)),
+            sksicd.PolyType().make_elem("KazPoly", np.zeros(4)),
         )
     )
 
@@ -579,9 +578,7 @@ def test_pfa_polys(sicd_con, em, poly_to_invalidate):
     sicd_con.sicdroot.find("./{*}PFA").append(
         em.STDeskew(
             em.Applied("true"),
-            sarkit.standards.xml.PolyType(2).make_elem(
-                "STDSPhasePoly", np.zeros((2, 3))
-            ),
+            sksicd.Poly2dType().make_elem("STDSPhasePoly", np.zeros((2, 3))),
         )
     )
     sicd_con.check("check_pfa_polys")
@@ -637,15 +634,11 @@ def sicd_con_bad_inca(sicd_con, em):
             em.RMAlgoType("RG_DOP"),
             em.ImageType("INCA"),
             em.INCA(
-                sarkit.standards.xml.PolyType(1).make_elem("TimeCAPoly", np.ones(4)),
+                sksicd.PolyType().make_elem("TimeCAPoly", np.ones(4)),
                 em.R_CA_SCP("10000.0"),
                 em.FreqZero("0.0"),
-                sarkit.standards.xml.PolyType(2).make_elem(
-                    "DRateSFPoly", np.ones((4, 3))
-                ),
-                sarkit.standards.xml.PolyType(2).make_elem(
-                    "DopCentroidPoly", np.ones((5, 4))
-                ),
+                sksicd.Poly2dType().make_elem("DRateSFPoly", np.ones((4, 3))),
+                sksicd.Poly2dType().make_elem("DopCentroidPoly", np.ones((5, 4))),
                 em.DopCentroidCOA("false"),
             ),
         )

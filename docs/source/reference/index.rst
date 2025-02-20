@@ -7,17 +7,28 @@ SARkit API Reference
 :Release: |version|
 :Date: |today|
 
-API reference for :mod:`sarkit`.
+API reference for ``sarkit``.
 
-* `sarkit.constants`
+* :py:mod:`sarkit`
+* `sarkit.cphd`
+* `sarkit.crsd`
 * `sarkit.processing`
-* `sarkit.standards`
+* `sarkit.sicd`
+
+  - `sarkit.sicd.projection`
+
+* `sarkit.sidd`
 * `sarkit.verification`
+* `sarkit.wgs84`
 
 .. toctree::
    :hidden:
 
-    sarkit.constants <constants>
+    sarkit <sarkit>
+    sarkit.cphd <cphd>
+    sarkit.crsd <crsd>
     sarkit.processing <processing>
-    sarkit.standards <standards>
+    sarkit.sicd <sicd>
+    sarkit.sidd <sidd>
     sarkit.verification <verification>
+    sarkit.wgs84 <wgs84>

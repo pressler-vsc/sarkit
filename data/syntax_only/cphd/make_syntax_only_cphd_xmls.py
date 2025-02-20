@@ -8,7 +8,7 @@ import tempfile
 import lxml.builder
 import lxml.etree
 
-import sarkit.standards.cphd.io
+import sarkit.cphd as skcphd
 
 STUB_DIR = pathlib.Path(__file__).parent / "stubs"
 
@@ -170,7 +170,7 @@ def main(args=None):
             mods(etree)
             version_ns = lxml.etree.QName(etree.getroot()).namespace
             lxml.etree.cleanup_namespaces(etree, top_nsmap={None: version_ns})
-            version_info = sarkit.standards.cphd.io.VERSION_INFO[version_ns]
+            version_info = skcphd.VERSION_INFO[version_ns]
             schema = lxml.etree.XMLSchema(file=version_info["schema"])
             schema.assertValid(etree)
             lxml.etree.indent(etree, space=" " * 4)

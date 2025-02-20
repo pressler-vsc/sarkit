@@ -9,11 +9,9 @@ import shapely.affinity
 import shapely.geometry as shg
 from lxml import etree
 
-import sarkit.constants
-import sarkit.standards.cphd.io as cphd_io
-import sarkit.standards.cphd.xml as cphd_xml
-import sarkit.standards.xml
-from sarkit.verification.cphd_consistency import CphdConsistency, main
+import sarkit.cphd as skcphd
+from sarkit import _constants
+from sarkit.verification._cphd_consistency import CphdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -23,16 +21,16 @@ good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
 @pytest.fixture(scope="session")
 def example_cphd_file(tmp_path_factory):
     cphd_etree = etree.parse(good_cphd_xml_path)
-    xmlhelp = cphd_xml.XmlHelper(cphd_etree)
+    xmlhelp = skcphd.XmlHelper(cphd_etree)
 
-    cphd_plan = cphd_io.CphdPlan(
-        file_header=cphd_io.CphdFileHeaderFields(
+    cphd_plan = skcphd.CphdPlan(
+        file_header=skcphd.CphdFileHeaderFields(
             classification="UNCLASSIFIED",
             release_info="UNRESTRICTED",
         ),
         cphd_xmltree=cphd_etree,
     )
-    pvp_dtype = cphd_io.get_pvp_dtype(cphd_etree)
+    pvp_dtype = skcphd.get_pvp_dtype(cphd_etree)
 
     assert cphd_etree.findtext("./{*}Data/{*}SignalArrayFormat") == "CF8"
     rng = np.random.default_rng(123456)
@@ -73,7 +71,7 @@ def example_cphd_file(tmp_path_factory):
 
     pvps["RcvTime"] = (
         pvps["TxTime"]
-        + 2.0 * xmlhelp.load(".//{*}SlantRange") / sarkit.constants.speed_of_light
+        + 2.0 * xmlhelp.load(".//{*}SlantRange") / _constants.speed_of_light
     )
     pvps["RcvPos"] = np.polynomial.polynomial.polyval(pvps["RcvTime"], arppoly).T
     pvps["RcvVel"] = np.polynomial.polynomial.polyval(
@@ -86,7 +84,7 @@ def example_cphd_file(tmp_path_factory):
     tmp_cphd = (
         tmp_path_factory.mktemp("data") / good_cphd_xml_path.with_suffix(".cphd").name
     )
-    with open(tmp_cphd, "wb") as f, cphd_io.CphdWriter(f, cphd_plan) as cw:
+    with open(tmp_cphd, "wb") as f, skcphd.CphdWriter(f, cphd_plan) as cw:
         cw.write_pvp("1", pvps)
         cw.write_signal("1", signal)
     assert not main([str(tmp_cphd), "--signal-data"])
@@ -325,8 +323,8 @@ def test_check_extended_imagearea_x1y1_x2y2(cphd_con_from_file):
     ia_poly = shg.box(*ia_x1y1, *ia_x2y2)
     ia_poly_shrink = shapely.affinity.scale(ia_poly, 0.5, 0.5)
     ext_area_elem[:] = [
-        sarkit.standards.xml.XyType().make_elem("X1Y1", ia_poly_shrink.bounds[:2]),
-        sarkit.standards.xml.XyType().make_elem("X2Y2", ia_poly_shrink.bounds[2:]),
+        skcphd.XyType().make_elem("X1Y1", ia_poly_shrink.bounds[:2]),
+        skcphd.XyType().make_elem("X2Y2", ia_poly_shrink.bounds[2:]),
     ]
     new_con = CphdConsistency(cphd_con_from_file.cphdroot, pvps=cphd_con_from_file.pvps)
 
@@ -918,8 +916,8 @@ def test_channel_signalnormal(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
-                sarkit.standards.xml.BoolType().make_elem("SignalNormal", True),
+                skcphd.TxtType().make_elem("Identifier", "1"),
+                skcphd.BoolType().make_elem("SignalNormal", True),
             ),
         )
     )
@@ -961,8 +959,8 @@ def test_fxbwnoise(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
-                sarkit.standards.xml.DblType().make_elem("FxBWNoise", 0.0),
+                skcphd.TxtType().make_elem("Identifier", "1"),
+                skcphd.DblType().make_elem("FxBWNoise", 0.0),
             ),
         )
     )
@@ -999,10 +997,8 @@ def test_toaextsaved(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
-                em.TOAExtended(
-                    sarkit.standards.xml.DblType().make_elem("TOAExtSaved", 0.0)
-                ),
+                skcphd.TxtType().make_elem("Identifier", "1"),
+                em.TOAExtended(skcphd.DblType().make_elem("TOAExtSaved", 0.0)),
             ),
         )
     )
@@ -1099,8 +1095,8 @@ def test_unique_identifiers(cphd_con_from_file, em):
     cphd_con_from_file.cphdroot.append(
         em.Channel(
             em.Parameters(
-                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
-                sarkit.standards.xml.TxtType().make_elem("Identifier", "1"),
+                skcphd.TxtType().make_elem("Identifier", "1"),
+                skcphd.TxtType().make_elem("Identifier", "1"),
             ),
         )
     )

@@ -4,7 +4,7 @@ from typing import Any, BinaryIO, TypeGuard
 
 import numpy as np
 
-import sarkit.standards.geocoords
+import sarkit.wgs84
 
 
 def is_file_like(the_input: Any) -> TypeGuard[BinaryIO]:
@@ -100,7 +100,7 @@ def _interpolate_corner_points_string(entry, rows, cols, icp):
         icp_new = np.zeros((icp.shape[0], 3), dtype=np.float64)
         icp_new[:, :2] = icp
         icp = icp_new
-    icp_ecf = sarkit.standards.geocoords.geodetic_to_ecf(icp)
+    icp_ecf = sarkit.wgs84.geodetic_to_cartesian(icp)
 
     const = 1.0 / (rows * cols)
     pattern = entry[np.array([(0, 2), (1, 2), (1, 3), (0, 3)], dtype=np.int64)]
@@ -115,7 +115,7 @@ def _interpolate_corner_points_string(entry, rows, cols, icp):
             axis=0,
         )
 
-        pt_latlong = sarkit.standards.geocoords.ecf_to_geodetic(pt_array)[:2]
+        pt_latlong = sarkit.wgs84.cartesian_to_geodetic(pt_array)[:2]
         dms = dms_format(pt_latlong)
         out.append(
             "{0:02d}{1:02d}{2:02d}{3:s}".format(*dms[0])

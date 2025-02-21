@@ -1,15 +1,13 @@
 import itertools
+import sys
 
 import pytest
 
-import sarkit.verification.consistency as con
+import sarkit.verification._consistency as con
 
 
 class DummyConsistency(con.ConsistencyChecker):
     """A ConsistencyChecker used for unit testing and code coverage"""
-
-    def __init__(self):
-        super(DummyConsistency, self).__init__()
 
     def check_need_pass(self):
         with self.need("need pass"):
@@ -76,7 +74,7 @@ def dummycon():
     yield DummyConsistency()
 
 
-def test_all(dummycon, capsys):
+def test_all(dummycon, capsys, monkeypatch):
     dummycon.check()
     assert len(dummycon.all()) == 11
     assert len(dummycon.failures()) == 5
@@ -101,12 +99,31 @@ def test_all(dummycon, capsys):
     passed = [item for item in details if item["passed"]]
     assert not passed
 
-    dummycon.print_result()
-    captured = capsys.readouterr()
-    assert "\x1b" in captured.out
+    def prints_color():
+        captured = capsys.readouterr()
+        return "\x1b" in captured.out
+
+    # color=None, notty
+    dummycon.print_result(color=None)
+    assert not prints_color()
+
+    # color=None, tty
+    with monkeypatch.context() as m:
+        m.setattr(sys.stdout, "isatty", lambda: True)
+        dummycon.print_result(color=None)
+        assert prints_color()
+
+        m.setenv("NO_COLOR", "")
+        dummycon.print_result(color=None)
+        assert not prints_color()
+
+    # color=True
+    dummycon.print_result(color=True)
+    assert prints_color()
+
+    # color=False
     dummycon.print_result(color=False)
-    captured2 = capsys.readouterr()
-    assert "\x1b" not in captured2.out
+    assert not prints_color()
 
     dummycon.print_result(
         include_passed_checks=True, skip_detail=True, fail_detail=True, pass_detail=True

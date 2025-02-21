@@ -1,12 +1,9 @@
 # Contributing to SARkit
 
 SARkit is a Python package that is intended to simplify working with the NGA SAR
-standards: Compensated Phase History Data (CPHD), Sensor Independent Complex
-Data (SICD), and Sensor Independent Derived Data (SIDD).
+standards. Basic SARkit functionality relies on a small set of dependencies.
+Some features require additional dependencies which can be installed using packaging extras:
 
-The package has three subpackages with different roles.
-
-- standards: A reference implementation of the NGA standards with minimal external dependencies to maximize useability in many contexts.
 - verification: Uses additional dependencies to test compliance with the NGA standards.  These additional dependencies are not needed to work with the formats.
 - processing: Contains SAR processing that is not defined in a standard, but has proven to be useful and commonplace.
 
@@ -44,9 +41,6 @@ into your environment with pip from the package root.
 python -m pip install .
 ```
 
-Installing without packaging extras will only ensure that sarkit.standards
-is fully supported.  Other packages will have reduced functionality.
-
 The packaging extras are listed below:
 
 - verification
@@ -57,13 +51,10 @@ The packaging extras are listed below:
 - dev
 
 Any union of these dependencies can be installed simultaneously by specifying
-the individual dependency groups in brackets, comma delimited.  The dependencies
-for the standards subpackage is installed by default, as that is the core
-functionality.
+the individual dependency groups in brackets, comma delimited.
 
-The following install command would install all dependencies for
-the standards subpackage and allow for linting and testing.  mypy works best with
-an editable install.
+The following install command would install core dependencies and allow for linting and testing.
+mypy works best with an editable install.
 
 ```bash
 python -m pip install --editable .[dev]
@@ -85,11 +76,11 @@ In the development environment, unit tests can be run with pytest.
 pytest tests
 ```
 
-Unit tests are organized by subpackage so that the unit tests for the standards
+Unit tests are organized by functional group so that the unit tests for the core functionality
 can be run as below.
 
 ```bash
-pytest tests/standards
+pytest tests/core
 ```
 
 ## Submitting changes

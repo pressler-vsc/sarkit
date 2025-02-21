@@ -10,7 +10,7 @@ build:
     post_create_environment:
       - pip install --upgrade pdm
     post_install:
-      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH pdm install -dG doc
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH pdm install -G all -G doc
 
 sphinx:
    configuration: docs/source/conf.py

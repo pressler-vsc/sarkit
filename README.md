@@ -2,12 +2,17 @@
 
 <img src="https://raw.githubusercontent.com/ValkyrieSystems/sarkit/main/docs/source/_static/sarkit_logo.png" width=200>
 
+[![PyPI - Version](https://img.shields.io/pypi/v/sarkit)](https://pypi.org/project/sarkit/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/sarkit)
+[![PyPI - License](https://img.shields.io/pypi/l/sarkit)](./LICENSE)
+<br>
 [![Tests](https://github.com/ValkyrieSystems/sarkit/actions/workflows/tests.yml/badge.svg)](https://github.com/ValkyrieSystems/sarkit/actions/workflows/tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/sarkit/badge/?version=latest)](https://sarkit.readthedocs.io/en/latest/?badge=latest)
 
 </div>
 
-**SARkit** is a suite of Synthetic Aperture Radar (SAR)-related tools in Python developed and maintained by the National Geospatial-Intelligence Agency (NGA) to encourage the use of SAR data standards.
+**SARkit** is a suite of Synthetic Aperture Radar (SAR)-related tools in Python developed and maintained by
+Valkyrie Systems Corporation to encourage the use of National Geospatial-Intelligence Agency (NGA) SAR data standards.
 
 With SARkit, you can:
 
@@ -15,13 +20,10 @@ With SARkit, you can:
 * interact with SAR XML metadata using more convenient Python objects
 * check SAR data/metadata files for inconsistencies
 
-## Origins
-This project was developed at the National Geospatial-Intelligence Agency (NGA) as the modern successor to
-[SarPy](https://github.com/ngageoint/sarpy).
+This project was developed as the modern successor to [SarPy](https://github.com/ngageoint/sarpy).
 
 ## License
-The software use, modification, and distribution rights are stipulated within the MIT license
-(See [`LICENSE`](LICENSE) file).
+This repository is licensed under the [MIT license](./LICENSE).
 
 ## Contributing and Development
 Contributions are welcome; for details see the [contributing guide](./CONTRIBUTING.md).

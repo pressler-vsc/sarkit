@@ -7,7 +7,8 @@ import tempfile
 
 import lxml.builder
 import lxml.etree
-import sarpy.standards.crsd.io
+
+import sarkit.crsd as skcrsd
 
 STUB_DIR = pathlib.Path(__file__).parent / "stubs"
 
@@ -148,7 +149,7 @@ def main(args=None):
             mods(etree)
             version_ns = lxml.etree.QName(etree.getroot()).namespace
             lxml.etree.cleanup_namespaces(etree, top_nsmap={None: version_ns})
-            version_info = sarpy.standards.crsd.io.VERSION_INFO[version_ns]
+            version_info = skcrsd.VERSION_INFO[version_ns]
             schema = lxml.etree.XMLSchema(file=version_info["schema"])
             lxml.etree.indent(etree, space=" " * 4)
             schema.assertValid(etree)

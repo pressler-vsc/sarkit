@@ -5,9 +5,8 @@ import numpy as np
 import pytest
 from lxml import etree
 
-import sarkit.processing.pixel_type
-import sarkit.standards.sicd.io as ss_io
-import sarkit.standards.sicd.xml as ss_xml
+import sarkit.processing as skproc
+import sarkit.sicd as sksicd
 
 good_sicd_xml_path = (
     pathlib.Path(__file__).absolute().parent / "../../data" / "example-sicd-1.2.1.xml"
@@ -23,7 +22,7 @@ def good_xml():
 
 @pytest.fixture
 def amp_phs(good_xml):
-    xml_helper = ss_xml.XmlHelper(good_xml)
+    xml_helper = sksicd.XmlHelper(good_xml)
     num_rows = xml_helper.load("./{*}ImageData/{*}NumRows")
     num_cols = xml_helper.load("./{*}ImageData/{*}NumCols")
     shape = (num_rows, num_cols)
@@ -39,7 +38,7 @@ def amp_phs(good_xml):
     xml_helper.set("./{*}ImageData/{*}AmpTable", np.linspace(0, 1e3, 256))
 
     arr = np.random.default_rng().integers(256, size=shape + (2,), dtype=np.uint8)
-    arr = arr.view(dtype=ss_io.PIXEL_TYPES["AMP8I_PHS8I"]["dtype"]).reshape(shape)
+    arr = arr.view(dtype=sksicd.PIXEL_TYPES["AMP8I_PHS8I"]["dtype"]).reshape(shape)
     return arr, good_xml
 
 
@@ -70,29 +69,27 @@ def _check_pixel_scaling(in1, xmlhelp1, in2, xmlhelp2):
 def test_bad_pixel_type(amp_phs):
     complex_array, good_xml = amp_phs
     with pytest.raises(TypeError):
-        sarkit.processing.pixel_type.as_re32f_im32f(
+        skproc.sicd_as_re32f_im32f(
             np.zeros(complex_array.shape, dtype=np.complex64), good_xml
         )
     with pytest.raises(TypeError):
-        sarkit.processing.pixel_type.as_re16i_im16i(
+        skproc.sicd_as_re16i_im16i(
             np.zeros(complex_array.shape, dtype=np.complex64), good_xml
         )
     with pytest.raises(TypeError):
-        sarkit.processing.pixel_type.as_amp8i_phs8i(
+        skproc.sicd_as_amp8i_phs8i(
             np.zeros(complex_array.shape, dtype=np.complex64), good_xml, np.arange(256)
         )
 
 
 def test_pixel_type(amp_phs):
     complex_array, good_xml = amp_phs
-    xmlhelp_in = ss_xml.XmlHelper(good_xml)
+    xmlhelp_in = sksicd.XmlHelper(good_xml)
     amp_array_in = xmlhelp_in.load("./{*}ImageData/{*}AmpTable")[complex_array["amp"]]
 
     # AMP8I_PHS8I -> RE32F_IM32F
-    f32_arr, f32_xml = sarkit.processing.pixel_type.as_re32f_im32f(
-        complex_array, good_xml
-    )
-    xmlhelp_f32 = ss_xml.XmlHelper(f32_xml)
+    f32_arr, f32_xml = skproc.sicd_as_re32f_im32f(complex_array, good_xml)
+    xmlhelp_f32 = sksicd.XmlHelper(f32_xml)
     assert xmlhelp_f32.load("./{*}ImageData/{*}AmpTable") is None
     _check_pixel_scaling(f32_arr, xmlhelp_f32, amp_array_in, xmlhelp_in)
     assert xmlhelp_f32.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
@@ -101,10 +98,8 @@ def test_pixel_type(amp_phs):
     no_lut_xml = copy.deepcopy(good_xml)
     lut_node = no_lut_xml.find("./{*}ImageData/{*}AmpTable")
     lut_node.getparent().remove(lut_node)
-    f32_arr_0, f32_xml_0 = sarkit.processing.pixel_type.as_re32f_im32f(
-        complex_array, no_lut_xml
-    )
-    xmlhelp_f32_0 = ss_xml.XmlHelper(f32_xml_0)
+    f32_arr_0, f32_xml_0 = skproc.sicd_as_re32f_im32f(complex_array, no_lut_xml)
+    xmlhelp_f32_0 = sksicd.XmlHelper(f32_xml_0)
     assert xmlhelp_f32_0.load("./{*}ImageData/{*}AmpTable") is None
     _check_pixel_scaling(
         f32_arr_0, xmlhelp_f32_0, complex_array["amp"].astype(np.float32), xmlhelp_in
@@ -112,44 +107,40 @@ def test_pixel_type(amp_phs):
     assert xmlhelp_f32_0.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
 
     # AMP8I_PHS8I -> RE16I_IM16I
-    i16_arr, i16_xml = sarkit.processing.pixel_type.as_re16i_im16i(
-        complex_array, good_xml
-    )
-    xmlhelp_i16 = ss_xml.XmlHelper(i16_xml)
+    i16_arr, i16_xml = skproc.sicd_as_re16i_im16i(complex_array, good_xml)
+    xmlhelp_i16 = sksicd.XmlHelper(i16_xml)
     assert xmlhelp_i16.load("./{*}ImageData/{*}AmpTable") is None
     _check_pixel_scaling(f32_arr, xmlhelp_f32, i16_arr, xmlhelp_i16)
     assert xmlhelp_i16.load("./{*}ImageData/{*}PixelType") == "RE16I_IM16I"
 
     # RE32F_IM32F -> RE16I_IM16I
-    i16_arr_2, i16_xml_2 = sarkit.processing.pixel_type.as_re16i_im16i(f32_arr, f32_xml)
-    xmlhelp_i16_2 = ss_xml.XmlHelper(i16_xml_2)
+    i16_arr_2, i16_xml_2 = skproc.sicd_as_re16i_im16i(f32_arr, f32_xml)
+    xmlhelp_i16_2 = sksicd.XmlHelper(i16_xml_2)
     assert xmlhelp_i16_2.load("./{*}ImageData/{*}PixelType") == "RE16I_IM16I"
 
     _check_pixel_scaling(f32_arr, xmlhelp_f32, i16_arr_2, xmlhelp_i16_2)
 
     # RE32F_IM32F -> AMP8I_PHS8I
-    i8_arr, i8_xml = sarkit.processing.pixel_type.as_amp8i_phs8i(
+    i8_arr, i8_xml = skproc.sicd_as_amp8i_phs8i(
         f32_arr, f32_xml, xmlhelp_in.load("./{*}ImageData/{*}AmpTable")
     )
-    xmlhelp_i8 = ss_xml.XmlHelper(i8_xml)
+    xmlhelp_i8 = sksicd.XmlHelper(i8_xml)
     assert xmlhelp_i8.load("./{*}ImageData/{*}PixelType") == "AMP8I_PHS8I"
 
     amp_array = xmlhelp_i8.load("./{*}ImageData/{*}AmpTable")[i8_arr["amp"]]
     _check_pixel_scaling(f32_arr, xmlhelp_f32, amp_array, xmlhelp_i8)
 
     # RE16I_IM16I -> RE32F_IM32F
-    f32_arr2, f32_xml2 = sarkit.processing.pixel_type.as_re32f_im32f(i16_arr, i16_xml)
-    xmlhelp_f32_2 = ss_xml.XmlHelper(f32_xml2)
+    f32_arr2, f32_xml2 = skproc.sicd_as_re32f_im32f(i16_arr, i16_xml)
+    xmlhelp_f32_2 = sksicd.XmlHelper(f32_xml2)
     assert xmlhelp_f32_2.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
 
     _check_pixel_scaling(f32_arr, xmlhelp_f32, f32_arr2, xmlhelp_f32_2)
 
     # RE16I_IM16I -> AMP8I_PHS8I
     amp_table = np.arange(256) / 255 * (2**15 - 1)
-    i8_arr_2, i8_xml_2 = sarkit.processing.pixel_type.as_amp8i_phs8i(
-        i16_arr, i16_xml, amp_table
-    )
-    xmlhelp_i8_2 = ss_xml.XmlHelper(i8_xml_2)
+    i8_arr_2, i8_xml_2 = skproc.sicd_as_amp8i_phs8i(i16_arr, i16_xml, amp_table)
+    xmlhelp_i8_2 = sksicd.XmlHelper(i8_xml_2)
     assert xmlhelp_i8_2.load("./{*}ImageData/{*}PixelType") == "AMP8I_PHS8I"
 
     amp_array_2 = xmlhelp_i8_2.load("./{*}ImageData/{*}AmpTable")[i8_arr_2["amp"]]

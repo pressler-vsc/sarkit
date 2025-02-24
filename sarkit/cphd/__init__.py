@@ -18,10 +18,10 @@ Data Structure & File Format
 .. autosummary::
    :toctree: generated/
 
-   CphdFileHeaderFields
-   CphdReader
-   CphdPlan
-   CphdWriter
+   FileHeaderPart
+   Metadata
+   Reader
+   Writer
    read_file_header
    get_pvp_dtype
    binary_format_string_to_dtype
@@ -96,13 +96,13 @@ CPHD 1.1.0
 """
 
 from ._io import (
-    CPHD_SECTION_TERMINATOR,
     DEFINED_HEADER_KEYS,
+    SECTION_TERMINATOR,
     VERSION_INFO,
-    CphdFileHeaderFields,
-    CphdPlan,
-    CphdReader,
-    CphdWriter,
+    FileHeaderPart,
+    Metadata,
+    Reader,
+    Writer,
     binary_format_string_to_dtype,
     dtype_to_binary_format_string,
     get_pvp_dtype,
@@ -134,29 +134,29 @@ from ._xml import (
 )
 
 __all__ = [
-    "CPHD_SECTION_TERMINATOR",
     "DEFINED_HEADER_KEYS",
+    "SECTION_TERMINATOR",
     "TRANSCODERS",
     "VERSION_INFO",
     "AddedPvpType",
     "BoolType",
-    "CphdFileHeaderFields",
-    "CphdPlan",
-    "CphdReader",
-    "CphdWriter",
     "DblType",
     "EnuType",
+    "FileHeaderPart",
     "HexType",
     "ImageAreaCornerPointsType",
     "IntType",
     "LatLonHaeType",
     "LatLonType",
     "LineSampType",
+    "Metadata",
     "ParameterType",
     "Poly2dType",
     "PolyType",
     "PvpType",
+    "Reader",
     "TxtType",
+    "Writer",
     "XdtType",
     "XmlHelper",
     "XyType",

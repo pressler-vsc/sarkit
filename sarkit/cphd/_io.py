@@ -13,7 +13,7 @@ import numpy as np
 import numpy.typing as npt
 
 SCHEMA_DIR = importlib.resources.files("sarkit.cphd.schemas")
-CPHD_SECTION_TERMINATOR: Final[bytes] = b"\f\n"
+SECTION_TERMINATOR: Final[bytes] = b"\f\n"
 DEFINED_HEADER_KEYS: Final[set] = {
     "XML_BLOCK_SIZE",
     "XML_BLOCK_BYTE_OFFSET",
@@ -188,48 +188,32 @@ def mask_support_array(
 
 
 @dataclasses.dataclass(kw_only=True)
-class CphdFileHeaderFields:
+class FileHeaderPart:
     """CPHD header fields which are set per program specific Product Design Document
 
     Attributes
     ----------
-    classification : str
-        File classification
-    release_info : str
-        File release info
-    additional_kvps : dict of {str : str}, optional
-        Dictionary with additional key-value pairs
+    additional_kvps : dict of {str : str}
+        Additional key-value pairs
     """
 
-    classification: str
-    release_info: str
     additional_kvps: dict[str, str] = dataclasses.field(default_factory=dict)
-
-    def __post_init__(self):
-        if self.additional_kvps is None:
-            self.additional_kvps = {}
 
 
 @dataclasses.dataclass(kw_only=True)
-class CphdPlan:
-    """Class describing the plan for creating a CPHD file
+class Metadata:
+    """Settable CPHD metadata
 
     Attributes
     ----------
-    file_header : :py:class:`CphdFileHeaderFields`
+    file_header_part : FileHeaderPart
         CPHD File Header fields which can be set
-    cphd_xmltree : lxml.etree.ElementTree
-        CPHD XML ElementTree
-
-    See Also
-    --------
-    CphdReader
-    CphdWriter
-    CphdFileHeaderFields
+    xmltree : lxml.etree.ElementTree
+        CPHD XML
     """
 
-    file_header: CphdFileHeaderFields
-    cphd_xmltree: lxml.etree.ElementTree
+    file_header_part: FileHeaderPart = dataclasses.field(default_factory=FileHeaderPart)
+    xmltree: lxml.etree.ElementTree
 
 
 def read_file_header(file):
@@ -252,7 +236,7 @@ def read_file_header(file):
     file_type_header = file.readline().decode().strip("\n")
 
     kvp_list = {}
-    while (line := file.readline()) != CPHD_SECTION_TERMINATOR:
+    while (line := file.readline()) != SECTION_TERMINATOR:
         field, value = line.decode().strip("\n").split(" := ")
         kvp_list[field] = value
     return file_type_header, kvp_list
@@ -301,10 +285,10 @@ def get_pvp_dtype(cphd_xmltree):
     return dtype
 
 
-class CphdReader:
+class Reader:
     """Read a CPHD file
 
-    A CphdReader object can be used as a context manager in a ``with`` statement.
+    A Reader object can be used as a context manager in a ``with`` statement.
     Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
@@ -314,31 +298,18 @@ class CphdReader:
 
     Examples
     --------
-    >>> with cphd_path.open('rb') as file, CphdReader(file) as reader:
-    ...     cphd_xmltree = reader.cphd_xmltree
+    >>> with cphd_path.open('rb') as file, Reader(file) as reader:
+    ...     cphd_xmltree = reader.metadata.xmltree
     ...     signal, pvp = reader.read_channel(<chan_id>)
 
     Attributes
     ----------
-    file_header : :py:class:`CphdFileHeaderFields`
-       CPHD header dataclass
-    cphd_xmltree : lxml.etree.ElementTree
-        CPHD XML ElementTree
-    plan : :py:class:`CphdPlan`
-        A CphdPlan object suitable for use in a CphdWriter
-    xml_block_size : int
-    xml_block_byte_offset : int
-    pvp_block_size : int
-    pvp_block_byte_offset : int
-    signal_block_size : int
-    signal_block_byte_offset : int
-    support_block_size : int or None
-    support_block_byte_offset : int or None
+    metadata : Metadata
+       CPHD metadata
 
     See Also
     --------
-    CphdPlan
-    CphdWriter
+    Writer
     """
 
     def __init__(self, file):
@@ -350,65 +321,57 @@ class CphdReader:
         extra_header_keys = set(self._kvp_list.keys()) - DEFINED_HEADER_KEYS
         additional_kvps = {key: self._kvp_list[key] for key in extra_header_keys}
 
-        self.file_header = CphdFileHeaderFields(
-            classification=self._kvp_list["CLASSIFICATION"],
-            release_info=self._kvp_list["RELEASE_INFO"],
-            additional_kvps=additional_kvps,
-        )
-        self._file_object.seek(self.xml_block_byte_offset)
+        self._file_object.seek(self._xml_block_byte_offset)
         xml_bytes = self._file_object.read(int(self._kvp_list["XML_BLOCK_SIZE"]))
-        self.cphd_xmltree = lxml.etree.fromstring(xml_bytes).getroottree()
 
-        self.plan = CphdPlan(
-            cphd_xmltree=self.cphd_xmltree,
-            file_header=self.file_header,
+        self.metadata = Metadata(
+            xmltree=lxml.etree.fromstring(xml_bytes).getroottree(),
+            file_header_part=FileHeaderPart(additional_kvps=additional_kvps),
         )
 
     @property
-    def xml_block_byte_offset(self) -> int:
+    def _xml_block_byte_offset(self) -> int:
         """Offset to the XML block"""
         return int(self._kvp_list["XML_BLOCK_BYTE_OFFSET"])
 
     @property
-    def xml_block_size(self) -> int:
+    def _xml_block_size(self) -> int:
         """Size of the XML block"""
         return int(self._kvp_list["XML_BLOCK_SIZE"])
 
     @property
-    def pvp_block_byte_offset(self) -> int:
+    def _pvp_block_byte_offset(self) -> int:
         """Offset to the PVP block"""
         return int(self._kvp_list["PVP_BLOCK_BYTE_OFFSET"])
 
     @property
-    def pvp_block_size(self) -> int:
+    def _pvp_block_size(self) -> int:
         """Size of the PVP block"""
         return int(self._kvp_list["PVP_BLOCK_SIZE"])
 
     @property
-    def signal_block_byte_offset(self) -> int:
+    def _signal_block_byte_offset(self) -> int:
         """Offset to the Signal block"""
         return int(self._kvp_list["SIGNAL_BLOCK_BYTE_OFFSET"])
 
     @property
-    def signal_block_size(self) -> int:
+    def _signal_block_size(self) -> int:
         """Size of the Signal block"""
         return int(self._kvp_list["SIGNAL_BLOCK_SIZE"])
 
     @property
-    def support_block_byte_offset(self) -> int | None:
+    def _support_block_byte_offset(self) -> int | None:
         """Offset to the Support block"""
         if "SUPPORT_BLOCK_BYTE_OFFSET" in self._kvp_list:
             return int(self._kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"])
-        else:
-            return None
+        return None
 
     @property
-    def support_block_size(self) -> int | None:
+    def _support_block_size(self) -> int | None:
         """Size of the Support block"""
         if "SUPPORT_BLOCK_SIZE" in self._kvp_list:
             return int(self._kvp_list["SUPPORT_BLOCK_SIZE"])
-        else:
-            return None
+        return None
 
     def read_signal(self, channel_identifier: str) -> npt.NDArray:
         """Read signal data from a CPHD file
@@ -422,10 +385,8 @@ class CphdReader:
         -------
         ndarray
             2D array of complex samples
-
-
         """
-        channel_info = self.cphd_xmltree.find(
+        channel_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
@@ -433,10 +394,10 @@ class CphdReader:
         shape = (num_vect, num_samp)
 
         signal_offset = int(channel_info.find("./{*}SignalArrayByteOffset").text)
-        self._file_object.seek(signal_offset + self.signal_block_byte_offset)
+        self._file_object.seek(signal_offset + self._signal_block_byte_offset)
 
         signal_dtype = binary_format_string_to_dtype(
-            self.cphd_xmltree.find("./{*}Data/{*}SignalArrayFormat").text
+            self.metadata.xmltree.find("./{*}Data/{*}SignalArrayFormat").text
         ).newbyteorder("B")
 
         return np.fromfile(
@@ -457,15 +418,15 @@ class CphdReader:
             CPHD PVP array
 
         """
-        channel_info = self.cphd_xmltree.find(
+        channel_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
 
         pvp_offset = int(channel_info.find("./{*}PVPArrayByteOffset").text)
-        self._file_object.seek(pvp_offset + self.pvp_block_byte_offset)
+        self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
-        pvp_dtype = get_pvp_dtype(self.cphd_xmltree).newbyteorder("B")
+        pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
         return np.fromfile(self._file_object, pvp_dtype, count=num_vect)
 
     def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
@@ -487,12 +448,12 @@ class CphdReader:
         return self.read_signal(channel_identifier), self.read_pvps(channel_identifier)
 
     def _read_support_array(self, sa_identifier):
-        elem_format = self.cphd_xmltree.find(
+        elem_format = self.metadata.xmltree.find(
             f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}ElementFormat"
         )
         dtype = binary_format_string_to_dtype(elem_format.text).newbyteorder("B")
 
-        sa_info = self.cphd_xmltree.find(
+        sa_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}SupportArray[{{*}}Identifier='{sa_identifier}']"
         )
         num_rows = int(sa_info.find("./{*}NumRows").text)
@@ -500,7 +461,7 @@ class CphdReader:
         shape = (num_rows, num_cols)
 
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
-        self._file_object.seek(sa_offset + self.support_block_byte_offset)
+        self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
         return np.fromfile(self._file_object, dtype, count=np.prod(shape)).reshape(
             shape
@@ -511,7 +472,7 @@ class CphdReader:
         array = self._read_support_array(sa_identifier)
         if not masked:
             return array
-        nodata = self.cphd_xmltree.findtext(
+        nodata = self.metadata.xmltree.findtext(
             f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}NODATA"
         )
         return mask_support_array(array, nodata)
@@ -527,48 +488,47 @@ class CphdReader:
         self.done()
 
 
-class CphdWriter:
+class Writer:
     """Write a CPHD file
 
-    A CphdWriter object can be used as a context manager in a ``with`` statement.
+    A Writer object can be used as a context manager in a ``with`` statement.
 
     Parameters
     ----------
     file : `file object`
         CPHD file to write
-    plan : :py:class:`CphdPlan`
-        A CphdPlan object
+    metadata : Metadata
+        CPHD metadata to write
 
     Notes
     -----
-    plan should not be modified after creation of a writer
+    ``metadata`` should not be modified after creation of a writer
 
     Examples
     --------
-    >>> with output_path.open('wb') as file, CphdWriter(file, plan) as writer:
+    >>> with output_path.open('wb') as file, Writer(file, plan) as writer:
     ...     writer.write_signal("1", signal)
     ...     writer.write_pvp("1", pvp)
 
     See Also
     --------
-    CphdPlan
-    CphdReader
+    Reader
     """
 
-    def __init__(self, file, plan):
+    def __init__(self, file, metadata: Metadata):
         align_to = 64
         self._file_object = file
 
-        self._plan = plan
+        self._metadata = metadata
 
-        xml_block_body = lxml.etree.tostring(plan.cphd_xmltree, encoding="utf-8")
+        xml_block_body = lxml.etree.tostring(metadata.xmltree, encoding="utf-8")
 
         signal_itemsize = binary_format_string_to_dtype(
-            plan.cphd_xmltree.find("./{*}Data/{*}SignalArrayFormat").text
+            metadata.xmltree.find("./{*}Data/{*}SignalArrayFormat").text
         ).itemsize
-        pvp_itemsize = int(plan.cphd_xmltree.find("./{*}Data/{*}NumBytesPVP").text)
+        pvp_itemsize = int(metadata.xmltree.find("./{*}Data/{*}NumBytesPVP").text)
         self._channel_size_offsets = {}
-        for chan_node in plan.cphd_xmltree.findall("./{*}Data/{*}Channel"):
+        for chan_node in metadata.xmltree.findall("./{*}Data/{*}Channel"):
             channel_identifier = chan_node.find("./{*}Identifier").text
             channel_signal_offset = int(
                 chan_node.find("./{*}SignalArrayByteOffset").text
@@ -601,7 +561,7 @@ class CphdWriter:
         )
 
         self._sa_size_offsets = {}
-        for sa_node in plan.cphd_xmltree.findall("./{*}Data/{*}SupportArray"):
+        for sa_node in metadata.xmltree.findall("./{*}Data/{*}SupportArray"):
             sa_identifier = sa_node.find("./{*}Identifier").text
             sa_offset = int(sa_node.find("./{*}ArrayByteOffset").text)
             sa_size = (
@@ -629,8 +589,10 @@ class CphdWriter:
             "PVP_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
             "SIGNAL_BLOCK_SIZE": signal_block_size,
             "SIGNAL_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
-            "CLASSIFICATION": plan.file_header.classification,
-            "RELEASE_INFO": plan.file_header.release_info,
+            "CLASSIFICATION": metadata.xmltree.findtext(
+                "{*}CollectionID/{*}Classification"
+            ),
+            "RELEASE_INFO": metadata.xmltree.findtext("{*}CollectionID/{*}ReleaseInfo"),
         }
         if self._sa_size_offsets:
             self._file_header_kvp["SUPPORT_BLOCK_SIZE"] = support_block_size
@@ -638,24 +600,24 @@ class CphdWriter:
                 np.iinfo(np.uint64).max,
             )  # placeholder
 
-        self._file_header_kvp.update(plan.file_header.additional_kvps)
+        self._file_header_kvp.update(metadata.file_header_part.additional_kvps)
 
         def _serialize_header():
             version = VERSION_INFO[
-                lxml.etree.QName(plan.cphd_xmltree.getroot()).namespace
+                lxml.etree.QName(metadata.xmltree.getroot()).namespace
             ]["version"]
             header_str = f"CPHD/{version}\n"
             header_str += "".join(
                 (f"{key} := {value}\n" for key, value in self._file_header_kvp.items())
             )
-            return header_str.encode() + CPHD_SECTION_TERMINATOR
+            return header_str.encode() + SECTION_TERMINATOR
 
         next_offset = _align(len(_serialize_header()))
         self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"] = next_offset
         next_offset = _align(
             next_offset
             + self._file_header_kvp["XML_BLOCK_SIZE"]
-            + len(CPHD_SECTION_TERMINATOR)
+            + len(SECTION_TERMINATOR)
         )
 
         if self._sa_size_offsets:
@@ -673,11 +635,11 @@ class CphdWriter:
         self._file_object.seek(0)
         self._file_object.write(_serialize_header())
         self._file_object.seek(self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"])
-        self._file_object.write(xml_block_body + CPHD_SECTION_TERMINATOR)
+        self._file_object.write(xml_block_body + SECTION_TERMINATOR)
 
-        self._signal_arrays_written = set()
-        self._pvp_arrays_written = set()
-        self._support_arrays_written = set()
+        self._signal_arrays_written: set[str] = set()
+        self._pvp_arrays_written: set[str] = set()
+        self._support_arrays_written: set[str] = set()
 
     def write_signal(self, channel_identifier: str, signal_array: npt.NDArray):
         """Write signal data to a CPHD file
@@ -740,14 +702,14 @@ class CphdWriter:
         support_array : ndarray
             Array of support data
         """
-        data_sa_elem = self._plan.cphd_xmltree.find(
+        data_sa_elem = self._metadata.xmltree.find(
             f"{{*}}Data/{{*}}SupportArray[{{*}}Identifier='{support_array_identifier}']"
         )
         expected_shape = (
             int(data_sa_elem.findtext("{*}NumRows")),
             int(data_sa_elem.findtext("{*}NumCols")),
         )
-        sa_elem = self._plan.cphd_xmltree.find(
+        sa_elem = self._metadata.xmltree.find(
             f"{{*}}SupportArray/*[{{*}}Identifier='{support_array_identifier}']"
         )
         element_format = sa_elem.findtext("{*}ElementFormat")
@@ -788,7 +750,7 @@ class CphdWriter:
         """Warn about unwritten arrays declared in the XML"""
         channel_names = set(
             node.text
-            for node in self._plan.cphd_xmltree.findall(
+            for node in self._metadata.xmltree.findall(
                 "./{*}Data/{*}Channel/{*}Identifier"
             )
         )
@@ -806,7 +768,7 @@ class CphdWriter:
 
         sa_names = set(
             node.text
-            for node in self._plan.cphd_xmltree.findall(
+            for node in self._metadata.xmltree.findall(
                 "./{*}Data/{*}SupportArray/{*}Identifier"
             )
         )

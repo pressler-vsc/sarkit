@@ -70,21 +70,34 @@ def _to_binary_format_string_recursive(dtype):
 
 
 def dtype_to_binary_format_string(dtype: np.dtype) -> str:
-    """Return the CPHD Binary Format string (table 10-2) description of a numpy.dtype.
+    """Return the binary format string corresponding to a `numpy.dtype`.
+
+    See the "Allowed Binary Formats" table in the Design & Implementation Description Document
 
     Parameters
     ----------
     dtype : `numpy.dtype`
-        (e.g., numpy.int8, numpy.int32, numpy.complex64, etc.)
-
-        The dtype to be converted to PVP type string.
+        Data-type about which to get binary format string.
+        Endianness is ignored.
 
     Returns
     -------
-    result : str
-        PVP type designator for the specified `numpy.dtype`
-        (e.g., ``"I1"``, ``"I4"``, ``"CF8"``, etc.).
+    str
+        Binary format string for the specified `numpy.dtype`
 
+    Examples
+    --------
+
+    .. doctest::
+
+        >>> import numpy as np
+        >>> import sarkit.cphd as skcphd
+
+        >>> skcphd.dtype_to_binary_format_string(np.uint8)
+        'U1'
+
+        >>> skcphd.dtype_to_binary_format_string(np.dtype([('a', np.int16), ('b', 'S30')]))
+        'a=I2;b=S30;'
     """
     result = _to_binary_format_string_recursive(dtype)
 
@@ -122,19 +135,33 @@ def _single_binary_format_string_to_dtype(form):
 
 
 def binary_format_string_to_dtype(format_string: str) -> np.dtype:
-    """Return the numpy.dtype for CPHD Binary Format string (table 10-2).
+    """Return the `numpy.dtype` corresponding to a binary format string.
+
+    See the "Allowed Binary Formats" table in the Design & Implementation Description Document
 
     Parameters
     ----------
     format_string : str
-        PVP type designator (e.g., ``"I1"``, ``"I4"``, ``"CF8"``, etc.).
+        Binary format string about which to get the dtype.
 
     Returns
     -------
-    dtype : `numpy.dtype`
-        The equivalent `numpy.dtype` of the PVP format string
-        (e.g., numpy.int8, numpy.int32, numpy.complex64, etc.).
+    `numpy.dtype`
+        `numpy.dtype` corresponding to the binary format string (in native byte order)
 
+    Examples
+    --------
+
+    .. doctest::
+
+        >>> import numpy as np
+        >>> import sarkit.cphd as skcphd
+
+        >>> skcphd.binary_format_string_to_dtype('U1')
+        dtype('uint8')
+
+        >>> skcphd.binary_format_string_to_dtype('a=I2;b=S30;')
+        dtype([('a', '<i2'), ('b', 'S30')])
     """
     components = format_string.split(";")
 
@@ -217,7 +244,7 @@ class Metadata:
 
 
 def read_file_header(file):
-    """Read a CPHD file header.
+    """Read a file header.
 
     The file object's position is assumed to be at the start of the file.
 
@@ -229,7 +256,7 @@ def read_file_header(file):
     Returns
     -------
     file_type_header : str
-        File type from the first line of a CPHD file
+        File type from the first line of the file
     kvp_list : dict[str, str]
         Key-Value list of header fields
     """
@@ -506,7 +533,7 @@ class Writer:
 
     Examples
     --------
-    >>> with output_path.open('wb') as file, Writer(file, plan) as writer:
+    >>> with output_path.open('wb') as file, Writer(file, metadata) as writer:
     ...     writer.write_signal("1", signal)
     ...     writer.write_pvp("1", pvp)
 

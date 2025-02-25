@@ -64,7 +64,7 @@ Constants
      - `dict` of {xml namespace: version-specific information}
    * - ``DEFINED_HEADER_KEYS``
      - :external:py:obj:`set` of KVP keys defined in the standard
-   * - ``CPHD_SECTION_TERMINATOR``
+   * - ``SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
    * - ``TRANSCODERS``
      - `dict` of {name: transcoder}

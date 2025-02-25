@@ -2,6 +2,7 @@
 Functions to read and write SICD files.
 """
 
+import copy
 import dataclasses
 import datetime
 import importlib.resources
@@ -75,43 +76,43 @@ PIXEL_TYPES: Final[dict[str, dict[str, Any]]] = {
 
 
 @dataclasses.dataclass(kw_only=True)
-class SicdNitfSecurityFields:
+class NitfSecurityFields:
     """NITF Security Header/Subheader fields
 
     Attributes
     ----------
     clas : str
-        File Security Classification
+        Security Classification
     clsy : str
-        File Security Classification System
+        Security Classification System
     code : str
-        File Codewords
+        Codewords
     ctlh : str
-        File Control and Handling
+        Control and Handling
     rel : str
-        File Releasing Instructions
+        Releasing Instructions
     dctp : str
-        File Declassification Type
+        Declassification Type
     dcdt : str
-        File Declassification Date
+        Declassification Date
     dcxm : str
-        File Declassification Exemption
+        Declassification Exemption
     dg : str
-        File Downgrade
+        Downgrade
     dgdt : str
-        File Downgrade Date
+        Downgrade Date
     cltx : str
-        File Classification Text
+        Classification Text
     catp : str
-        File Classification Authority Type
+        Classification Authority Type
     caut : str
-        File Classification Authority
+        Classification Authority
     crsn : str
-        File Classification Reason
+        Classification Reason
     srdt : str
-        File Security Source Date
+        Security Source Date
     ctln : str
-        File Security Control Number
+        Security Control Number
     """
 
     clas: str
@@ -180,7 +181,7 @@ class SicdNitfSecurityFields:
 
 
 @dataclasses.dataclass(kw_only=True)
-class SicdNitfHeaderFields:
+class NitfFileHeaderPart:
     """NITF header fields which are set according to a Program Specific Implementation Document
 
     Attributes
@@ -189,7 +190,7 @@ class SicdNitfHeaderFields:
         Originating Station ID
     ftitle : str
         File Title
-    security : :py:class:`SicdNitfSecurityFields`
+    security : NitfSecurityFields
         Security Tags with "FS" prefix
     oname : str
         Originator's Name
@@ -199,7 +200,7 @@ class SicdNitfHeaderFields:
 
     ostaid: str
     ftitle: str = ""
-    security: SicdNitfSecurityFields
+    security: NitfSecurityFields
     oname: str = ""
     ophone: str = ""
 
@@ -209,18 +210,18 @@ class SicdNitfHeaderFields:
         return cls(
             ostaid=file_header.OSTAID,
             ftitle=file_header.FTITLE,
-            security=SicdNitfSecurityFields._from_security_tags(file_header.Security),
+            security=NitfSecurityFields._from_security_tags(file_header.Security),
             oname=file_header.ONAME,
             ophone=file_header.OPHONE,
         )
 
     def __post_init__(self):
         if isinstance(self.security, dict):
-            self.security = SicdNitfSecurityFields(**self.security)
+            self.security = NitfSecurityFields(**self.security)
 
 
 @dataclasses.dataclass(kw_only=True)
-class SicdNitfImageSegmentFields:
+class NitfImSubheaderPart:
     """NITF image header fields which are set according to a Program Specific Implementation Document
 
     Attributes
@@ -229,7 +230,7 @@ class SicdNitfImageSegmentFields:
        Target Identifier
     iid2 : str
         Image Identifier 2
-    security : :py:class:`SicdNitfSecurityFields`
+    security : NitfSecurityFields
         Security Tags with "IS" prefix
     isorce : str
         Image Source
@@ -240,7 +241,7 @@ class SicdNitfImageSegmentFields:
     ## IS fields are applied to all segments
     tgtid: str = ""
     iid2: str = ""
-    security: SicdNitfSecurityFields
+    security: NitfSecurityFields
     isorce: str
     icom: list[str] = dataclasses.field(default_factory=list)
 
@@ -250,7 +251,7 @@ class SicdNitfImageSegmentFields:
         return cls(
             tgtid=image_header.TGTID,
             iid2=image_header.IID2,
-            security=SicdNitfSecurityFields._from_security_tags(image_header.Security),
+            security=NitfSecurityFields._from_security_tags(image_header.Security),
             isorce=image_header.ISORCE,
             icom=[
                 val.to_bytes().decode().rstrip() for val in image_header.Comments.values
@@ -259,16 +260,16 @@ class SicdNitfImageSegmentFields:
 
     def __post_init__(self):
         if isinstance(self.security, dict):
-            self.security = SicdNitfSecurityFields(**self.security)
+            self.security = NitfSecurityFields(**self.security)
 
 
 @dataclasses.dataclass(kw_only=True)
-class SicdNitfDESegmentFields:
-    """NITF DE header fields which are set according to a Program Specific Implementation Document
+class NitfDeSubheaderPart:
+    """NITF DES subheader fields which are set according to a Program Specific Implementation Document
 
     Attributes
     ----------
-    security : :py:class:`SicdNitfSecurityFields`
+    security : NitfSecurityFields
         Security Tags with "DES" prefix
     desshrp : str
         Responsible Party - Organization Identifier
@@ -280,7 +281,7 @@ class SicdNitfDESegmentFields:
         Abstract. Brief narrative summary of the content of the DES.
     """
 
-    security: SicdNitfSecurityFields
+    security: NitfSecurityFields
     desshrp: str = ""
     desshli: str = ""
     desshlin: str = ""
@@ -290,7 +291,7 @@ class SicdNitfDESegmentFields:
     def _from_header(cls, de_header: sarkit._nitf.nitf.DataExtensionHeader) -> Self:
         """Construct from a NITF DataExtensionHeader object"""
         return cls(
-            security=SicdNitfSecurityFields._from_security_tags(de_header.Security),
+            security=NitfSecurityFields._from_security_tags(de_header.Security),
             desshrp=de_header.UserHeader.DESSHRP,
             desshli=de_header.UserHeader.DESSHLI,
             desshlin=de_header.UserHeader.DESSHLIN,
@@ -299,52 +300,60 @@ class SicdNitfDESegmentFields:
 
     def __post_init__(self):
         if isinstance(self.security, dict):
-            self.security = SicdNitfSecurityFields(**self.security)
+            self.security = NitfSecurityFields(**self.security)
 
 
 @dataclasses.dataclass(kw_only=True)
-class SicdNitfPlan:
-    """Class describing the plan for creating a SICD NITF Container
+class NitfMetadata:
+    """Settable SICD NITF metadata
 
     Attributes
     ----------
-    sicd_xmltree : lxml.etree.ElementTree
-        SICD XML ElementTree
-    header_fields : :py:class:`SicdNitfHeaderFields`
+    xmltree : lxml.etree.ElementTree
+        SICD XML
+    file_header_part : NitfFileHeaderPart
         NITF File Header fields which can be set
-    is_fields : :py:class:`SicdNitfImageSegmentFields`
-        NITF Image Segment Header fields which can be set
-    des_fields : :py:class:`SicdNitfDESegmentFields`
-        NITF DE Segment Header fields which can be set
-
-    See Also
-    --------
-    SicdNitfReader
-    SicdNitfWriter
-    SicdNitfSecurityFields
-    SicdNitfHeaderFields
-    SicdNitfImageSegmentFields
-    SicdNitfDESegmentFields
+    im_subheader_part : NitfImSubheaderPart
+        NITF image subheader fields which can be set
+    de_subheader_part : NitfDeSubheaderPart
+        NITF DES subheader fields which can be set
     """
 
-    sicd_xmltree: lxml.etree.ElementTree
-    header_fields: SicdNitfHeaderFields
-    is_fields: SicdNitfImageSegmentFields
-    des_fields: SicdNitfDESegmentFields
+    xmltree: lxml.etree.ElementTree
+    file_header_part: NitfFileHeaderPart
+    im_subheader_part: NitfImSubheaderPart
+    de_subheader_part: NitfDeSubheaderPart
 
     def __post_init__(self):
-        if isinstance(self.header_fields, dict):
-            self.header_fields = SicdNitfHeaderFields(**self.header_fields)
-        if isinstance(self.is_fields, dict):
-            self.is_fields = SicdNitfImageSegmentFields(**self.is_fields)
-        if isinstance(self.des_fields, dict):
-            self.des_fields = SicdNitfDESegmentFields(**self.des_fields)
+        if isinstance(self.file_header_part, dict):
+            self.file_header_part = NitfFileHeaderPart(**self.file_header_part)
+        if isinstance(self.im_subheader_part, dict):
+            self.im_subheader_part = NitfImSubheaderPart(**self.im_subheader_part)
+        if isinstance(self.de_subheader_part, dict):
+            self.de_subheader_part = NitfDeSubheaderPart(**self.de_subheader_part)
+
+    def __eq__(self, other):
+        if isinstance(other, NitfMetadata):
+            self_parts = (
+                lxml.etree.tostring(self.xmltree, method="c14n"),
+                self.file_header_part,
+                self.im_subheader_part,
+                self.de_subheader_part,
+            )
+            other_parts = (
+                lxml.etree.tostring(other.xmltree, method="c14n"),
+                other.file_header_part,
+                other.im_subheader_part,
+                other.de_subheader_part,
+            )
+            return self_parts == other_parts
+        return False
 
 
-class SicdNitfReader:
+class NitfReader:
     """Read a SICD NITF
 
-    A SicdNitfReader object can be used as a context manager in a ``with`` statement.
+    A NitfReader object can be used as a context manager in a ``with`` statement.
     Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
@@ -354,23 +363,18 @@ class SicdNitfReader:
 
     Examples
     --------
-    >>> with sicd_path.open('rb') as file, SicdNitfReader(file) as reader:
-    ...     sicd_xmltree = reader.sicd_xmltree
+    >>> with sicd_path.open('rb') as file, NitfReader(file) as reader:
+    ...     sicd_xmltree = reader.metadata.xmltree
     ...     pixels = reader.read_image()
 
     Attributes
     ----------
-    sicd_xmltree : lxml.etree.ElementTree
-    header_fields : SicdNitfHeaderFields
-    is_fields : SicdNitfImageSegmentFields
-    des_fields : SicdNitfDESegmentFields
-    nitf_plan : :py:class:`SicdNitfPlan`
-        A SicdNitfPlan object suitable for use in a SicdNitfWriter
+    metadata : NitfMetadata
+        SICD NITF metadata
 
     See Also
     --------
-    SicdNitfPlan
-    SicdNitfWriter
+    NitfWriter
     """
 
     def __init__(self, file):
@@ -403,38 +407,18 @@ class SicdNitfReader:
         sicd_xmltree = lxml.etree.fromstring(
             self._nitf_reader.nitf_details.get_des_bytes(0)
         ).getroottree()
-        nitf_header_fields = SicdNitfHeaderFields._from_header(nitf_details.nitf_header)
-        nitf_image_fields = SicdNitfImageSegmentFields._from_header(
+        nitf_header_fields = NitfFileHeaderPart._from_header(nitf_details.nitf_header)
+        nitf_image_fields = NitfImSubheaderPart._from_header(
             nitf_details.img_headers[0]
         )
-        nitf_de_fields = SicdNitfDESegmentFields._from_header(des_header)
+        nitf_de_fields = NitfDeSubheaderPart._from_header(des_header)
 
-        self.nitf_plan = SicdNitfPlan(
-            sicd_xmltree=sicd_xmltree,
-            header_fields=nitf_header_fields,
-            is_fields=nitf_image_fields,
-            des_fields=nitf_de_fields,
+        self.metadata = NitfMetadata(
+            xmltree=sicd_xmltree,
+            file_header_part=nitf_header_fields,
+            im_subheader_part=nitf_image_fields,
+            de_subheader_part=nitf_de_fields,
         )
-
-    @property
-    def sicd_xmltree(self) -> lxml.etree.ElementTree:
-        """SICD XML tree"""
-        return self.nitf_plan.sicd_xmltree
-
-    @property
-    def header_fields(self) -> SicdNitfHeaderFields:
-        """NITF File Header fields"""
-        return self.nitf_plan.header_fields
-
-    @property
-    def is_fields(self) -> SicdNitfImageSegmentFields:
-        """NITF Image Segment Subheader fields"""
-        return self.nitf_plan.is_fields
-
-    @property
-    def des_fields(self) -> SicdNitfDESegmentFields:
-        """NITF DE Segment Subheader fields"""
-        return self.nitf_plan.des_fields
 
     def read_image(self) -> npt.NDArray:
         """Read the entire pixel array
@@ -445,9 +429,9 @@ class SicdNitfReader:
             SICD image array
         """
         self._file_object.seek(self._initial_offset)
-        nrows = int(self.sicd_xmltree.findtext("{*}ImageData/{*}NumRows"))
-        ncols = int(self.sicd_xmltree.findtext("{*}ImageData/{*}NumCols"))
-        pixel_type = self.sicd_xmltree.findtext("{*}ImageData/{*}PixelType")
+        nrows = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumRows"))
+        ncols = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumCols"))
+        pixel_type = self.metadata.xmltree.findtext("{*}ImageData/{*}PixelType")
         dtype = PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
         sicd_pixels = np.empty((nrows, ncols), dtype)
         imseg_sizes = self._nitf_reader.nitf_details.img_segment_sizes[
@@ -536,40 +520,26 @@ def _create_des_manager(sicd_xmltree, des_fields):
     return sicd_des
 
 
-class SicdNitfWriter:
+class NitfWriter:
     """Write a SICD NITF
 
-    A SicdNitfWriter object can be used as a context manager in a ``with`` statement.
+    A NitfWriter object can be used as a context manager in a ``with`` statement.
 
     Parameters
     ----------
     file : `file object`
         SICD NITF file to write
-    nitf_plan : :py:class:`SicdNitfPlan`
-        NITF plan object
-
-    Notes
-    -----
-    nitf_plan should not be modified after creation of a writer
-
-    Examples
-    --------
-    >>> plan = SicdNitfPlan(sicd_xmltree=sicd_xmltree,
-    ...                     header_fields=SicdNitfHeaderFields(ostaid='my location',
-    ...                                                        security=SicdNitfSecurityFields(clas='U')),
-    ...                     is_fields=SicdNitfImageSegmentFields(isorce='my sensor',
-    ...                                                          security=SicdNitfSecurityFields(clas='U')),
-    ...                     des_fields=SicdNitfDESegmentFields(security=SicdNitfSecurityFields(clas='U')))
-    >>> with output_path.open('wb') as file, SicdNitfWriter(file, plan) as writer:
-    ...     writer.write_image(pixel_array)
+    metadata : NitfMetadata
+        SICD NITF metadata to write (copied on construction)
 
     See Also
     --------
-    SicdNitfPlan
-    SicdNitfReader
+    NitfReader
     """
 
-    def __init__(self, file, nitf_plan: SicdNitfPlan):
+    # TODO: add example to docstring
+
+    def __init__(self, file, metadata: NitfMetadata):
         self._file_object = file
 
         self._initial_offset = self._file_object.tell()
@@ -578,10 +548,8 @@ class SicdNitfWriter:
                 "seek(0) must be the start of the NITF"
             )  # this is a NITFDetails limitation
 
-        self._nitf_plan = nitf_plan
-        sicd_xmltree = nitf_plan.sicd_xmltree
-
-        """Create a SICD NITF from a pixel array and metadata."""
+        self._metadata = copy.deepcopy(metadata)
+        sicd_xmltree = self._metadata.xmltree
         xmlns = lxml.etree.QName(sicd_xmltree.getroot()).namespace
         schema = lxml.etree.XMLSchema(file=VERSION_INFO[xmlns]["schema"])
         if not schema.validate(sicd_xmltree):
@@ -596,12 +564,12 @@ class SicdNitfWriter:
         now_dt = datetime.datetime.now(datetime.timezone.utc)
         header = sarkit._nitf.nitf_elements.nitf_head.NITFHeader(
             CLEVEL=3,
-            OSTAID=self._nitf_plan.header_fields.ostaid,
+            OSTAID=self._metadata.file_header_part.ostaid,
             FDT=now_dt.strftime("%Y%m%d%H%M%S"),
-            FTITLE=self._nitf_plan.header_fields.ftitle,
-            Security=self._nitf_plan.header_fields.security._as_security_tags(),
-            ONAME=self._nitf_plan.header_fields.oname,
-            OPHONE=self._nitf_plan.header_fields.ophone,
+            FTITLE=self._metadata.file_header_part.ftitle,
+            Security=self._metadata.file_header_part.security._as_security_tags(),
+            ONAME=self._metadata.file_header_part.oname,
+            OPHONE=self._metadata.file_header_part.ophone,
             FL=0,
         )
 
@@ -636,10 +604,10 @@ class SicdNitfWriter:
                 IDATIM=xml_helper.load("./{*}Timeline/{*}CollectStart").strftime(
                     "%Y%m%d%H%M%S"
                 ),
-                TGTID=self._nitf_plan.is_fields.tgtid,
-                IID2=self._nitf_plan.is_fields.iid2,
-                Security=self._nitf_plan.is_fields.security._as_security_tags(),
-                ISORCE=self._nitf_plan.is_fields.isorce,
+                TGTID=self._metadata.im_subheader_part.tgtid,
+                IID2=self._metadata.im_subheader_part.iid2,
+                Security=self._metadata.im_subheader_part.security._as_security_tags(),
+                ISORCE=self._metadata.im_subheader_part.isorce,
                 NROWS=this_rows,
                 NCOLS=cols,
                 PVTYPE=PIXEL_TYPES[pixel_type]["pvtype"],
@@ -652,7 +620,7 @@ class SicdNitfWriter:
                 Comments=sarkit._nitf.nitf_elements.image.ImageComments(
                     [
                         sarkit._nitf.nitf_elements.image.ImageComment(COMMENT=comment)
-                        for comment in self._nitf_plan.is_fields.icom
+                        for comment in self._metadata.im_subheader_part.icom
                     ]
                 ),
                 IC="NC",
@@ -673,7 +641,7 @@ class SicdNitfWriter:
             )
             image_managers.append(sarkit._nitf.nitf.ImageSubheaderManager(subhead))
 
-        sicd_des = _create_des_manager(sicd_xmltree, self._nitf_plan.des_fields)
+        sicd_des = _create_des_manager(sicd_xmltree, self._metadata.de_subheader_part)
 
         sicd_details = sarkit._nitf.nitf.NITFWritingDetails(
             header,
@@ -700,16 +668,14 @@ class SicdNitfWriter:
             If not given, `array` must be the full SICD image.
 
         """
-        pixel_type = self._nitf_plan.sicd_xmltree.findtext(
-            "./{*}ImageData/{*}PixelType"
-        )
+        pixel_type = self._metadata.xmltree.findtext("./{*}ImageData/{*}PixelType")
         if PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
             raise ValueError(
                 f"Array dtype ({array.dtype}) does not match expected dtype ({PIXEL_TYPES[pixel_type]['dtype']}) "
                 f"for PixelType={pixel_type}"
             )
 
-        xml_helper = sicd_xml.XmlHelper(self._nitf_plan.sicd_xmltree)
+        xml_helper = sicd_xml.XmlHelper(self._metadata.xmltree)
         rows = xml_helper.load("./{*}ImageData/{*}NumRows")
         cols = xml_helper.load("./{*}ImageData/{*}NumCols")
         sicd_shape = np.asarray((rows, cols))
@@ -749,7 +715,7 @@ class SicdNitfWriter:
         """
         Flush to disk and close any opened file descriptors.
 
-        Called automatically when SicdNitfWriter is used as a context manager
+        Called automatically when used as a context manager
         """
         self._nitf_writer.close()
 

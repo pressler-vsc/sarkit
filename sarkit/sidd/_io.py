@@ -3,6 +3,7 @@ Functions to read and write SIDD files.
 """
 
 import collections
+import copy
 import dataclasses
 import datetime
 import importlib
@@ -94,13 +95,13 @@ ILOC_MAX: Final[int] = 99_999
 
 
 # SICD implementation happens to match, reuse it
-class NitfSecurityFields(sksicd.SicdNitfSecurityFields):
-    __doc__ = sksicd.SicdNitfSecurityFields.__doc__
+class NitfSecurityFields(sksicd.NitfSecurityFields):
+    __doc__ = sksicd.NitfSecurityFields.__doc__
 
 
 # SICD implementation happens to match, reuse it
-class NitfFileHeaderPart(sksicd.SicdNitfHeaderFields):
-    __doc__ = sksicd.SicdNitfHeaderFields.__doc__
+class NitfFileHeaderPart(sksicd.NitfFileHeaderPart):
+    __doc__ = sksicd.NitfFileHeaderPart.__doc__
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -143,8 +144,8 @@ class NitfImSubheaderPart:
 
 
 # SICD implementation happens to match, reuse it
-class NitfDeSubheaderPart(sksicd.SicdNitfDESegmentFields):
-    __doc__ = sksicd.SicdNitfDESegmentFields.__doc__
+class NitfDeSubheaderPart(sksicd.NitfDeSubheaderPart):
+    __doc__ = sksicd.NitfDeSubheaderPart.__doc__
 
 
 @dataclasses.dataclass
@@ -225,11 +226,11 @@ class NitfSicdXmlMetadata:
     """
 
     xmltree: lxml.etree.ElementTree
-    de_subheader_part: sksicd.SicdNitfDESegmentFields
+    de_subheader_part: sksicd.NitfDeSubheaderPart
 
     def __post_init__(self):
         if isinstance(self.de_subheader_part, dict):
-            self.de_subheader_part = sksicd.SicdNitfDESegmentFields(
+            self.de_subheader_part = sksicd.NitfDeSubheaderPart(
                 **self.de_subheader_part
             )
 
@@ -370,9 +371,7 @@ class NitfReader:
                             NitfProductSupportXmlMetadata(xmltree, nitf_de_fields)
                         )
                 elif "SICD" in xmltree.getroot().tag:
-                    nitf_de_fields = sksicd.SicdNitfDESegmentFields._from_header(
-                        des_header
-                    )
+                    nitf_de_fields = sksicd.NitfDeSubheaderPart._from_header(des_header)
                     self.metadata.sicd_xmls.append(
                         NitfSicdXmlMetadata(xmltree, nitf_de_fields)
                     )
@@ -419,11 +418,7 @@ class NitfWriter:
     file : `file object`
         SIDD NITF file to write
     metadata : NitfMetadata
-        SIDD NITF metadata to write
-
-    Notes
-    -----
-    ``metadata`` should not be modified after creation of a writer
+        SIDD NITF metadata to write (copied on construction)
 
     Examples
     --------
@@ -478,7 +473,7 @@ class NitfWriter:
 
     def __init__(self, file, metadata: NitfMetadata):
         self._file = file
-        self._metadata = metadata
+        self._metadata = copy.deepcopy(metadata)
         self._images_written: set[int] = set()
 
         self._initial_offset = self._file.tell()

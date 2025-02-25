@@ -2,6 +2,7 @@
 Functions to read and write CRSD files.
 """
 
+import copy
 import dataclasses
 import importlib.resources
 import logging
@@ -421,11 +422,7 @@ class Writer:
     file : `file object`
         CRSD file to write
     metadata : Metadata
-        CRSD metadata to write
-
-    Notes
-    -----
-    ``metadata`` should not be modified after creation of a writer
+        CRSD metadata to write (copied on construction)
 
     Examples
     --------
@@ -442,18 +439,17 @@ class Writer:
         align_to = 64
         self._file_object = file
 
-        self._metadata = metadata
+        self._metadata = copy.deepcopy(metadata)
+        crsd_xmltree = self._metadata.xmltree
 
-        xml_block_body = lxml.etree.tostring(metadata.xmltree, encoding="utf-8")
+        xml_block_body = lxml.etree.tostring(crsd_xmltree, encoding="utf-8")
 
         self._sequence_size_offsets = {}
-        if metadata.xmltree.find("./{*}Data/{*}Transmit") is not None:
+        if crsd_xmltree.find("./{*}Data/{*}Transmit") is not None:
             ppp_itemsize = int(
-                metadata.xmltree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text
+                crsd_xmltree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text
             )
-            for seq_node in metadata.xmltree.findall(
-                "./{*}Data/{*}Transmit/{*}TxSequence"
-            ):
+            for seq_node in crsd_xmltree.findall("./{*}Data/{*}Transmit/{*}TxSequence"):
                 sequence_identifier = seq_node.find("./{*}Identifier").text
                 sequence_ppp_offset = int(seq_node.find("./{*}PPPArrayByteOffset").text)
                 sequence_ppp_size = (
@@ -465,16 +461,14 @@ class Writer:
                 }
 
         self._channel_size_offsets = {}
-        if metadata.xmltree.find("./{*}Data/{*}Receive") is not None:
+        if crsd_xmltree.find("./{*}Data/{*}Receive") is not None:
             signal_itemsize = binary_format_string_to_dtype(
-                metadata.xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
+                crsd_xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
             ).itemsize
             pvp_itemsize = int(
-                metadata.xmltree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text
+                crsd_xmltree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text
             )
-            for chan_node in metadata.xmltree.findall(
-                "./{*}Data/{*}Receive/{*}Channel"
-            ):
+            for chan_node in crsd_xmltree.findall("./{*}Data/{*}Receive/{*}Channel"):
                 channel_identifier = chan_node.find("./{*}Identifier").text
                 channel_signal_offset = int(
                     chan_node.find("./{*}SignalArrayByteOffset").text
@@ -498,7 +492,7 @@ class Writer:
                 }
 
         self._sa_size_offsets = {}
-        for sa_node in metadata.xmltree.findall("./{*}Data/{*}Support/{*}SupportArray"):
+        for sa_node in crsd_xmltree.findall("./{*}Data/{*}Support/{*}SupportArray"):
             sa_identifier = sa_node.find("./{*}Identifier").text
             sa_offset = int(sa_node.find("./{*}ArrayByteOffset").text)
             sa_size = (
@@ -520,10 +514,8 @@ class Writer:
             return int(np.ceil(float(val) / align_to) * align_to)
 
         self._file_header_kvp = {
-            "CLASSIFICATION": metadata.xmltree.findtext(
-                "{*}ProductInfo/{*}Classification"
-            ),
-            "RELEASE_INFO": metadata.xmltree.findtext("{*}ProductInfo/{*}ReleaseInfo"),
+            "CLASSIFICATION": crsd_xmltree.findtext("{*}ProductInfo/{*}Classification"),
+            "RELEASE_INFO": crsd_xmltree.findtext("{*}ProductInfo/{*}ReleaseInfo"),
             "XML_BLOCK_SIZE": len(xml_block_body),
             "XML_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
         }
@@ -561,12 +553,12 @@ class Writer:
             np.iinfo(np.uint64).max,
         )  # placeholder
 
-        self._file_header_kvp.update(metadata.file_header_part.additional_kvps)
+        self._file_header_kvp.update(self._metadata.file_header_part.additional_kvps)
 
         def _serialize_header():
-            version = VERSION_INFO[
-                lxml.etree.QName(metadata.xmltree.getroot()).namespace
-            ]["version"]
+            version = VERSION_INFO[lxml.etree.QName(crsd_xmltree.getroot()).namespace][
+                "version"
+            ]
             if self._sequence_size_offsets and self._channel_size_offsets:
                 file_type = "CRSDsar"
             elif self._channel_size_offsets:

@@ -2,6 +2,7 @@
 Functions to read and write CPHD files.
 """
 
+import copy
 import dataclasses
 import importlib.resources
 import logging
@@ -525,11 +526,7 @@ class Writer:
     file : `file object`
         CPHD file to write
     metadata : Metadata
-        CPHD metadata to write
-
-    Notes
-    -----
-    ``metadata`` should not be modified after creation of a writer
+        CPHD metadata to write (copied on construction)
 
     Examples
     --------
@@ -546,16 +543,17 @@ class Writer:
         align_to = 64
         self._file_object = file
 
-        self._metadata = metadata
+        self._metadata = copy.deepcopy(metadata)
+        cphd_xmltree = self._metadata.xmltree
 
-        xml_block_body = lxml.etree.tostring(metadata.xmltree, encoding="utf-8")
+        xml_block_body = lxml.etree.tostring(cphd_xmltree, encoding="utf-8")
 
         signal_itemsize = binary_format_string_to_dtype(
-            metadata.xmltree.find("./{*}Data/{*}SignalArrayFormat").text
+            cphd_xmltree.find("./{*}Data/{*}SignalArrayFormat").text
         ).itemsize
-        pvp_itemsize = int(metadata.xmltree.find("./{*}Data/{*}NumBytesPVP").text)
+        pvp_itemsize = int(cphd_xmltree.find("./{*}Data/{*}NumBytesPVP").text)
         self._channel_size_offsets = {}
-        for chan_node in metadata.xmltree.findall("./{*}Data/{*}Channel"):
+        for chan_node in cphd_xmltree.findall("./{*}Data/{*}Channel"):
             channel_identifier = chan_node.find("./{*}Identifier").text
             channel_signal_offset = int(
                 chan_node.find("./{*}SignalArrayByteOffset").text
@@ -588,7 +586,7 @@ class Writer:
         )
 
         self._sa_size_offsets = {}
-        for sa_node in metadata.xmltree.findall("./{*}Data/{*}SupportArray"):
+        for sa_node in cphd_xmltree.findall("./{*}Data/{*}SupportArray"):
             sa_identifier = sa_node.find("./{*}Identifier").text
             sa_offset = int(sa_node.find("./{*}ArrayByteOffset").text)
             sa_size = (
@@ -616,10 +614,10 @@ class Writer:
             "PVP_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
             "SIGNAL_BLOCK_SIZE": signal_block_size,
             "SIGNAL_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
-            "CLASSIFICATION": metadata.xmltree.findtext(
+            "CLASSIFICATION": cphd_xmltree.findtext(
                 "{*}CollectionID/{*}Classification"
             ),
-            "RELEASE_INFO": metadata.xmltree.findtext("{*}CollectionID/{*}ReleaseInfo"),
+            "RELEASE_INFO": cphd_xmltree.findtext("{*}CollectionID/{*}ReleaseInfo"),
         }
         if self._sa_size_offsets:
             self._file_header_kvp["SUPPORT_BLOCK_SIZE"] = support_block_size
@@ -627,12 +625,12 @@ class Writer:
                 np.iinfo(np.uint64).max,
             )  # placeholder
 
-        self._file_header_kvp.update(metadata.file_header_part.additional_kvps)
+        self._file_header_kvp.update(self._metadata.file_header_part.additional_kvps)
 
         def _serialize_header():
-            version = VERSION_INFO[
-                lxml.etree.QName(metadata.xmltree.getroot()).namespace
-            ]["version"]
+            version = VERSION_INFO[lxml.etree.QName(cphd_xmltree.getroot()).namespace][
+                "version"
+            ]
             header_str = f"CPHD/{version}\n"
             header_str += "".join(
                 (f"{key} := {value}\n" for key, value in self._file_header_kvp.items())

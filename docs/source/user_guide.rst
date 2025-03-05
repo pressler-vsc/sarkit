@@ -66,16 +66,11 @@ is often a small fraction of the size of a SAR data file.
 
 .. testsetup::
 
-   import pathlib
-   import tempfile
-
    import lxml.etree
    import numpy as np
 
    import sarkit.sicd as sksicd
 
-   tmpdir = tempfile.TemporaryDirectory()
-   tmppath = pathlib.Path(tmpdir.name)
    example_sicd = tmppath / "example.sicd"
    sec = {"security": {"clas": "U"}}
    parser = lxml.etree.XMLParser(remove_blank_text=True)
@@ -88,11 +83,6 @@ is often a small fraction of the size of a SAR data file.
    )
    with open(example_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
        pass  # don't currently care about the pixels
-
-
-.. testcleanup::
-
-   tmpdir.cleanup()
 
 .. doctest::
 

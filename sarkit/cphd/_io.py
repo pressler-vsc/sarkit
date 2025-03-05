@@ -324,12 +324,6 @@ class Reader:
     file : `file object`
         CPHD file to read
 
-    Examples
-    --------
-    >>> with cphd_path.open('rb') as file, Reader(file) as reader:
-    ...     cphd_xmltree = reader.metadata.xmltree
-    ...     signal, pvp = reader.read_channel(<chan_id>)
-
     Attributes
     ----------
     metadata : Metadata
@@ -338,6 +332,33 @@ class Reader:
     See Also
     --------
     Writer
+
+    Examples
+    --------
+
+    .. testsetup:: cphd_io
+
+        import sarkit.cphd as skcphd
+        import lxml.etree
+        meta = skcphd.Metadata(xmltree=lxml.etree.parse("data/example-cphd-1.0.1.xml"))
+
+        file = pathlib.Path(tmpdir.name) / "foo"
+        with file.open("wb") as f, skcphd.Writer(f, meta) as w:
+            f.seek(
+                w._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
+                + w._file_header_kvp["SIGNAL_BLOCK_SIZE"]
+                - 1
+            )
+            f.write(b"0")
+
+    .. doctest:: cphd_io
+
+        >>> import sarkit.cphd as skcphd
+        >>> with file.open("rb") as f, skcphd.Reader(f) as r:
+        ...     ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
+        ...     sig, pvp = r.read_channel(ch_id)
+        ...     sa_id = r.metadata.xmltree.findtext("{*}Data/{*}SupportArray/{*}Identifier")
+        ...     sa = r.read_support_array(sa_id)
     """
 
     def __init__(self, file):
@@ -528,15 +549,44 @@ class Writer:
     metadata : Metadata
         CPHD metadata to write (copied on construction)
 
-    Examples
-    --------
-    >>> with output_path.open('wb') as file, Writer(file, metadata) as writer:
-    ...     writer.write_signal("1", signal)
-    ...     writer.write_pvp("1", pvp)
-
     See Also
     --------
     Reader
+
+    Examples
+    --------
+    Generate some metadata and data
+
+    .. doctest:: cphd_io
+
+        >>> import lxml.etree
+
+        >>> xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+        >>> first_channel = xmltree.find("{*}Data/{*}Channel")
+        >>> ch_id = first_channel.findtext("{*}Identifier")
+        >>> num_v = int(first_channel.findtext("{*}NumVectors"))
+        >>> num_s = int(first_channel.findtext("{*}NumSamples"))
+        >>> sig_format = xmltree.findtext("{*}Data/{*}SignalArrayFormat")
+
+        >>> import sarkit.cphd as skcphd
+
+        >>> meta = skcphd.Metadata(
+        ...     xmltree=xmltree,
+        ...     file_header_part=skcphd.FileHeaderPart(additional_kvps={"K": "V"}),
+        ... )
+
+        >>> import numpy as np
+
+        >>> sig = np.zeros((num_v, num_s), dtype=skcphd.binary_format_string_to_dtype(sig_format))
+        >>> pvps = np.zeros(num_v, dtype=skcphd.get_pvp_dtype(xmltree))
+
+    Write a channel's signal and PVP arrays to a file.
+
+    .. doctest:: cphd_io
+
+        >>> with (tmppath / "written.cphd").open("wb") as f, skcphd.Writer(f, meta) as w:
+        ...     w.write_signal(ch_id, sig)
+        ...     w.write_pvp(ch_id, pvps)
     """
 
     def __init__(self, file, metadata: Metadata):

@@ -172,12 +172,6 @@ class Reader:
     file : `file object`
         CRSD file to read
 
-    Examples
-    --------
-    >>> with crsd_path.open('rb') as file, Reader(file) as reader:
-    ...     crsd_xmltree = reader.metadata.xmltree
-    ...     signal, pvp = reader.read_channel(<chan_id>)
-
     Attributes
     ----------
     metadata : Metadata
@@ -186,6 +180,37 @@ class Reader:
     See Also
     --------
     Writer
+
+    Examples
+    --------
+
+    .. testsetup:: crsd_io
+
+        import sarkit.crsd as skcrsd
+        import lxml.etree
+        meta = skcrsd.Metadata(
+            xmltree=lxml.etree.parse("data/example-crsd-1.0.0.2024-12-30.xml")
+        )
+
+        file = pathlib.Path(tmpdir.name) / "foo"
+        with file.open("wb") as f, skcrsd.Writer(f, meta) as w:
+            f.seek(
+                w._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
+                + w._file_header_kvp["SIGNAL_BLOCK_SIZE"]
+                - 1
+            )
+            f.write(b"0")
+
+    .. doctest:: crsd_io
+
+        >>> import sarkit.crsd as skcrsd
+        >>> with file.open("rb") as f, skcrsd.Reader(f) as r:
+        ...     sa_id = r.metadata.xmltree.findtext("{*}Data/{*}Support//{*}Identifier")
+        ...     sa = r.read_support_array(sa_id)
+        ...     tx_id = r.metadata.xmltree.findtext("{*}Data/{*}Transmit//{*}Identifier")
+        ...     txseq = r.read_ppps(tx_id)
+        ...     ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Receive/{*}Channel/{*}Identifier")
+        ...     sig, pvp = r.read_channel(ch_id)
     """
 
     def __init__(self, file):
@@ -424,15 +449,49 @@ class Writer:
     metadata : Metadata
         CRSD metadata to write (copied on construction)
 
-    Examples
-    --------
-    >>> with output_path.open('wb') as file, Writer(file, metadata) as writer:
-    ...     writer.write_signal("1", signal)
-    ...     writer.write_pvp("1", pvp)
-
     See Also
     --------
     Reader
+
+    Examples
+    --------
+    Generate some metadata and data
+
+    .. doctest:: crsd_io
+
+        >>> import lxml.etree
+
+        >>> xmltree = lxml.etree.parse("data/example-crsd-1.0.0.2024-12-30.xml")
+        >>> first_sequence = xmltree.find("{*}Data/{*}Transmit/{*}TxSequence")
+        >>> tx_id = first_sequence.findtext("{*}Identifier")
+        >>> num_p = int(first_sequence.findtext("{*}NumPulses"))
+        >>> first_channel = xmltree.find("{*}Data/{*}Receive/{*}Channel")
+        >>> ch_id = first_channel.findtext("{*}Identifier")
+        >>> num_v = int(first_channel.findtext("{*}NumVectors"))
+        >>> num_s = int(first_channel.findtext("{*}NumSamples"))
+        >>> sig_format = xmltree.findtext("{*}Data/{*}Receive/{*}SignalArrayFormat")
+
+        >>> import sarkit.crsd as skcrsd
+
+        >>> meta = skcrsd.Metadata(
+        ...     xmltree=xmltree,
+        ...     file_header_part=skcrsd.FileHeaderPart(additional_kvps={"K": "V"}),
+        ... )
+
+        >>> import numpy as np
+
+        >>> sig = np.zeros((num_v, num_s), dtype=skcrsd.binary_format_string_to_dtype(sig_format))
+        >>> pvps = np.zeros(num_v, dtype=skcrsd.get_pvp_dtype(xmltree))
+        >>> ppps = np.zeros(num_p, dtype=skcrsd.get_ppp_dtype(xmltree))
+
+    Write a channel's signal array and PVP arrays and a transmit sequence's PPP array to a file.
+
+    .. doctest:: crsd_io
+
+        >>> with (tmppath / "written.crsd").open("wb") as f, skcrsd.Writer(f, meta) as w:
+        ...     w.write_signal(ch_id, sig)
+        ...     w.write_pvp(ch_id, pvps)
+        ...     w.write_ppp(tx_id, ppps)
     """
 
     def __init__(self, file, metadata: Metadata):

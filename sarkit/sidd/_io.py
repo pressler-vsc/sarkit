@@ -277,12 +277,6 @@ class NitfReader:
     file : `file object`
         SIDD NITF file to read
 
-    Examples
-    --------
-    >>> with sidd_path.open('rb') as file, NitfReader(file) as reader:
-    ...     sidd_xmltree = reader.metadata.images[0].xmltree
-    ...     pixels = reader.read_image(0)
-
     Attributes
     ----------
     metadata : NitfMetadata
@@ -291,6 +285,48 @@ class NitfReader:
     See Also
     --------
     NitfWriter
+
+    Examples
+    --------
+
+    .. testsetup:: sidd_io
+
+        import lxml.etree
+        import numpy as np
+
+        import sarkit.sidd as sksidd
+
+        sidd_xml = lxml.etree.parse("data/example-sidd-3.0.0.xml")
+        sec = {"security": {"clas": "U"}}
+        meta = sksidd.NitfMetadata(
+            file_header_part={"ostaid": "sksidd stn", "ftitle": "sarkit example", **sec},
+            images=[
+                sksidd.NitfProductImageMetadata(
+                    xmltree=sidd_xml,
+                    im_subheader_part=sec,
+                    de_subheader_part=sec,
+                )
+            ],
+        )
+        img_to_write = np.zeros(
+            sksidd.XmlHelper(sidd_xml).load("{*}Measurement/{*}PixelFootprint"),
+            dtype=sksidd.PIXEL_TYPES[sidd_xml.findtext("{*}Display/{*}PixelType")]["dtype"],
+        )
+        file = pathlib.Path(tmpdir.name) / "foo"
+        with file.open("wb") as f, sksidd.NitfWriter(f, meta) as w:
+            w.write_image(0, img_to_write)
+
+    .. doctest:: sidd_io
+
+        >>> import sarkit.sidd as sksidd
+        >>> with file.open("rb") as f, sksidd.NitfReader(f) as r:
+        ...     img = r.read_image(0)
+
+        >>> print(r.metadata.images[0].xmltree.getroot().tag)
+        {urn:SIDD:3.0.0}SIDD
+
+        >>> print(r.metadata.file_header_part.ftitle)
+        sarkit example
     """
 
     def __init__(self, file):
@@ -331,10 +367,8 @@ class NitfReader:
             ),
         )
 
-        self.header_fields = NitfFileHeaderPart._from_header(
-            self._nitf_details.nitf_header
-        )
-        self.metadata = NitfMetadata(file_header_part=self.header_fields)
+        header_fields = NitfFileHeaderPart._from_header(self._nitf_details.nitf_header)
+        self.metadata = NitfMetadata(file_header_part=header_fields)
 
         image_number = 0
         for idx in range(self._nitf_details.des_subheader_offsets.size):
@@ -420,6 +454,10 @@ class NitfWriter:
     metadata : NitfMetadata
         SIDD NITF metadata to write (copied on construction)
 
+    See Also
+    --------
+    NitfReader
+
     Examples
     --------
     Write a SIDD NITF with a single product image
@@ -465,10 +503,6 @@ class NitfWriter:
         >>> outfile = NamedTemporaryFile()
         >>> with sksidd.NitfWriter(outfile, meta) as w:
         ...     w.write_image(0, img_to_write)
-
-    See Also
-    --------
-    NitfReader
     """
 
     def __init__(self, file, metadata: NitfMetadata):

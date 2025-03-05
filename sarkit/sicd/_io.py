@@ -361,12 +361,6 @@ class NitfReader:
     file : `file object`
         SICD NITF file to read
 
-    Examples
-    --------
-    >>> with sicd_path.open('rb') as file, NitfReader(file) as reader:
-    ...     sicd_xmltree = reader.metadata.xmltree
-    ...     pixels = reader.read_image()
-
     Attributes
     ----------
     metadata : NitfMetadata
@@ -375,6 +369,39 @@ class NitfReader:
     See Also
     --------
     NitfWriter
+
+    Examples
+    --------
+    .. testsetup::
+
+        import lxml.etree
+        import numpy as np
+
+        import sarkit.sicd as sksicd
+
+        file = tmppath / "example.sicd"
+        sec = {"security": {"clas": "U"}}
+        example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml")
+        sicd_meta = sksicd.NitfMetadata(
+            xmltree=example_sicd_xmltree,
+            file_header_part={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
+            im_subheader_part={"isorce": "this sensor"} | sec,
+            de_subheader_part=sec,
+        )
+        with open(file, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
+            pass  # don't currently care about the pixels
+
+    .. doctest::
+
+        >>> import sarkit.sicd as sicd
+        >>> with file.open("rb") as f, sksicd.NitfReader(f) as r:
+        ...     img = r.read_image()
+
+        >>> print(r.metadata.xmltree.getroot().tag)
+        {urn:SICD:1.4.0}SICD
+
+        >>> print(r.metadata.im_subheader_part.isorce)
+        this sensor
     """
 
     def __init__(self, file):
@@ -535,9 +562,46 @@ class NitfWriter:
     See Also
     --------
     NitfReader
-    """
 
-    # TODO: add example to docstring
+    Examples
+    --------
+    Construct a SICD metadata object...
+
+    .. doctest::
+
+        >>> import lxml.etree
+        >>> import sarkit.sicd as sksicd
+        >>> sicd_xml = lxml.etree.parse("data/example-sicd-1.4.0.xml")
+        >>> sec = sksicd.NitfSecurityFields(clas="U")
+        >>> meta = sksicd.NitfMetadata(
+        ...     xmltree=sicd_xml,
+        ...     file_header_part=sksicd.NitfFileHeaderPart(ostaid="my station", security=sec),
+        ...     im_subheader_part=sksicd.NitfImSubheaderPart(isorce="my sensor", security=sec),
+        ...     de_subheader_part=sksicd.NitfDeSubheaderPart(security=sec),
+        ... )
+
+    ... and associated complex image array.
+
+    .. doctest::
+
+        >>> import numpy as np
+        >>> img_to_write = np.zeros(
+        ...     (
+        ...         sksicd.XmlHelper(sicd_xml).load("{*}ImageData/{*}NumRows"),
+        ...         sksicd.XmlHelper(sicd_xml).load("{*}ImageData/{*}NumCols"),
+        ...     ),
+        ...     dtype=sksicd.PIXEL_TYPES[sicd_xml.findtext("{*}ImageData/{*}PixelType")]["dtype"],
+        ... )
+
+    Write the SICD NITF to a file
+
+    .. doctest::
+
+        >>> from tempfile import NamedTemporaryFile
+        >>> outfile = NamedTemporaryFile()
+        >>> with sksicd.NitfWriter(outfile, meta) as w:
+        ...     w.write_image(img_to_write)
+    """
 
     def __init__(self, file, metadata: NitfMetadata):
         self._file_object = file

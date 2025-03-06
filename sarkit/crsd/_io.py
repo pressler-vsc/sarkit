@@ -32,11 +32,10 @@ DEFINED_HEADER_KEYS: Final[set] = {
 }
 
 VERSION_INFO: Final[dict] = {
-    "http://api.nsgreg.nga.mil/schema/crsd/1.0.0_NEXT": {
-        # TBD
+    "http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25": {
         "version": "1.0",
-        "date": "2024-12-30T00:00:00Z",
-        "schema": SCHEMA_DIR / "NGA.STND.0080-1_1.0_DRAFT_CRSD_DIDD_2024_12_30.xsd",
+        "date": "2025-02-25T00:00:00Z",
+        "schema": SCHEMA_DIR / "CRSD_schema_V1.0_DRAFT_2025_02_25.xsd",
     },
 }
 
@@ -305,7 +304,7 @@ class CrsdReader:
 
         """
         channel_info = self.crsd_xmltree.find(
-            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
+            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
         num_samp = int(channel_info.find("./{*}NumSamples").text)
@@ -338,7 +337,7 @@ class CrsdReader:
 
         """
         channel_info = self.crsd_xmltree.find(
-            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
+            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
 
@@ -382,7 +381,7 @@ class CrsdReader:
 
         """
         channel_info = self.crsd_xmltree.find(
-            f"{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}Identifier='{sequence_identifier}']"
+            f"{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}TxId='{sequence_identifier}']"
         )
         num_pulse = int(channel_info.find("./{*}NumPulses").text)
 
@@ -400,7 +399,7 @@ class CrsdReader:
         dtype = binary_format_string_to_dtype(elem_format.text).newbyteorder("B")
 
         sa_info = self.crsd_xmltree.find(
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{sa_identifier}']"
+            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{sa_identifier}']"
         )
         num_rows = int(sa_info.find("./{*}NumRows").text)
         num_cols = int(sa_info.find("./{*}NumCols").text)
@@ -479,7 +478,7 @@ class CrsdWriter:
             for seq_node in plan.crsd_xmltree.findall(
                 "./{*}Data/{*}Transmit/{*}TxSequence"
             ):
-                sequence_identifier = seq_node.find("./{*}Identifier").text
+                sequence_identifier = seq_node.find("./{*}TxId").text
                 sequence_ppp_offset = int(seq_node.find("./{*}PPPArrayByteOffset").text)
                 sequence_ppp_size = (
                     int(seq_node.find("./{*}NumPulses").text) * ppp_itemsize
@@ -500,7 +499,7 @@ class CrsdWriter:
             for chan_node in plan.crsd_xmltree.findall(
                 "./{*}Data/{*}Receive/{*}Channel"
             ):
-                channel_identifier = chan_node.find("./{*}Identifier").text
+                channel_identifier = chan_node.find("./{*}ChId").text
                 channel_signal_offset = int(
                     chan_node.find("./{*}SignalArrayByteOffset").text
                 )
@@ -526,7 +525,7 @@ class CrsdWriter:
         for sa_node in plan.crsd_xmltree.findall(
             "./{*}Data/{*}Support/{*}SupportArray"
         ):
-            sa_identifier = sa_node.find("./{*}Identifier").text
+            sa_identifier = sa_node.find("./{*}SAId").text
             sa_offset = int(sa_node.find("./{*}ArrayByteOffset").text)
             sa_size = (
                 int(sa_node.find("./{*}NumRows").text)
@@ -748,7 +747,7 @@ class CrsdWriter:
         channel_names = set(
             node.text
             for node in self._plan.crsd_xmltree.findall(
-                "./{*}Data/{*}Receive/{*}Channel/{*}Identifier"
+                "./{*}Data/{*}Receive/{*}Channel/{*}ChId"
             )
         )
         missing_signal_channels = channel_names - self._signal_arrays_written
@@ -766,7 +765,7 @@ class CrsdWriter:
         sequence_names = set(
             node.text
             for node in self._plan.crsd_xmltree.findall(
-                "./{*}Data/{*}Transmit/{*}TxSequence/{*}Identifier"
+                "./{*}Data/{*}Transmit/{*}TxSequence/{*}TxId"
             )
         )
         missing_ppp_sequences = sequence_names - self._ppp_arrays_written
@@ -778,7 +777,7 @@ class CrsdWriter:
         sa_names = set(
             node.text
             for node in self._plan.crsd_xmltree.findall(
-                "./{*}Data/{*}SupportArray/{*}Identifier"
+                "./{*}Data/{*}SupportArray/{*}SAId"
             )
         )
         missing_sa = sa_names - self._support_arrays_written

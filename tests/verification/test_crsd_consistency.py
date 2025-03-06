@@ -15,7 +15,7 @@ from sarkit.verification._crsd_consistency import CrsdConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
-good_crsd_xml_path = DATAPATH / "example-crsd-1.0.0.2024-12-30.xml"
+good_crsd_xml_path = DATAPATH / "example-crsd-1.0-draft.2025-02-25.xml"
 
 
 def _repack_support_arrays(crsd_etree):
@@ -178,7 +178,7 @@ def example_crsdsar_file(tmp_path_factory):
         cw.write_ppp(sequence_id, ppps)
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
-    assert not main([str(tmp_crsd), "-vvv"])
+    assert not main([str(tmp_crsd), "-v"])
     yield tmp_crsd
 
 
@@ -223,7 +223,7 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
     _remove(crsd_etree, "{*}Channel")
     _remove(crsd_etree, "{*}ReferenceGeometry/{*}SARImage")
     _remove(crsd_etree, "{*}ReferenceGeometry/{*}RcvParameters")
-    _remove(crsd_etree, "{*}Dwell")
+    _remove(crsd_etree, "{*}DwellPolynomials")
     _remove(crsd_etree, "{*}PVP")
     _replace_error(crsd_etree, "Tx")
     tmp_crsd = (
@@ -262,7 +262,7 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
     _remove(crsd_etree, "{*}Channel/{*}Parameters/{*}SARImage")
     _remove(crsd_etree, "{*}ReferenceGeometry/{*}SARImage")
     _remove(crsd_etree, "{*}ReferenceGeometry/{*}TxParameters")
-    _remove(crsd_etree, "{*}Dwell")
+    _remove(crsd_etree, "{*}DwellPolynomials")
     fx_ids = [
         x.text
         for x in crsd_etree.findall("{*}SupportArray/{*}FxResponseArray/{*}Identifier")
@@ -275,7 +275,7 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
     for x in fx_ids + xm_ids:
         _remove(
             crsd_etree,
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{x}']",
+            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{x}']",
         )
     nsa = crsd_etree.find("{*}Data/{*}Support/{*}NumSupportArrays")
     nsa.text = str(int(nsa.text) - len(fx_ids + xm_ids))
@@ -476,7 +476,7 @@ def test_global_frcvminmax(crsd_con, name):
 def test_ref_tx_id(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    crsd_con.crsdroot.find("{*}TxSequence/{*}RefTxID").text += "_bad"
+    crsd_con.crsdroot.find("{*}TxSequence/{*}RefTxId").text += "_bad"
     crsd_con.check("check_reftxid")
     assert_failures(crsd_con, "extant TxSequence")
 
@@ -644,7 +644,7 @@ def test_fxbw_not_fixed(crsd_con):
 def test_fxbw_fixed_fx1(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppps = crsd_con._get_sequence_ppps(sequence_id)
     ppps["FX1"][0] *= 2
     crsd_con.check("check_tx_frequency_band", allow_prefix=True)
@@ -654,7 +654,7 @@ def test_fxbw_fixed_fx1(crsd_con):
 def test_fxbw_fixed_fx2(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppps = crsd_con._get_sequence_ppps(sequence_id)
     ppps["FX2"][0] *= 2
     crsd_con.check("check_tx_frequency_band", allow_prefix=True)
@@ -680,7 +680,7 @@ def test_xmindex_ppp_presence_not_present(crsd_con):
 def test_xmindex_value(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["XMIndex"][0] = -3
     crsd_con.check("check_xmindex_value", allow_prefix=True)
@@ -690,7 +690,7 @@ def test_xmindex_value(crsd_con):
 def test_xmindex_value_too_big(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["XMIndex"][0] = 2**62
     crsd_con.check("check_xmindex_value", allow_prefix=True)
@@ -700,7 +700,7 @@ def test_xmindex_value_too_big(crsd_con):
 def test_fx12_ppp(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["FX1"][0] = ppp["FX2"][0]
     crsd_con.check("check_fx12_ppp", allow_prefix=True)
@@ -710,7 +710,7 @@ def test_fx12_ppp(crsd_con):
 def test_txposveltime_matched(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TxPos"][:] = ppp["TxPos"][::-1]
     crsd_con.check("check_txposveltime", allow_prefix=True)
@@ -720,7 +720,7 @@ def test_txposveltime_matched(crsd_con):
 def test_txposveltime_sized(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TxPos"][:] *= 2
     ppp["TxVel"][:] *= 2  # to keep them a matched set
@@ -731,7 +731,7 @@ def test_txposveltime_sized(crsd_con):
 def test_txtime_not_increasing(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TxTime"][1] = ppp["TxTime"][0]
     crsd_con.check("check_txtime", allow_prefix=True)
@@ -741,7 +741,7 @@ def test_txtime_not_increasing(crsd_con):
 def test_txtime_frac_negative(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TxTime"]["Frac"][1] = -0.5
     crsd_con.check("check_txtime", allow_prefix=True)
@@ -751,7 +751,7 @@ def test_txtime_frac_negative(crsd_con):
 def test_txtime_frac_too_big(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TxTime"]["Frac"][1] = 1.5
     crsd_con.check("check_txtime", allow_prefix=True)
@@ -761,7 +761,7 @@ def test_txtime_frac_too_big(crsd_con):
 def test_txoverlap(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TXmt"][0] = 1.0
     crsd_con.check("check_txoverlap", allow_prefix=True)
@@ -771,7 +771,7 @@ def test_txoverlap(crsd_con):
 def test_phix0_intfrac_negative(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["PhiX0"]["Frac"][1] = -0.5
     crsd_con.check("check_phix0_intfrac", allow_prefix=True)
@@ -781,7 +781,7 @@ def test_phix0_intfrac_negative(crsd_con):
 def test_phix0_intfrac_too_big(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["PhiX0"]["Frac"][1] = 1.5
     crsd_con.check("check_phix0_intfrac", allow_prefix=True)
@@ -792,7 +792,7 @@ def test_phix0_intfrac_too_big(crsd_con):
 def test_tx_acxy_not_unit(crsd_con, axis):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp[f"TxAC{axis}"][0] *= 3
     crsd_con.check("check_tx_acxy", allow_prefix=True)
@@ -802,7 +802,7 @@ def test_tx_acxy_not_unit(crsd_con, axis):
 def test_txacxy_not_ortho(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TxACX"][0] = ppp["TxACY"][0]
     crsd_con.check("check_tx_acxy", allow_prefix=True)
@@ -812,7 +812,7 @@ def test_txacxy_not_ortho(crsd_con):
 def test_txeb(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["TxEB"][0] = [0.8, 0.8]
     crsd_con.check("check_txeb", allow_prefix=True)
@@ -822,7 +822,7 @@ def test_txeb(crsd_con):
 def test_fxresponseindex_negative(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["FxResponseIndex"][0] = -1
     crsd_con.check("check_fxresponseindex", allow_prefix=True)
@@ -832,7 +832,7 @@ def test_fxresponseindex_negative(crsd_con):
 def test_fxresponseindex_too_big(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["FxResponseIndex"][0] = 2**62  # this _should_ be big enough
     crsd_con.check("check_fxresponseindex", allow_prefix=True)
@@ -843,7 +843,7 @@ def test_fxrate_xm_zero(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
     crsd_con.crsdroot.find("{*}TxSequence/{*}TxWFType").text = "XM"
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["FxRate"][:] = 0
     crsd_con.check("check_fxrate", allow_prefix=True)
@@ -861,7 +861,7 @@ def test_fxrate_xm_nonzero(crsd_con):
 def test_fxfreq0(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
-    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+    sequence_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
     ppp = crsd_con._get_sequence_ppps(sequence_id)
     ppp["FxFreq0"][3] = 0
     crsd_con.check("check_fxfreq0", allow_prefix=True)
@@ -881,7 +881,7 @@ def test_xm_pulse_length_too_long(crsd_con):
         pytest.skip("Test not applicable to CRSDrcv")
     xm_id = crsd_con.crsdroot.findtext("{*}TxSequence/{*}Parameters/{*}XMId")
     crsd_con.crsdroot.find(
-        f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{xm_id}"]/{{*}}NumCols'
+        f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{xm_id}"]/{{*}}NumCols'
     ).text = "2000"
     crsd_con.check("check_xm_pulse_length", allow_prefix=True)
     assert_failures(crsd_con, "pulse fits")
@@ -931,7 +931,7 @@ def ant_patched_crsd_con(crsd_con, monkeypatch):
 
         def dummy(self, identifier):
             data_node = crsd_con.crsdroot.find(
-                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{identifier}']"
+                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
             )
             num_rows = int(data_node.findtext("{*}NumRows"))
             num_cols = int(data_node.findtext("{*}NumCols"))
@@ -946,7 +946,7 @@ def ant_patched_crsd_con(crsd_con, monkeypatch):
             return skcrsd.mask_support_array(
                 retval,
                 crsd_con.crsdroot.findtext(
-                    f"{{*}}SupportArray/{{*}}AntGainPhase[{{*}}Identifier='{identifier}']/{{*}}NODATA"
+                    f"{{*}}SupportArray/{{*}}GainPhaseArray[{{*}}Identifier='{identifier}']/{{*}}NODATA"
                 ),
             )
 
@@ -967,7 +967,7 @@ def test_check_ant_gain_phase(ant_patched_crsd_con, name, val):
 def test_check_ant_gain_phase_nodata(ant_patched_crsd_con, name, val):
     crsd_con, data_value = ant_patched_crsd_con(data=val)
     elem_ns = etree.QName(crsd_con.crsdroot).namespace
-    for gp_node in crsd_con.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+    for gp_node in crsd_con.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
         _remove(gp_node, "{*}NODATA")
         gp_node.append(_make_elem(f"{{{elem_ns}}}NODATA", data_value.tobytes().hex()))
     crsd_con.check("check_ant_gain_phase")
@@ -979,7 +979,7 @@ def test_check_ant_gain_phase_nodata(ant_patched_crsd_con, name, val):
 @pytest.mark.parametrize("name,val", [("Gain", (1.0, 0.0)), ("Phase", (0.0, 1.0))])
 def test_check_ant_gain_phase_want_contains(ant_patched_crsd_con, var, name, val):
     crsd_con, _ = ant_patched_crsd_con(data=val)
-    for gp in crsd_con.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+    for gp in crsd_con.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
         gp.find("{*}" + var).text = "1e-10"
     crsd_con.check("check_ant_gain_phase")
     assert_failures(crsd_con, r"contains \(0, 0\)")
@@ -988,7 +988,7 @@ def test_check_ant_gain_phase_want_contains(ant_patched_crsd_con, var, name, val
 
 @pytest.mark.parametrize("var", ["X0", "Y0", "XSS", "YSS"])
 def test_ant_gp_extent(crsd_con, var):
-    for gp in crsd_con.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+    for gp in crsd_con.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
         gp.find("{*}" + var).text = "1.1"
     crsd_con.check("check_ant_gp_extent")
     assert_failures(crsd_con, "within unit square")
@@ -996,10 +996,10 @@ def test_ant_gp_extent(crsd_con, var):
 
 @pytest.mark.parametrize("var", ["NumRows", "NumCols"])
 def test_ant_gp_size(crsd_con, var):
-    for gp in crsd_con.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+    for gp in crsd_con.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
         identifier = gp.findtext("{*}Identifier")
         data_node = crsd_con.crsdroot.find(
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{identifier}']"
+            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
         )
         data_node.find("{*}" + var).text = "1"
     crsd_con.check("check_ant_gp_size")
@@ -1019,7 +1019,7 @@ def test_ant_gp_nan_pass_nodata(ant_patched_crsd_con):
 
     crsd_con, data_value = ant_patched_crsd_con(data=(np.nan, 0.0))
     elem_ns = etree.QName(crsd_con.crsdroot).namespace
-    for gp_node in crsd_con.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+    for gp_node in crsd_con.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
         _remove(gp_node, "{*}NODATA")
         gp_node.append(_make_elem(f"{{{elem_ns}}}NODATA", data_value.tobytes().hex()))
     crsd_con.check("check_ant_gp_nan")
@@ -1033,7 +1033,7 @@ def test_ant_gp_nan_fail_nodata(ant_patched_crsd_con):
 
     crsd_con, data_value = ant_patched_crsd_con(data=(np.nan, 0.0), data_filler=filler)
     elem_ns = etree.QName(crsd_con.crsdroot).namespace
-    for gp_node in crsd_con.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+    for gp_node in crsd_con.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
         _remove(gp_node, "{*}NODATA")
         gp_node.append(_make_elem(f"{{{elem_ns}}}NODATA", data_value.tobytes().hex()))
     crsd_con.check("check_ant_gp_nan")
@@ -1048,8 +1048,10 @@ def test_ant_gp_nan_fail(ant_patched_crsd_con):
 
 @pytest.mark.parametrize("antdir", ["X", "Y"])
 def test_check_ant_gain_phase_not_sample(crsd_con, antdir):
-    d0 = crsd_con.crsdroot.find("{*}SupportArray/{*}AntGainPhase/{*}" + f"{antdir}0")
-    dss = crsd_con.crsdroot.find("{*}SupportArray/{*}AntGainPhase/{*}" + f"{antdir}SS")
+    d0 = crsd_con.crsdroot.find("{*}SupportArray/{*}GainPhaseArray/{*}" + f"{antdir}0")
+    dss = crsd_con.crsdroot.find(
+        "{*}SupportArray/{*}GainPhaseArray/{*}" + f"{antdir}SS"
+    )
     d0.text = str(float(d0.text) + float(dss.text) / 2)
     crsd_con.check("check_ant_gain_phase")
     assert_not_failures(crsd_con, r"has zero {name}")
@@ -1381,7 +1383,7 @@ def dwell_array_patched_crsd_con(example_crsdsar_file, monkeypatch):
     num_arr = crsd_con.xmlhelp.load("{*}Data/{*}Support/{*}NumSupportArrays") + 1
     crsd_con.xmlhelp.set("{*}Data/{*}Support/{*}NumSupportArrays", num_arr)
     dataarr = etree.Element(f"{{{elem_ns}}}SupportArray")
-    dataarr.append(_make_elem(f"{{{elem_ns}}}Identifier", "dwell array"))
+    dataarr.append(_make_elem(f"{{{elem_ns}}}SAId", "dwell array"))
     dataarr.append(_make_elem(f"{{{elem_ns}}}NumRows", "54"))
     dataarr.append(_make_elem(f"{{{elem_ns}}}NumCols", "52"))
     dataarr.append(_make_elem(f"{{{elem_ns}}}BytesPerElement", "8"))
@@ -1408,7 +1410,7 @@ def dwell_array_patched_crsd_con(example_crsdsar_file, monkeypatch):
         if identifier != "dwell array":
             return old_read_support_array(identifier)
         data_node = crsd_con.crsdroot.find(
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{identifier}']"
+            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
         )
         num_rows = int(data_node.findtext("{*}NumRows"))
         num_cols = int(data_node.findtext("{*}NumCols"))
@@ -1453,19 +1455,19 @@ def test_dwell_array_coverage_x1y1(dwell_array_patched_crsd_con):
 
 # only applicable to CRSDsar
 @pytest.mark.parametrize("name", ["COD", "Dwell"])
-def check_dwell_ids_num(example_crsdsar_file, name):
+def test_check_dwell_ids_num(example_crsdsar_file, name):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
-    crsd_con.crsdroot.find(f"{{*}}Dwell/{{*}}Num{name}Times").text = "2"
+    crsd_con.crsdroot.find(f"{{*}}DwellPolynomials/{{*}}Num{name}Times").text = "2"
     crsd_con.check(f"check_{name.lower()}time_ids")
     assert_failures(crsd_con, "Num.* is correct")
 
 
 # only applicable to CRSDsar
 @pytest.mark.parametrize("name", ["COD", "Dwell"])
-def check_dwell_ids_duplicate(example_crsdsar_file, name):
+def test_check_dwell_ids_duplicate(example_crsdsar_file, name):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
-    crsd_con.crsdroot.find(f"{{*}}Dwell/{{*}}Num{name}Times").text = "2"
-    node = crsd_con.crsdroot.find(f"{{*}}Dwell/{{*}}{name}Time")
+    crsd_con.crsdroot.find(f"{{*}}DwellPolynomials/{{*}}Num{name}Times").text = "2"
+    node = crsd_con.crsdroot.find(f"{{*}}DwellPolynomials/{{*}}{name}Time")
     node.addnext(copy.deepcopy(node))
     crsd_con.check(f"check_{name.lower()}time_ids")
     assert_failures(crsd_con, "Identifiers are unique")
@@ -1877,19 +1879,17 @@ def test_num_support_arrays(crsd_con):
 
 
 def test_support_array_bad_id(crsd_con):
-    crsd_con.crsdroot.find(
-        "{*}Data/{*}Support/{*}SupportArray/{*}Identifier"
-    ).text += "_bad"
+    crsd_con.crsdroot.find("{*}Data/{*}Support/{*}SupportArray/{*}SAId").text += "_bad"
     crsd_con.check("check_support_array_ids")
     assert crsd_con.failures()
 
 
 def test_support_array_duplicate_id_data(crsd_con):
     dup_id = crsd_con.crsdroot.find(
-        "{*}Data/{*}Support/{*}SupportArray[1]/{*}Identifier"
+        "{*}Data/{*}Support/{*}SupportArray[1]/{*}SAId"
     ).text
     crsd_con.crsdroot.find(
-        "{*}Data/{*}Support/{*}SupportArray[2]/{*}Identifier"
+        "{*}Data/{*}Support/{*}SupportArray[2]/{*}SAId"
     ).text = dup_id
     crsd_con.check("check_support_array_ids")
     assert_failures(crsd_con, "are unique")
@@ -1923,9 +1923,7 @@ def test_num_txsequence(crsd_con):
 def test_txsequence_bad_id(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("test not applicable with CRSDrcv")
-    crsd_con.crsdroot.find(
-        "{*}Data/{*}Transmit/{*}TxSequence/{*}Identifier"
-    ).text += "_bad"
+    crsd_con.crsdroot.find("{*}Data/{*}Transmit/{*}TxSequence/{*}TxId").text += "_bad"
     crsd_con.check("check_transmit_sequence_ids")
     assert crsd_con.failures()
 
@@ -1994,7 +1992,7 @@ def test_num_channnels(crsd_con):
 def test_channel_bad_id(crsd_con):
     if crsd_con.crsd_type == "CRSDtx":
         pytest.skip("test not applicable with CRSDtx")
-    crsd_con.crsdroot.find("{*}Data/{*}Receive/{*}Channel/{*}Identifier").text += "_bad"
+    crsd_con.crsdroot.find("{*}Data/{*}Receive/{*}Channel/{*}ChId").text += "_bad"
     crsd_con.check("check_channel_ids")
     assert crsd_con.failures()
 
@@ -2053,7 +2051,7 @@ def test_pvp_unique_names(crsd_con):
 
 
 def test_support_array_nodata_fail(crsd_con):
-    ant_sa = crsd_con.crsdroot.find("{*}SupportArray/{*}AntGainPhase")
+    ant_sa = crsd_con.crsdroot.find("{*}SupportArray/{*}GainPhaseArray")
     if ant_sa.find("{*}NODATA") is None:
         elem_ns = etree.QName(ant_sa).namespace
         ant_sa.append(etree.Element(f"{{{elem_ns}}}NODATA"))
@@ -2069,7 +2067,7 @@ def test_ns_fxr(crsd_con):
         "{*}SupportArray/{*}FxResponseArray/{*}Identifier"
     )
     crsd_con.crsdroot.find(
-        f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{fx_id}"]/{{*}}NumCols'
+        f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{fx_id}"]/{{*}}NumCols'
     ).text = "1"
     crsd_con.check("check_ns_fxr")
     assert_failures(crsd_con, "at least 3")
@@ -2125,7 +2123,7 @@ def test_error_mono_bistatic_bistatic_used(example_crsdsar_file):
     assert_failures(crsd_con, "Monostatic ErrorParameters branch is used")
 
 
-@pytest.mark.parametrize("short", ["ACF", "APC", "AntPat"])
+@pytest.mark.parametrize("short", ["ACF", "APC", "APAT"])
 def test_check_antenna_ids_count(crsd_con, short):
     crsd_con.crsdroot.find(f"{{*}}Antenna/{{*}}Num{short}s").text += "1"
     crsd_con.check("check_antenna_ids")

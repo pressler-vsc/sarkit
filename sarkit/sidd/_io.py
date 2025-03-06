@@ -167,6 +167,11 @@ class SiddNitfPlanProductImageInfo:
         NITF Image Segment Header fields which can be set
     des_fields : :py:class:`SiddNitfDESegmentFields`
         NITF DE Segment Header fields which can be set
+    lookup_table : ndarray or None
+        Mapping from raw to display pixel values. Required for "LU" pixel types.
+        Table must be 256 elements.
+        For MONO8LU, table must have dtype of np.uint8 or np.uint16.
+        For RGB8LU, table must have dtype of ``PIXEL_TYPES["RGB24I"]["dtype"]``.
 
     See Also
     --------
@@ -180,8 +185,35 @@ class SiddNitfPlanProductImageInfo:
     sidd_xmltree: lxml.etree.ElementTree
     is_fields: SiddNitfImageSegmentFields
     des_fields: SiddNitfDESegmentFields
+    lookup_table: npt.ArrayLike | None
 
     def __post_init__(self):
+        _validate_xml(self.sidd_xmltree)
+
+        xml_helper = sksidd.XmlHelper(self.sidd_xmltree)
+        pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
+
+        if self.lookup_table is not None:
+            lookup_table = np.asarray(self.lookup_table)
+            if lookup_table.shape != (256,):
+                raise ValueError("lookup_table must contain exactly 256 elements")
+            lut_dtype = lookup_table.dtype
+        else:
+            lut_dtype = None
+
+        mismatch = False
+        if ("LU" in pixel_type) != (lut_dtype is not None):
+            mismatch = True
+        elif pixel_type == "MONO8LU" and lut_dtype not in (np.uint8, np.uint16):
+            mismatch = True
+        elif pixel_type == "RGB8LU" and lut_dtype != PIXEL_TYPES["RGB24I"]["dtype"]:
+            mismatch = True
+
+        if mismatch:
+            raise RuntimeError(
+                f"lookup_table type mismatch.  {pixel_type=}  {lut_dtype=}"
+            )
+
         if isinstance(self.is_fields, dict):
             self.is_fields = SiddNitfImageSegmentFields(**self.is_fields)
             self.des_fields = SiddNitfDESegmentFields(**self.des_fields)
@@ -333,6 +365,7 @@ class SiddNitfPlan:
         sidd_xmltree: lxml.etree.ElementTree,
         is_fields: SiddNitfImageSegmentFields,
         des_fields: SiddNitfDESegmentFields,
+        lookup_table: npt.ArrayLike | None = None,
     ) -> int:
         """Add a SAR product to the plan
 
@@ -344,17 +377,21 @@ class SiddNitfPlan:
             NITF Image Segment Header fields which can be set
         des_fields : :py:class:`SiddNitfDESegmentFields`
             NITF DE Segment Header fields which can be set
+        lookup_table : ndarray, optional
+            Mapping from raw to display pixel values. Required for "LU" pixel types.
+            Must be 256 elements.
 
         Returns
         -------
         int
             The image number of the newly added SAR image
         """
-        _validate_xml(sidd_xmltree)
-
         self._images.append(
             SiddNitfPlanProductImageInfo(
-                sidd_xmltree, is_fields=is_fields, des_fields=des_fields
+                sidd_xmltree,
+                is_fields=is_fields,
+                des_fields=des_fields,
+                lookup_table=lookup_table,
             )
         )
         return len(self._images) - 1
@@ -512,13 +549,47 @@ class SiddNitfReader:
                     if len(self.plan.images) < len(image_segment_collections):
                         # user settable fields should be the same for all image segments
                         im_idx = im_segments[image_number][0]
-                        im_fields = SiddNitfImageSegmentFields._from_header(
-                            self._ntf["ImageSegments"][im_idx]["SubHeader"]
-                        )
+                        im_subhdr = self._ntf["ImageSegments"][im_idx]["SubHeader"]
+                        im_fields = SiddNitfImageSegmentFields._from_header(im_subhdr)
+                        pixel_type = xmltree.findtext("./{*}Display/{*}PixelType")
+                        lookup_table = None
+                        if "LU" in pixel_type:
+                            assert im_subhdr["NBANDS"].value == 1
+                            assert im_subhdr["NELUT00001"].value == 256
+
+                        if pixel_type == "RGB8LU":
+                            assert im_subhdr["NLUTS00001"].value == 3
+                            lookup_table = np.empty(256, PIXEL_TYPES["RGB24I"]["dtype"])
+                            lookup_table["R"] = np.frombuffer(
+                                im_subhdr["LUTD000011"].value, dtype=np.uint8
+                            )
+                            lookup_table["G"] = np.frombuffer(
+                                im_subhdr["LUTD000012"].value, dtype=np.uint8
+                            )
+                            lookup_table["B"] = np.frombuffer(
+                                im_subhdr["LUTD000013"].value, dtype=np.uint8
+                            )
+                        elif pixel_type == "MONO8LU":
+                            msbs = np.frombuffer(
+                                im_subhdr["LUTD000011"].value, dtype=np.uint8
+                            )
+                            if im_subhdr["NLUTS00001"].value == 1:
+                                lookup_table = msbs
+                            elif im_subhdr["NLUTS00001"].value == 2:
+                                lsbs = np.frombuffer(
+                                    im_subhdr["LUTD000012"].value, dtype=np.uint8
+                                )
+                                lookup_table = (msbs.astype(np.uint16) << 8) + lsbs
+                            else:
+                                raise ValueError(
+                                    f"Unsupported NLUTS={im_subhdr['NLUTS00001'].value}"
+                                )
+
                         self.plan.add_image(
                             sidd_xmltree=xmltree,
                             is_fields=im_fields,
                             des_fields=nitf_de_fields,
+                            lookup_table=lookup_table,
                         )
                         image_number += 1
                     else:
@@ -678,7 +749,8 @@ class SiddNitfWriter:
 
             imageinfo = self._nitf_plan.images[image_num]
             xml_helper = sksidd.XmlHelper(imageinfo.sidd_xmltree)
-            pixel_info = PIXEL_TYPES[xml_helper.load("./{*}Display/{*}PixelType")]
+            pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
+            pixel_info = PIXEL_TYPES[pixel_type]
 
             icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
 
@@ -708,6 +780,29 @@ class SiddNitfWriter:
             subhdr["NBANDS"].value = len(pixel_info["IREPBANDn"])
             for bandnum, irepband in enumerate(pixel_info["IREPBANDn"]):
                 subhdr[f"IREPBAND{bandnum + 1:05d}"].value = irepband
+
+            if "LU" in pixel_type:
+                if pixel_type == "RGB8LU":
+                    subhdr["NLUTS00001"].value = 3
+                    subhdr["NELUT00001"].value = 256
+                    subhdr["LUTD000011"].value = imageinfo.lookup_table["R"].tobytes()
+                    subhdr["LUTD000012"].value = imageinfo.lookup_table["G"].tobytes()
+                    subhdr["LUTD000013"].value = imageinfo.lookup_table["B"].tobytes()
+                elif pixel_type == "MONO8LU":
+                    if imageinfo.lookup_table.dtype == np.uint8:
+                        subhdr["NLUTS00001"].value = 1
+                        subhdr["NELUT00001"].value = 256
+                        subhdr["LUTD000011"].value = imageinfo.lookup_table.tobytes()
+                    elif imageinfo.lookup_table.dtype == np.uint16:
+                        subhdr["NLUTS00001"].value = 2
+                        subhdr["NELUT00001"].value = 256
+                        subhdr["LUTD000011"].value = (
+                            (imageinfo.lookup_table >> 8).astype(np.uint8).tobytes()
+                        )  # MSB
+                        subhdr["LUTD000012"].value = (
+                            (imageinfo.lookup_table & 0xFF).astype(np.uint8).tobytes()
+                        )  # LSB
+
             subhdr["IMODE"].value = pixel_info["IMODE"]
             subhdr["NBPR"].value = 1
             subhdr["NBPC"].value = 1

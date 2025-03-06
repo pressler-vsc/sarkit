@@ -1,5 +1,6 @@
 import itertools
 import pathlib
+import re
 
 import lxml
 import numpy as np
@@ -7,7 +8,7 @@ import pytest
 
 import sarkit._nitf_io
 import sarkit.sidd as sksidd
-import sarkit.sidd._io as siddio
+import sarkit.sidd._io
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -45,16 +46,42 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 
     basis_etree2 = lxml.etree.parse(sidd_xml)
     basis_etree2.find("./{*}Display/{*}PixelType").text = "RGB24I"
-    basis_array2 = np.empty(basis_array0.shape, siddio.PIXEL_TYPES["RGB24I"]["dtype"])
+    basis_array2 = np.empty(basis_array0.shape, sksidd.PIXEL_TYPES["RGB24I"]["dtype"])
     basis_array2["R"] = basis_array0
     basis_array2["G"] = basis_array0 + 1
     basis_array2["B"] = basis_array0 - 1
 
-    # TODO MONO8LU and RGB8LU
+    basis_etree3 = lxml.etree.parse(sidd_xml)
+    basis_array3 = _random_image(basis_etree3)
+    basis_etree3.find("./{*}Display/{*}PixelType").text = "RGB8LU"
+    lookup_table3 = np.asarray(
+        [
+            np.arange(256, dtype=np.uint8),
+            np.arange(256, dtype=np.uint8)[::-1],
+            np.random.default_rng(12345).integers(0, 2**8, (256,), dtype=np.uint8),
+        ]
+    )
+    lookup_table3 = (
+        lookup_table3.T.reshape(-1, 3)
+        .copy()
+        .view(sksidd.PIXEL_TYPES["RGB24I"]["dtype"])
+        .squeeze()
+    )
 
+    basis_etree4 = lxml.etree.parse(sidd_xml)
+    basis_array4 = _random_image(basis_etree4)
+    basis_etree4.find("./{*}Display/{*}PixelType").text = "MONO8LU"
+    lookup_table4 = np.arange(256, dtype=np.uint8)[::-1]
+
+    basis_etree5 = lxml.etree.parse(sidd_xml)
+    basis_array5 = _random_image(basis_etree5)
+    basis_etree5.find("./{*}Display/{*}PixelType").text = "MONO8LU"
+    lookup_table5 = (np.arange(256, dtype=np.uint16) << 8) + np.arange(
+        256, dtype=np.uint16
+    )[::-1]
     if force_segmentation:
         monkeypatch.setattr(
-            siddio, "LI_MAX", basis_array0.nbytes // 5
+            sarkit.sidd._io, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
 
     nitf_plan = sksidd.SiddNitfPlan(
@@ -169,6 +196,57 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         },
     )
 
+    nitf_plan.add_image(
+        basis_etree3,
+        is_fields={
+            "tgtid": "tgtid",
+            "iid2": "iid2",
+            "security": {
+                "clas": "U",
+            },
+        },
+        des_fields={
+            "security": {
+                "clas": "U",
+            },
+        },
+        lookup_table=lookup_table3,
+    )
+
+    nitf_plan.add_image(
+        basis_etree4,
+        is_fields={
+            "tgtid": "tgtid",
+            "iid2": "iid2",
+            "security": {
+                "clas": "U",
+            },
+        },
+        des_fields={
+            "security": {
+                "clas": "U",
+            },
+        },
+        lookup_table=lookup_table4,
+    )
+
+    nitf_plan.add_image(
+        basis_etree5,
+        is_fields={
+            "tgtid": "tgtid",
+            "iid2": "iid2",
+            "security": {
+                "clas": "U",
+            },
+        },
+        des_fields={
+            "security": {
+                "clas": "U",
+            },
+        },
+        lookup_table=lookup_table5,
+    )
+
     nitf_plan.add_sicd_xml(
         sicd_xmltree=sicd_xmltree, des_fields={"security": {"clas": "U"}}
     )
@@ -197,13 +275,21 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             writer.write_image(0, basis_array0)
             writer.write_image(1, basis_array1)
             writer.write_image(2, basis_array2)
+            writer.write_image(3, basis_array3)
+            writer.write_image(4, basis_array4)
+            writer.write_image(5, basis_array5)
 
     def _num_imseg(array):
-        rows_per_seg = int(np.floor(siddio.LI_MAX / array[0].nbytes))
+        rows_per_seg = int(np.floor(sarkit.sidd._io.LI_MAX / array[0].nbytes))
         return int(np.ceil(array.shape[0] / rows_per_seg))
 
     num_expected_imseg = (
-        _num_imseg(basis_array0) + _num_imseg(basis_array1) + _num_imseg(basis_array2)
+        _num_imseg(basis_array0)
+        + _num_imseg(basis_array1)
+        + _num_imseg(basis_array2)
+        + _num_imseg(basis_array3)
+        + _num_imseg(basis_array4)
+        + _num_imseg(basis_array5)
     )
     if force_segmentation:
         assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
@@ -214,12 +300,15 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 
     with out_sidd.open("rb") as file:
         with sksidd.SiddNitfReader(file) as reader:
-            assert len(reader.images) == 3
+            assert len(reader.images) == 6
             assert len(reader.sicd_xmls) == 2
             assert len(reader.product_support_xmls) == 2
             read_array0 = reader.read_image(0)
             read_array1 = reader.read_image(1)
             read_array2 = reader.read_image(2)
+            read_array3 = reader.read_image(3)
+            read_array4 = reader.read_image(4)
+            read_array5 = reader.read_image(5)
             read_xmltree = reader.images[0].sidd_xmltree
             read_sicd_xmltree = reader.sicd_xmls[-1].sicd_xmltree
             read_ps_xmltree0 = reader.product_support_xmls[0].product_support_xmltree
@@ -239,6 +328,19 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     assert np.array_equal(basis_array0, read_array0)
     assert np.array_equal(basis_array1, read_array1)
     assert np.array_equal(basis_array2, read_array2)
+    assert np.array_equal(basis_array3, read_array3)
+    assert np.array_equal(basis_array4, read_array4)
+    assert np.array_equal(basis_array5, read_array5)
+
+    assert np.array_equal(
+        reader.images[3].lookup_table, nitf_plan.images[3].lookup_table
+    )
+    assert np.array_equal(
+        reader.images[4].lookup_table, nitf_plan.images[4].lookup_table
+    )
+    assert np.array_equal(
+        reader.images[5].lookup_table, nitf_plan.images[5].lookup_table
+    )
 
 
 def test_segmentation():
@@ -358,6 +460,155 @@ def test_segmentation():
     assert expected_fhdr_li == fhdr_li
 
     assert expected_imhdrs == imhdrs
+
+
+def test_SiddNitfPlanProductImageInfo():  # noqa N802
+    sidd_xmltree = lxml.etree.parse(DATAPATH / "example-sidd-3.0.0.xml")
+    is_fields = {
+        "tgtid": "tgtid",
+        "iid2": "iid2",
+        "security": {
+            "clas": "U",
+        },
+    }
+    des_fields = {
+        "security": {
+            "clas": "U",
+        },
+    }
+
+    assert sidd_xmltree.find("./{*}Display/{*}PixelType").text == "MONO8I"
+    image_info = sksidd.SiddNitfPlanProductImageInfo(
+        sidd_xmltree=sidd_xmltree,
+        is_fields=is_fields,
+        des_fields=des_fields,
+        lookup_table=None,
+    )
+    assert image_info.is_fields.tgtid == is_fields["tgtid"]
+    assert image_info.is_fields.iid2 == is_fields["iid2"]
+    assert image_info.is_fields.security.clas == is_fields["security"]["clas"]
+    assert image_info.des_fields.security.clas == des_fields["security"]["clas"]
+
+    # Can't have lookup table for MONO8I
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "lookup_table type mismatch.  pixel_type='MONO8I'  lut_dtype=dtype('uint8')"
+        ),
+    ):
+        image_info = sksidd.SiddNitfPlanProductImageInfo(
+            sidd_xmltree=sidd_xmltree,
+            is_fields=is_fields,
+            des_fields=des_fields,
+            lookup_table=np.arange(256, dtype=np.uint8),
+        )
+
+    sidd_xmltree.find("./{*}Display/{*}PixelType").text = "MONO8LU"
+    image_info = sksidd.SiddNitfPlanProductImageInfo(
+        sidd_xmltree=sidd_xmltree,
+        is_fields=is_fields,
+        des_fields=des_fields,
+        lookup_table=np.arange(256, dtype=np.uint8),
+    )
+    assert image_info.lookup_table.shape == (256,)
+    assert image_info.lookup_table.dtype == np.uint8
+
+    image_info = sksidd.SiddNitfPlanProductImageInfo(
+        sidd_xmltree=sidd_xmltree,
+        is_fields=is_fields,
+        des_fields=des_fields,
+        lookup_table=np.arange(256, dtype=np.uint16),
+    )
+    assert image_info.lookup_table.shape == (256,)
+    assert image_info.lookup_table.dtype == np.uint16
+
+    # Must have lookup table for MONO8LU
+    with pytest.raises(
+        RuntimeError,
+        match="lookup_table type mismatch.  pixel_type='MONO8LU'  lut_dtype=None",
+    ):
+        image_info = sksidd.SiddNitfPlanProductImageInfo(
+            sidd_xmltree=sidd_xmltree,
+            is_fields=is_fields,
+            des_fields=des_fields,
+            lookup_table=None,
+        )
+
+    # MONO8LU lookup table must have 256 elements
+    with pytest.raises(
+        ValueError, match="lookup_table must contain exactly 256 elements"
+    ):
+        image_info = sksidd.SiddNitfPlanProductImageInfo(
+            sidd_xmltree=sidd_xmltree,
+            is_fields=is_fields,
+            des_fields=des_fields,
+            lookup_table=np.arange(255, dtype=np.uint8),
+        )
+
+    # MONO8LU lookup table must be uint8 or uint16
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "lookup_table type mismatch.  pixel_type='MONO8LU'  lut_dtype=dtype('uint32')"
+        ),
+    ):
+        image_info = sksidd.SiddNitfPlanProductImageInfo(
+            sidd_xmltree=sidd_xmltree,
+            is_fields=is_fields,
+            des_fields=des_fields,
+            lookup_table=np.arange(256, dtype=np.uint32),
+        )
+
+    sidd_xmltree.find("./{*}Display/{*}PixelType").text = "RGB8LU"
+    rgb_dtype = sksidd.PIXEL_TYPES["RGB24I"]["dtype"]
+    good_rgb_lut = np.empty(256, dtype=rgb_dtype)
+    image_info = sksidd.SiddNitfPlanProductImageInfo(
+        sidd_xmltree=sidd_xmltree,
+        is_fields=is_fields,
+        des_fields=des_fields,
+        lookup_table=good_rgb_lut,
+    )
+    assert image_info.lookup_table.shape == (256,)
+    assert image_info.lookup_table.dtype == rgb_dtype
+
+    # Must have lookup table for RGB8LU
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "lookup_table type mismatch.  pixel_type='RGB8LU'  lut_dtype=None"
+        ),
+    ):
+        image_info = sksidd.SiddNitfPlanProductImageInfo(
+            sidd_xmltree=sidd_xmltree,
+            is_fields=is_fields,
+            des_fields=des_fields,
+            lookup_table=None,
+        )
+
+    # RGB8LU lookup table must have 256 elements
+    with pytest.raises(
+        ValueError, match="lookup_table must contain exactly 256 elements"
+    ):
+        image_info = sksidd.SiddNitfPlanProductImageInfo(
+            sidd_xmltree=sidd_xmltree,
+            is_fields=is_fields,
+            des_fields=des_fields,
+            lookup_table=good_rgb_lut[:255],
+        )
+
+    # RGB8LU lookup table must be RGB structured dtype
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "lookup_table type mismatch.  pixel_type='RGB8LU'  lut_dtype=dtype('uint8')"
+        ),
+    ):
+        image_info = sksidd.SiddNitfPlanProductImageInfo(
+            sidd_xmltree=sidd_xmltree,
+            is_fields=is_fields,
+            des_fields=des_fields,
+            lookup_table=np.arange(256, dtype=np.uint8),
+        )
 
 
 def test_version_info():

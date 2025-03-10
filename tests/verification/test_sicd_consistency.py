@@ -21,13 +21,13 @@ def example_sicd_file(tmp_path_factory):
         tmp_path_factory.mktemp("data") / good_sicd_xml_path.with_suffix(".sicd").name
     )
     sec = {"security": {"clas": "U"}}
-    sicd_plan = sksicd.SicdNitfPlan(
-        sicd_xmltree=sicd_etree,
-        header_fields={"ostaid": "nowhere"} | sec,
-        is_fields={"isorce": "this sensor"} | sec,
-        des_fields=sec,
+    sicd_meta = sksicd.NitfMetadata(
+        xmltree=sicd_etree,
+        file_header_part={"ostaid": "nowhere"} | sec,
+        im_subheader_part={"isorce": "this sensor"} | sec,
+        de_subheader_part=sec,
     )
-    with open(tmp_sicd, "wb") as f, sksicd.SicdNitfWriter(f, sicd_plan):
+    with open(tmp_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
         pass  # don't currently care about the pixels
     assert not main([str(tmp_sicd)])
     yield tmp_sicd

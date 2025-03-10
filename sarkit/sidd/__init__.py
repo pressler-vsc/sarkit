@@ -18,18 +18,18 @@ Data Structure & File Format
 .. autosummary::
    :toctree: generated/
 
-   SiddNitfHeaderFields
-   SiddNitfSecurityFields
-   SiddNitfImageSegmentFields
-   SiddNitfDESegmentFields
-   SiddNitfReader
-   SiddNitfPlan
-   SiddNitfPlanProductImageInfo
-   SiddNitfPlanLegendInfo
-   SiddNitfPlanDedInfo
-   SiddNitfPlanProductSupportXmlInfo
-   SiddNitfPlanSicdXmlInfo
-   SiddNitfWriter
+   NitfSecurityFields
+   NitfFileHeaderPart
+   NitfImSubheaderPart
+   NitfDeSubheaderPart
+   NitfReader
+   NitfMetadata
+   NitfProductImageMetadata
+   NitfLegendMetadata
+   NitfDedMetadata
+   NitfProductSupportXmlMetadata
+   NitfSicdXmlMetadata
+   NitfWriter
    SegmentationImhdr
    segmentation_algorithm
 
@@ -117,19 +117,19 @@ from ._io import (
     LI_MAX,
     PIXEL_TYPES,
     VERSION_INFO,
+    NitfDedMetadata,
+    NitfDeSubheaderPart,
+    NitfFileHeaderPart,
+    NitfImSubheaderPart,
+    NitfLegendMetadata,
+    NitfMetadata,
+    NitfProductImageMetadata,
+    NitfProductSupportXmlMetadata,
+    NitfReader,
+    NitfSecurityFields,
+    NitfSicdXmlMetadata,
+    NitfWriter,
     SegmentationImhdr,
-    SiddNitfDESegmentFields,
-    SiddNitfHeaderFields,
-    SiddNitfImageSegmentFields,
-    SiddNitfPlan,
-    SiddNitfPlanDedInfo,
-    SiddNitfPlanLegendInfo,
-    SiddNitfPlanProductImageInfo,
-    SiddNitfPlanProductSupportXmlInfo,
-    SiddNitfPlanSicdXmlInfo,
-    SiddNitfReader,
-    SiddNitfSecurityFields,
-    SiddNitfWriter,
     segmentation_algorithm,
 )
 from ._xml import (
@@ -172,6 +172,18 @@ __all__ = [
     "IntListType",
     "IntType",
     "LatLonType",
+    "NitfDeSubheaderPart",
+    "NitfDedMetadata",
+    "NitfFileHeaderPart",
+    "NitfImSubheaderPart",
+    "NitfLegendMetadata",
+    "NitfMetadata",
+    "NitfProductImageMetadata",
+    "NitfProductSupportXmlMetadata",
+    "NitfReader",
+    "NitfSecurityFields",
+    "NitfSicdXmlMetadata",
+    "NitfWriter",
     "ParameterType",
     "PolyCoef1dType",
     "PolyCoef2dType",
@@ -180,18 +192,6 @@ __all__ = [
     "RowColIntType",
     "SegmentationImhdr",
     "SfaPointType",
-    "SiddNitfDESegmentFields",
-    "SiddNitfHeaderFields",
-    "SiddNitfImageSegmentFields",
-    "SiddNitfPlan",
-    "SiddNitfPlanDedInfo",
-    "SiddNitfPlanLegendInfo",
-    "SiddNitfPlanProductImageInfo",
-    "SiddNitfPlanProductSupportXmlInfo",
-    "SiddNitfPlanSicdXmlInfo",
-    "SiddNitfReader",
-    "SiddNitfSecurityFields",
-    "SiddNitfWriter",
     "TxtType",
     "XdtType",
     "XmlHelper",

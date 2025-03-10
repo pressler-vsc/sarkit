@@ -179,8 +179,8 @@ class CphdConsistency(con.ConsistencyChecker):
                 pvps = None
             except etree.XMLSyntaxError:
                 infile.seek(0, os.SEEK_SET)
-                reader = skcphd.CphdReader(infile)
-                cphdroot = reader.cphd_xmltree
+                reader = skcphd.Reader(infile)
+                cphdroot = reader.metadata.xmltree
                 infile.seek(0, os.SEEK_SET)
                 _, kvp_list = skcphd.read_file_header(infile)
                 pvps = {}

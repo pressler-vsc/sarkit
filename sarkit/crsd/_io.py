@@ -2,6 +2,7 @@
 Functions to read and write CRSD files.
 """
 
+import copy
 import dataclasses
 import importlib.resources
 import logging
@@ -15,7 +16,7 @@ import numpy.typing as npt
 import sarkit.cphd as skcphd
 
 SCHEMA_DIR = importlib.resources.files("sarkit.crsd.schemas")
-CRSD_SECTION_TERMINATOR: Final[bytes] = b"\f\n"
+SECTION_TERMINATOR: Final[bytes] = b"\f\n"
 DEFINED_HEADER_KEYS: Final[set] = {
     "XML_BLOCK_SIZE",
     "XML_BLOCK_BYTE_OFFSET",
@@ -40,56 +41,53 @@ VERSION_INFO: Final[dict] = {
 }
 
 
-dtype_to_binary_format_string = skcphd.dtype_to_binary_format_string
-binary_format_string_to_dtype = skcphd.binary_format_string_to_dtype
+# Happens to match CPHD
+def dtype_to_binary_format_string(dtype: np.dtype) -> str:
+    return skcphd.dtype_to_binary_format_string(dtype)
 
+
+# Happens to match CPHD
+def binary_format_string_to_dtype(format_string: str) -> np.dtype:
+    return skcphd.binary_format_string_to_dtype(format_string)
+
+
+dtype_to_binary_format_string.__doc__ = getattr(
+    skcphd.dtype_to_binary_format_string, "__doc__", ""
+).replace("cphd", "crsd")
+binary_format_string_to_dtype.__doc__ = getattr(
+    skcphd.binary_format_string_to_dtype, "__doc__", ""
+).replace("cphd", "crsd")
 
 mask_support_array = skcphd.mask_support_array
 
 
 @dataclasses.dataclass(kw_only=True)
-class CrsdFileHeaderFields:
+class FileHeaderPart:
     """CRSD header fields which are set per program specific Product Design Document
 
     Attributes
     ----------
-    classification : str
-        File classification
-    release_info : str
-        File release info
-    additional_kvps : dict of {str : str}, optional
-        Dictionary with additional key-value pairs
+    additional_kvps : dict of {str : str}
+        Additional key-value pairs
     """
 
-    classification: str
-    release_info: str
     additional_kvps: dict[str, str] = dataclasses.field(default_factory=dict)
-
-    def __post_init__(self):
-        if self.additional_kvps is None:
-            self.additional_kvps = {}
 
 
 @dataclasses.dataclass(kw_only=True)
-class CrsdPlan:
-    """Class describing the plan for creating a CRSD file
+class Metadata:
+    """Settable CRSD metadata
 
     Attributes
     ----------
-    file_header : :py:class:`CrsdFileHeaderFields`
+    file_header_part : FileHeaderPart
         CRSD File Header fields which can be set
-    crsd_xmltree : lxml.etree.ElementTree
-        CRSD XML ElementTree
-
-    See Also
-    --------
-    CrsdReader
-    CrsdWriter
-    CrsdFileHeaderFields
+    xmltree : lxml.etree.ElementTree
+        CRSD XML
     """
 
-    file_header: CrsdFileHeaderFields
-    crsd_xmltree: lxml.etree.ElementTree
+    file_header_part: FileHeaderPart = dataclasses.field(default_factory=FileHeaderPart)
+    xmltree: lxml.etree.ElementTree
 
 
 read_file_header = skcphd.read_file_header
@@ -162,10 +160,10 @@ def get_pvp_dtype(crsd_xmltree):
     return _get_pxp_dtype(crsd_xmltree.find("./{*}PVP"))
 
 
-class CrsdReader:
+class Reader:
     """Read a CRSD file
 
-    A CrsdReader object can be used as a context manager in a ``with`` statement.
+    A Reader object can be used as a context manager in a ``with`` statement.
     Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
@@ -173,35 +171,45 @@ class CrsdReader:
     file : `file object`
         CRSD file to read
 
-    Examples
-    --------
-    >>> with crsd_path.open('rb') as file, CrsdReader(file) as reader:
-    ...     crsd_xmltree = reader.crsd_xmltree
-    ...     signal, pvp = reader.read_channel(<chan_id>)
-
     Attributes
     ----------
-    file_header : :py:class:`CrsdFileHeaderFields`
-       CRSD header dataclass
-    crsd_xmltree : lxml.etree.ElementTree
-        CRSD XML ElementTree
-    plan : :py:class:`CrsdPlan`
-        A CrsdPlan object suitable for use in a CrsdWriter
-    xml_block_size : int
-    xml_block_byte_offset : int
-    ppp_block_size : int or None
-    ppp_block_byte_offset : int or None
-    pvp_block_size : int or None
-    pvp_block_byte_offset : int or None
-    signal_block_size : int or None
-    signal_block_byte_offset : int or None
-    support_block_size : int
-    support_block_byte_offset : int
+    metadata : Metadata
+       CRSD metadata
 
     See Also
     --------
-    CrsdPlan
-    CrsdWriter
+    Writer
+
+    Examples
+    --------
+
+    .. testsetup:: crsd_io
+
+        import sarkit.crsd as skcrsd
+        import lxml.etree
+        meta = skcrsd.Metadata(
+            xmltree=lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
+        )
+
+        file = pathlib.Path(tmpdir.name) / "foo"
+        with file.open("wb") as f, skcrsd.Writer(f, meta) as w:
+            f.seek(
+                w._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
+                + w._file_header_kvp["SIGNAL_BLOCK_SIZE"]
+                - 1
+            )
+            f.write(b"0")
+
+    .. doctest:: crsd_io
+
+        >>> import sarkit.crsd as skcrsd
+        >>> with file.open("rb") as f, skcrsd.Reader(f) as r:
+        ...     sa_id = r.metadata.xmltree.findtext("{*}Data/{*}Support//{*}SAId")
+        ...     sa = r.read_support_array(sa_id)
+        ...     tx_id = r.metadata.xmltree.findtext("{*}Data/{*}Transmit//{*}TxId")
+        ...     txseq = r.read_ppps(tx_id)
+        ...     ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Receive/{*}Channel/{*}ChId")
+        ...     sig, pvp = r.read_channel(ch_id)
     """
 
     def __init__(self, file):
@@ -213,79 +221,73 @@ class CrsdReader:
         extra_header_keys = set(self._kvp_list.keys()) - DEFINED_HEADER_KEYS
         additional_kvps = {key: self._kvp_list[key] for key in extra_header_keys}
 
-        self.file_header = CrsdFileHeaderFields(
-            classification=self._kvp_list["CLASSIFICATION"],
-            release_info=self._kvp_list["RELEASE_INFO"],
-            additional_kvps=additional_kvps,
-        )
-        self._file_object.seek(self.xml_block_byte_offset)
+        self._file_object.seek(self._xml_block_byte_offset)
         xml_bytes = self._file_object.read(int(self._kvp_list["XML_BLOCK_SIZE"]))
-        self.crsd_xmltree = lxml.etree.fromstring(xml_bytes).getroottree()
 
-        self.plan = CrsdPlan(
-            crsd_xmltree=self.crsd_xmltree,
-            file_header=self.file_header,
+        self.metadata = Metadata(
+            xmltree=lxml.etree.fromstring(xml_bytes).getroottree(),
+            file_header_part=FileHeaderPart(additional_kvps=additional_kvps),
         )
 
     @property
-    def xml_block_byte_offset(self) -> int:
+    def _xml_block_byte_offset(self) -> int:
         """Offset to the XML block"""
         return int(self._kvp_list["XML_BLOCK_BYTE_OFFSET"])
 
     @property
-    def xml_block_size(self) -> int:
+    def _xml_block_size(self) -> int:
         """Size of the XML block"""
         return int(self._kvp_list["XML_BLOCK_SIZE"])
 
     @property
-    def pvp_block_byte_offset(self) -> int | None:
+    def _pvp_block_byte_offset(self) -> int | None:
         """Offset to the PVP block"""
         if (n := self._kvp_list.get("PVP_BLOCK_BYTE_OFFSET")) is not None:
             return int(n)
         return None
 
     @property
-    def pvp_block_size(self) -> int | None:
+    def _pvp_block_size(self) -> int | None:
         """Size of the PVP block"""
         if (n := self._kvp_list.get("PVP_BLOCK_SIZE")) is not None:
             return int(n)
         return None
 
     @property
-    def ppp_block_byte_offset(self) -> int | None:
+    def _ppp_block_byte_offset(self) -> int | None:
         """Offset to the PPP block"""
         if (n := self._kvp_list.get("PPP_BLOCK_BYTE_OFFSET")) is not None:
             return int(n)
         return None
 
     @property
-    def ppp_block_size(self) -> int | None:
+    def _ppp_block_size(self) -> int | None:
         """Size of the PPP block"""
         if (n := self._kvp_list.get("PPP_BLOCK_SIZE")) is not None:
             return int(n)
         return None
 
     @property
-    def signal_block_byte_offset(self) -> int | None:
+    def _signal_block_byte_offset(self) -> int | None:
         """Offset to the Signal block"""
         if (n := self._kvp_list.get("SIGNAL_BLOCK_BYTE_OFFSET")) is not None:
             return int(n)
         return None
 
     @property
-    def signal_block_size(self) -> int | None:
+    def _signal_block_size(self) -> int | None:
         """Size of the Signal block"""
         if (n := self._kvp_list.get("SIGNAL_BLOCK_SIZE")) is not None:
             return int(n)
         return None
 
     @property
-    def support_block_byte_offset(self) -> int:
+    def _support_block_byte_offset(self) -> int:
         """Offset to the Support block"""
         return int(self._kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"])
 
     @property
-    def support_block_size(self) -> int:
+    def _support_block_size(self) -> int:
         """Size of the Support block"""
         return int(self._kvp_list["SUPPORT_BLOCK_SIZE"])
 
@@ -303,7 +305,7 @@ class CrsdReader:
             2D array of complex samples
 
         """
-        channel_info = self.crsd_xmltree.find(
+        channel_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
@@ -311,11 +313,11 @@ class CrsdReader:
         shape = (num_vect, num_samp)
 
         signal_offset = int(channel_info.find("./{*}SignalArrayByteOffset").text)
-        assert self.signal_block_byte_offset is not None  # placate mypy
-        self._file_object.seek(signal_offset + self.signal_block_byte_offset)
+        assert self._signal_block_byte_offset is not None  # placate mypy
+        self._file_object.seek(signal_offset + self._signal_block_byte_offset)
 
         signal_dtype = binary_format_string_to_dtype(
-            self.crsd_xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
+            self.metadata.xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
         ).newbyteorder("B")
 
         return np.fromfile(
@@ -336,16 +338,16 @@ class CrsdReader:
             CRSD PVP array
 
         """
-        channel_info = self.crsd_xmltree.find(
+        channel_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
 
         pvp_offset = int(channel_info.find("./{*}PVPArrayByteOffset").text)
-        assert self.pvp_block_byte_offset is not None  # placate mypy
-        self._file_object.seek(pvp_offset + self.pvp_block_byte_offset)
+        assert self._pvp_block_byte_offset is not None  # placate mypy
+        self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
-        pvp_dtype = get_pvp_dtype(self.crsd_xmltree).newbyteorder("B")
+        pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
         return np.fromfile(self._file_object, pvp_dtype, count=num_vect)
 
     def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
@@ -380,25 +382,25 @@ class CrsdReader:
             CRSD PPP array
 
         """
-        channel_info = self.crsd_xmltree.find(
+        channel_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}TxId='{sequence_identifier}']"
         )
         num_pulse = int(channel_info.find("./{*}NumPulses").text)
 
         ppp_offset = int(channel_info.find("./{*}PPPArrayByteOffset").text)
-        assert self.ppp_block_byte_offset is not None  # placate mypy
-        self._file_object.seek(ppp_offset + self.ppp_block_byte_offset)
+        assert self._ppp_block_byte_offset is not None  # placate mypy
+        self._file_object.seek(ppp_offset + self._ppp_block_byte_offset)
 
-        ppp_dtype = get_ppp_dtype(self.crsd_xmltree).newbyteorder("B")
+        ppp_dtype = get_ppp_dtype(self.metadata.xmltree).newbyteorder("B")
         return np.fromfile(self._file_object, ppp_dtype, count=num_pulse)
 
     def _read_support_array(self, sa_identifier):
-        elem_format = self.crsd_xmltree.find(
+        elem_format = self.metadata.xmltree.find(
             f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}ElementFormat"
         )
         dtype = binary_format_string_to_dtype(elem_format.text).newbyteorder("B")
 
-        sa_info = self.crsd_xmltree.find(
+        sa_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{sa_identifier}']"
         )
         num_rows = int(sa_info.find("./{*}NumRows").text)
@@ -406,7 +408,7 @@ class CrsdReader:
         shape = (num_rows, num_cols)
 
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
-        self._file_object.seek(sa_offset + self.support_block_byte_offset)
+        self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
         array = np.fromfile(self._file_object, dtype, count=np.prod(shape)).reshape(
             shape
@@ -418,7 +420,7 @@ class CrsdReader:
         array = self._read_support_array(sa_identifier)
         if not masked:
             return array
-        nodata = self.crsd_xmltree.findtext(
+        nodata = self.metadata.xmltree.findtext(
             f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}NODATA"
         )
         return mask_support_array(array, nodata)
@@ -434,50 +436,78 @@ class CrsdReader:
         self.done()
 
 
-class CrsdWriter:
+class Writer:
     """Write a CRSD file
 
-    A CrsdWriter object can be used as a context manager in a ``with`` statement.
+    A Writer object can be used as a context manager in a ``with`` statement.
 
     Parameters
     ----------
     file : `file object`
         CRSD file to write
-    plan : :py:class:`CrsdPlan`
-        A CrsdPlan object
-
-    Notes
-    -----
-    plan should not be modified after creation of a writer
-
-    Examples
-    --------
-    >>> with output_path.open('wb') as file, CrsdWriter(file, plan) as writer:
-    ...     writer.write_signal("1", signal)
-    ...     writer.write_pvp("1", pvp)
+    metadata : Metadata
+        CRSD metadata to write (copied on construction)
 
     See Also
     --------
-    CrsdPlan
-    CrsdReader
+    Reader
+
+    Examples
+    --------
+    Generate some metadata and data
+
+    .. doctest:: crsd_io
+
+        >>> import lxml.etree
+
+        >>> xmltree = lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
+        >>> first_sequence = xmltree.find("{*}Data/{*}Transmit/{*}TxSequence")
+        >>> tx_id = first_sequence.findtext("{*}TxId")
+        >>> num_p = int(first_sequence.findtext("{*}NumPulses"))
+        >>> first_channel = xmltree.find("{*}Data/{*}Receive/{*}Channel")
+        >>> ch_id = first_channel.findtext("{*}ChId")
+        >>> num_v = int(first_channel.findtext("{*}NumVectors"))
+        >>> num_s = int(first_channel.findtext("{*}NumSamples"))
+        >>> sig_format = xmltree.findtext("{*}Data/{*}Receive/{*}SignalArrayFormat")
+
+        >>> import sarkit.crsd as skcrsd
+
+        >>> meta = skcrsd.Metadata(
+        ...     xmltree=xmltree,
+        ...     file_header_part=skcrsd.FileHeaderPart(additional_kvps={"K": "V"}),
+        ... )
+
+        >>> import numpy as np
+
+        >>> sig = np.zeros((num_v, num_s), dtype=skcrsd.binary_format_string_to_dtype(sig_format))
+        >>> pvps = np.zeros(num_v, dtype=skcrsd.get_pvp_dtype(xmltree))
+        >>> ppps = np.zeros(num_p, dtype=skcrsd.get_ppp_dtype(xmltree))
+
+    Write a channel's signal array and PVP arrays and a transmit sequence's PPP array to a file.
+
+    .. doctest:: crsd_io
+
+        >>> with (tmppath / "written.crsd").open("wb") as f, skcrsd.Writer(f, meta) as w:
+        ...     w.write_signal(ch_id, sig)
+        ...     w.write_pvp(ch_id, pvps)
+        ...     w.write_ppp(tx_id, ppps)
     """
 
-    def __init__(self, file, plan):
+    def __init__(self, file, metadata: Metadata):
         align_to = 64
         self._file_object = file
 
-        self._plan = plan
+        self._metadata = copy.deepcopy(metadata)
+        crsd_xmltree = self._metadata.xmltree
 
-        xml_block_body = lxml.etree.tostring(plan.crsd_xmltree, encoding="utf-8")
+        xml_block_body = lxml.etree.tostring(crsd_xmltree, encoding="utf-8")
 
         self._sequence_size_offsets = {}
-        if plan.crsd_xmltree.find("./{*}Data/{*}Transmit") is not None:
+        if crsd_xmltree.find("./{*}Data/{*}Transmit") is not None:
             ppp_itemsize = int(
-                plan.crsd_xmltree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text
+                crsd_xmltree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text
             )
-            for seq_node in plan.crsd_xmltree.findall(
-                "./{*}Data/{*}Transmit/{*}TxSequence"
-            ):
+            for seq_node in crsd_xmltree.findall("./{*}Data/{*}Transmit/{*}TxSequence"):
                 sequence_identifier = seq_node.find("./{*}TxId").text
                 sequence_ppp_offset = int(seq_node.find("./{*}PPPArrayByteOffset").text)
                 sequence_ppp_size = (
@@ -489,16 +519,14 @@ class CrsdWriter:
                 }
 
         self._channel_size_offsets = {}
-        if plan.crsd_xmltree.find("./{*}Data/{*}Receive") is not None:
+        if crsd_xmltree.find("./{*}Data/{*}Receive") is not None:
             signal_itemsize = binary_format_string_to_dtype(
-                plan.crsd_xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
+                crsd_xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
             ).itemsize
             pvp_itemsize = int(
-                plan.crsd_xmltree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text
+                crsd_xmltree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text
             )
-            for chan_node in plan.crsd_xmltree.findall(
-                "./{*}Data/{*}Receive/{*}Channel"
-            ):
+            for chan_node in crsd_xmltree.findall("./{*}Data/{*}Receive/{*}Channel"):
                 channel_identifier = chan_node.find("./{*}ChId").text
                 channel_signal_offset = int(
                     chan_node.find("./{*}SignalArrayByteOffset").text
@@ -522,9 +550,7 @@ class CrsdWriter:
                 }
 
         self._sa_size_offsets = {}
-        for sa_node in plan.crsd_xmltree.findall(
-            "./{*}Data/{*}Support/{*}SupportArray"
-        ):
+        for sa_node in crsd_xmltree.findall("./{*}Data/{*}Support/{*}SupportArray"):
             sa_identifier = sa_node.find("./{*}SAId").text
             sa_offset = int(sa_node.find("./{*}ArrayByteOffset").text)
             sa_size = (
@@ -546,8 +572,8 @@ class CrsdWriter:
             return int(np.ceil(float(val) / align_to) * align_to)
 
         self._file_header_kvp = {
-            "CLASSIFICATION": plan.file_header.classification,
-            "RELEASE_INFO": plan.file_header.release_info,
+            "CLASSIFICATION": crsd_xmltree.findtext("{*}ProductInfo/{*}Classification"),
+            "RELEASE_INFO": crsd_xmltree.findtext("{*}ProductInfo/{*}ReleaseInfo"),
             "XML_BLOCK_SIZE": len(xml_block_body),
             "XML_BLOCK_BYTE_OFFSET": np.iinfo(np.uint64).max,  # placeholder
         }
@@ -585,12 +611,12 @@ class CrsdWriter:
             np.iinfo(np.uint64).max,
         )  # placeholder
 
-        self._file_header_kvp.update(plan.file_header.additional_kvps)
+        self._file_header_kvp.update(self._metadata.file_header_part.additional_kvps)
 
         def _serialize_header():
-            version = VERSION_INFO[
-                lxml.etree.QName(plan.crsd_xmltree.getroot()).namespace
-            ]["version"]
+            version = VERSION_INFO[lxml.etree.QName(crsd_xmltree.getroot()).namespace][
+                "version"
+            ]
             if self._sequence_size_offsets and self._channel_size_offsets:
                 file_type = "CRSDsar"
             elif self._channel_size_offsets:
@@ -603,7 +629,7 @@ class CrsdWriter:
             header_str += "".join(
                 (f"{key} := {value}\n" for key, value in self._file_header_kvp.items())
             )
-            return header_str.encode() + CRSD_SECTION_TERMINATOR
+            return header_str.encode() + SECTION_TERMINATOR
 
         next_offset = _align(len(_serialize_header()))
 
@@ -611,7 +637,7 @@ class CrsdWriter:
         next_offset = _align(
             next_offset
             + self._file_header_kvp["XML_BLOCK_SIZE"]
-            + len(CRSD_SECTION_TERMINATOR)
+            + len(SECTION_TERMINATOR)
         )
 
         self._file_header_kvp["SUPPORT_BLOCK_BYTE_OFFSET"] = next_offset
@@ -632,12 +658,12 @@ class CrsdWriter:
         self._file_object.seek(0)
         self._file_object.write(_serialize_header())
         self._file_object.seek(self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"])
-        self._file_object.write(xml_block_body + CRSD_SECTION_TERMINATOR)
+        self._file_object.write(xml_block_body + SECTION_TERMINATOR)
 
-        self._signal_arrays_written = set()
-        self._pvp_arrays_written = set()
-        self._ppp_arrays_written = set()
-        self._support_arrays_written = set()
+        self._signal_arrays_written: set[str] = set()
+        self._pvp_arrays_written: set[str] = set()
+        self._ppp_arrays_written: set[str] = set()
+        self._support_arrays_written: set[str] = set()
 
     def write_signal(self, channel_identifier: str, signal_array: npt.NDArray):
         """Write signal data to a CRSD file
@@ -650,6 +676,7 @@ class CrsdWriter:
             2D array of complex samples
 
         """
+        # TODO Add support for partial CRSD writing
         assert (
             signal_array.nbytes
             == self._channel_size_offsets[channel_identifier]["signal_size"]
@@ -662,9 +689,6 @@ class CrsdWriter:
         )
         output_dtype = signal_array.dtype.newbyteorder(">")
         signal_array.astype(output_dtype, copy=False).tofile(self._file_object)
-
-        # TODO Add support for partial CRSD writing
-        return
 
     def write_pvp(self, channel_identifier: str, pvp_array: npt.NDArray):
         """Write pvp data to a CRSD file
@@ -689,7 +713,6 @@ class CrsdWriter:
         )
         output_dtype = pvp_array.dtype.newbyteorder(">")
         pvp_array.astype(output_dtype, copy=False).tofile(self._file_object)
-        return
 
     def write_ppp(self, sequence_identifier: str, ppp_array: npt.NDArray):
         """Write ppp data to a CRSD file
@@ -714,7 +737,6 @@ class CrsdWriter:
         )
         output_dtype = ppp_array.dtype.newbyteorder(">")
         ppp_array.astype(output_dtype, copy=False).tofile(self._file_object)
-        return
 
     def write_support_array(
         self, support_array_identifier: str, support_array: npt.NDArray
@@ -729,6 +751,7 @@ class CrsdWriter:
             Array of support data
 
         """
+        # TODO: support masked arrays ala CPHD
         assert (
             support_array.nbytes
             == self._sa_size_offsets[support_array_identifier]["size"]
@@ -746,7 +769,7 @@ class CrsdWriter:
         """Warn about unwritten arrays declared in the XML"""
         channel_names = set(
             node.text
-            for node in self._plan.crsd_xmltree.findall(
+            for node in self._metadata.xmltree.findall(
                 "./{*}Data/{*}Receive/{*}Channel/{*}ChId"
             )
         )
@@ -764,7 +787,7 @@ class CrsdWriter:
 
         sequence_names = set(
             node.text
-            for node in self._plan.crsd_xmltree.findall(
+            for node in self._metadata.xmltree.findall(
                 "./{*}Data/{*}Transmit/{*}TxSequence/{*}TxId"
             )
         )
@@ -776,7 +799,7 @@ class CrsdWriter:
 
         sa_names = set(
             node.text
-            for node in self._plan.crsd_xmltree.findall(
+            for node in self._metadata.xmltree.findall(
                 "./{*}Data/{*}SupportArray/{*}SAId"
             )
         )

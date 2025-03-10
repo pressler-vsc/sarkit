@@ -1,6 +1,6 @@
 import pathlib
 
-import lxml
+import lxml.etree
 import numpy as np
 import pytest
 
@@ -44,8 +44,8 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             sarkit.sidd._io, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
 
-    nitf_plan = sksidd.SiddNitfPlan(
-        header_fields={
+    write_metadata = sksidd.NitfMetadata(
+        file_header_part={
             "ostaid": "ostaid",
             "ftitle": "ftitle",
             # Data is unclassified.  These fields are filled for testing purposes only.
@@ -71,100 +71,108 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             "ophone": "ophone",
         }
     )
-    nitf_plan.add_image(
-        basis_etree,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            # Data is unclassified.  These fields are filled for testing purposes only.
-            "security": {
-                "clas": "S",
-                "clsy": "II",
-                "code": "code_i",
-                "ctlh": "ii",
-                "rel": "rel_i",
-                "dctp": "",
-                "dcdt": "",
-                "dcxm": "X2",
-                "dg": "R",
-                "dgdt": "20000202",
-                "cltx": "RL_i",
-                "catp": "D",
-                "caut": "caut_i",
-                "crsn": "B",
-                "srdt": "20000203",
-                "ctln": "ctln_i",
-            },
-            "icom": ["first comment", "second comment"],
-        },
-        des_fields={
-            # Data is unclassified.  These fields are filled for testing purposes only.
-            "security": {
-                "clas": "U",
-                "clsy": "DD",
-                "code": "code_d",
-                "ctlh": "dd",
-                "rel": "rel_d",
-                "dctp": "X",
-                "dcdt": "",
-                "dcxm": "X3",
-                "dg": "",
-                "dgdt": "20000302",
-                "cltx": "CH_d",
-                "catp": "M",
-                "caut": "caut_d",
-                "crsn": "C",
-                "srdt": "20000303",
-                "ctln": "ctln_d",
-            },
-            "desshrp": "desshrp",
-            "desshli": "desshli",
-            "desshlin": "desshlin",
-            "desshabs": "desshabs",
-        },
+    write_metadata.images.extend(
+        [
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    # Data is unclassified.  These fields are filled for testing purposes only.
+                    "security": {
+                        "clas": "S",
+                        "clsy": "II",
+                        "code": "code_i",
+                        "ctlh": "ii",
+                        "rel": "rel_i",
+                        "dctp": "",
+                        "dcdt": "",
+                        "dcxm": "X2",
+                        "dg": "R",
+                        "dgdt": "20000202",
+                        "cltx": "RL_i",
+                        "catp": "D",
+                        "caut": "caut_i",
+                        "crsn": "B",
+                        "srdt": "20000203",
+                        "ctln": "ctln_i",
+                    },
+                    "icom": ["first comment", "second comment"],
+                },
+                de_subheader_part={
+                    # Data is unclassified.  These fields are filled for testing purposes only.
+                    "security": {
+                        "clas": "U",
+                        "clsy": "DD",
+                        "code": "code_d",
+                        "ctlh": "dd",
+                        "rel": "rel_d",
+                        "dctp": "X",
+                        "dcdt": "",
+                        "dcxm": "X3",
+                        "dg": "",
+                        "dgdt": "20000302",
+                        "cltx": "CH_d",
+                        "catp": "M",
+                        "caut": "caut_d",
+                        "crsn": "C",
+                        "srdt": "20000303",
+                        "ctln": "ctln_d",
+                    },
+                    "desshrp": "desshrp",
+                    "desshli": "desshli",
+                    "desshlin": "desshlin",
+                    "desshabs": "desshabs",
+                },
+            ),
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                de_subheader_part={
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+            ),
+        ]
     )
 
-    nitf_plan.add_image(
-        basis_etree,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            "security": {
-                "clas": "U",
-            },
-        },
-        des_fields={
-            "security": {
-                "clas": "U",
-            },
-        },
-    )
-
-    nitf_plan.add_sicd_xml(
-        sicd_xmltree=sicd_xmltree, des_fields={"security": {"clas": "U"}}
-    )
-
-    nitf_plan.add_sicd_xml(
-        sicd_xmltree=sicd_xmltree, des_fields={"security": {"clas": "U"}}
+    write_metadata.sicd_xmls.extend(
+        [
+            sksidd.NitfSicdXmlMetadata(
+                sicd_xmltree, de_subheader_part={"security": {"clas": "U"}}
+            )
+        ]
+        * 2
     )
 
     ps_xmltree0 = lxml.etree.ElementTree(
         lxml.etree.fromstring("<product><support/></product>")
-    )
-    nitf_plan.add_product_support_xml(
-        ps_xmltree=ps_xmltree0, des_fields={"security": {"clas": "U"}}
     )
     ps_xmltree1 = lxml.etree.ElementTree(
         lxml.etree.fromstring(
             '<product xmlns="https://example.com"><support/></product>'
         )
     )
-    nitf_plan.add_product_support_xml(
-        ps_xmltree=ps_xmltree1, des_fields={"security": {"clas": "U"}}
+    write_metadata.product_support_xmls.extend(
+        [
+            sksidd.NitfProductSupportXmlMetadata(
+                ps_xmltree0, {"security": {"clas": "U"}}
+            ),
+            sksidd.NitfProductSupportXmlMetadata(
+                ps_xmltree1, {"security": {"clas": "U"}}
+            ),
+        ]
     )
 
     with out_sidd.open("wb") as file:
-        with sksidd.SiddNitfWriter(file, nitf_plan) as writer:
+        with sksidd.NitfWriter(file, write_metadata) as writer:
             writer.write_image(0, basis_array0)
             writer.write_image(1, basis_array1)
 
@@ -178,16 +186,17 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         assert num_expected_imseg == len(nitf_details.img_headers)
 
     with out_sidd.open("rb") as file:
-        with sksidd.SiddNitfReader(file) as reader:
-            assert len(reader.images) == 2
-            assert len(reader.sicd_xmls) == 2
-            assert len(reader.product_support_xmls) == 2
+        with sksidd.NitfReader(file) as reader:
+            read_metadata = reader.metadata
+            assert len(read_metadata.images) == 2
+            assert len(read_metadata.sicd_xmls) == 2
+            assert len(read_metadata.product_support_xmls) == 2
             read_array0 = reader.read_image(0)
             read_array1 = reader.read_image(1)
-            read_xmltree = reader.images[0].sidd_xmltree
-            read_sicd_xmltree = reader.sicd_xmls[-1].sicd_xmltree
-            read_ps_xmltree0 = reader.product_support_xmls[0].product_support_xmltree
-            read_ps_xmltree1 = reader.product_support_xmls[1].product_support_xmltree
+            read_xmltree = read_metadata.images[0].xmltree
+            read_sicd_xmltree = read_metadata.sicd_xmls[-1].xmltree
+            read_ps_xmltree0 = read_metadata.product_support_xmls[0].xmltree
+            read_ps_xmltree1 = read_metadata.product_support_xmls[1].xmltree
 
     def _normalized(xmltree):
         return lxml.etree.tostring(xmltree, method="c14n")
@@ -197,9 +206,15 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     assert _normalized(read_ps_xmltree1) == _normalized(ps_xmltree1)
     assert _normalized(read_sicd_xmltree) == _normalized(sicd_xmltree)
 
-    assert nitf_plan.header_fields == reader.header_fields
-    assert nitf_plan.images[0].is_fields == reader.images[0].is_fields
-    assert nitf_plan.images[0].des_fields == reader.images[0].des_fields
+    assert write_metadata.file_header_part == read_metadata.file_header_part
+    assert (
+        write_metadata.images[0].im_subheader_part
+        == read_metadata.images[0].im_subheader_part
+    )
+    assert (
+        write_metadata.images[0].de_subheader_part
+        == read_metadata.images[0].de_subheader_part
+    )
     assert np.array_equal(basis_array0, read_array0)
     assert np.array_equal(basis_array1, read_array1)
 

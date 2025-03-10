@@ -19,10 +19,10 @@ Data Structure & File Format
 .. autosummary::
    :toctree: generated/
 
-   CrsdFileHeaderFields
-   CrsdReader
-   CrsdPlan
-   CrsdWriter
+   FileHeaderPart
+   Metadata
+   Reader
+   Writer
    read_file_header
    get_pvp_dtype
    get_ppp_dtype
@@ -88,7 +88,7 @@ Constants
      - `dict` of {xml namespace: version-specific information}
    * - ``DEFINED_HEADER_KEYS``
      - :external:py:obj:`set` of KVP keys defined in the standard
-   * - ``CRSD_SECTION_TERMINATOR``
+   * - ``SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
    * - ``TRANSCODERS``
      - `dict` of {name: transcoder}
@@ -111,13 +111,13 @@ from ._computations import (
     compute_ref_point_parameters,
 )
 from ._io import (
-    CRSD_SECTION_TERMINATOR,
     DEFINED_HEADER_KEYS,
+    SECTION_TERMINATOR,
     VERSION_INFO,
-    CrsdFileHeaderFields,
-    CrsdPlan,
-    CrsdReader,
-    CrsdWriter,
+    FileHeaderPart,
+    Metadata,
+    Reader,
+    Writer,
     binary_format_string_to_dtype,
     dtype_to_binary_format_string,
     get_ppp_dtype,
@@ -152,31 +152,31 @@ from ._xml import (
 )
 
 __all__ = [
-    "CRSD_SECTION_TERMINATOR",
     "DEFINED_HEADER_KEYS",
+    "SECTION_TERMINATOR",
     "TRANSCODERS",
     "VERSION_INFO",
     "AddedPxpType",
     "BoolType",
-    "CrsdFileHeaderFields",
-    "CrsdPlan",
-    "CrsdReader",
-    "CrsdWriter",
     "DblType",
     "EdfType",
     "EnuType",
+    "FileHeaderPart",
     "HexType",
     "ImageAreaCornerPointsType",
     "IntType",
     "LatLonHaeType",
     "LatLonType",
     "LineSampType",
+    "Metadata",
     "MtxType",
     "ParameterType",
     "Poly2dType",
     "PolyType",
     "PxpType",
+    "Reader",
     "TxtType",
+    "Writer",
     "XdtType",
     "XmlHelper",
     "XyType",

@@ -167,14 +167,10 @@ def example_crsdsar_file(tmp_path_factory):
     )
     sequence_id = crsd_etree.findtext("{*}TxSequence/{*}Parameters/{*}Identifier")
     channel_id = crsd_etree.findtext("{*}Channel/{*}Parameters/{*}Identifier")
-    newplan = skcrsd.CrsdPlan(
-        file_header=skcrsd.CrsdFileHeaderFields(
-            classification="UNCLASSIFIED",
-            release_info="UNRESTRICTED",
-        ),
-        crsd_xmltree=crsd_etree,
+    new_meta = skcrsd.Metadata(
+        xmltree=crsd_etree,
     )
-    with open(tmp_crsd, "wb") as f, skcrsd.CrsdWriter(f, newplan) as cw:
+    with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
         cw.write_ppp(sequence_id, ppps)
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
@@ -205,8 +201,8 @@ def _replace_error(crsd_etree, sensor_type):
 
 @pytest.fixture(scope="session")
 def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
-    with open(example_crsdsar_file, "rb") as f, skcrsd.CrsdReader(f) as cr:
-        crsd_etree = cr.crsd_xmltree
+    with open(example_crsdsar_file, "rb") as f, skcrsd.Reader(f) as cr:
+        crsd_etree = cr.metadata.xmltree
         sequence_id = crsd_etree.findtext("{*}TxSequence/{*}Parameters/{*}Identifier")
         ppps = cr.read_ppps(sequence_id)
     crsd_etree.find(".//{*}RefPulseIndex").text = crsd_etree.find(
@@ -230,14 +226,10 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
         tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
     )
 
-    new_plan = skcrsd.CrsdPlan(
-        file_header=skcrsd.CrsdFileHeaderFields(
-            classification="UNCLASSIFIED",
-            release_info="UNRESTRICTED",
-        ),
-        crsd_xmltree=crsd_etree,
+    new_meta = skcrsd.Metadata(
+        xmltree=crsd_etree,
     )
-    with open(tmp_crsd, "wb") as f, skcrsd.CrsdWriter(f, new_plan) as cw:
+    with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
         cw.write_ppp(sequence_id, ppps)
     assert not main([str(tmp_crsd), "-vvv"])
     yield tmp_crsd
@@ -245,8 +237,8 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
 
 @pytest.fixture(scope="session")
 def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
-    with open(example_crsdsar_file, "rb") as f, skcrsd.CrsdReader(f) as cr:
-        crsd_etree = cr.crsd_xmltree
+    with open(example_crsdsar_file, "rb") as f, skcrsd.Reader(f) as cr:
+        crsd_etree = cr.metadata.xmltree
         channel_id = crsd_etree.findtext("{*}Channel/{*}Parameters/{*}Identifier")
         pvps = cr.read_pvps(channel_id)
         signal = cr.read_signal(channel_id)
@@ -298,14 +290,10 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
         tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
     )
 
-    newplan = skcrsd.CrsdPlan(
-        file_header=skcrsd.CrsdFileHeaderFields(
-            classification="UNCLASSIFIED",
-            release_info="UNRESTRICTED",
-        ),
-        crsd_xmltree=crsd_etree,
+    new_meta = skcrsd.Metadata(
+        xmltree=crsd_etree,
     )
-    with open(tmp_crsd, "wb") as f, skcrsd.CrsdWriter(f, newplan) as cw:
+    with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
         cw.write_pvp(channel_id, new_pvps)
         cw.write_signal(channel_id, signal)
     assert not main([str(tmp_crsd), "-vvv"])
@@ -901,7 +889,7 @@ def ant_patched_crsd_con(crsd_con, monkeypatch):
                 ),
             )
 
-        monkeypatch.setattr(skcrsd.CrsdReader, "read_support_array", dummy)
+        monkeypatch.setattr(skcrsd.Reader, "read_support_array", dummy)
         return crsd_con, data
 
     return func

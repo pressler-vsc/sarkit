@@ -109,29 +109,29 @@ def test_roundtrip(tmp_path):
         sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
         support_arrays[sa_id] = _random_support_array(basis_etree, sa_id)
 
-    cphd_plan = skcphd.CphdPlan(
-        file_header=skcphd.CphdFileHeaderFields(
-            classification="UNCLASSIFIED",
-            release_info="UNRESTRICTED",
+    cphd_metadata = skcphd.Metadata(
+        file_header_part=skcphd.FileHeaderPart(
             additional_kvps={"k1": "v1", "k2": "v2"},
         ),
-        cphd_xmltree=basis_etree,
+        xmltree=basis_etree,
     )
     out_cphd = tmp_path / "out.cphd"
     with open(out_cphd, "wb") as f:
-        with skcphd.CphdWriter(f, cphd_plan) as writer:
+        with skcphd.Writer(f, cphd_metadata) as writer:
             writer.write_signal(channel_ids[0], basis_signal)
             writer.write_pvp(channel_ids[0], pvps)
             for k, v in support_arrays.items():
                 writer.write_support_array(k, v)
 
-    with open(out_cphd, "rb") as f, skcphd.CphdReader(f) as reader:
+    with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         read_sig, read_pvp = reader.read_channel(channel_ids[0])
         read_support_arrays = {}
-        for sa_id in reader.cphd_xmltree.findall("./{*}SupportArray/*/{*}Identifier"):
+        for sa_id in reader.metadata.xmltree.findall(
+            "./{*}SupportArray/*/{*}Identifier"
+        ):
             read_support_arrays[sa_id.text] = reader.read_support_array(sa_id.text)
 
-    assert cphd_plan.file_header == reader.file_header
+    assert cphd_metadata.file_header_part == reader.metadata.file_header_part
     assert np.array_equal(basis_signal, read_sig)
     assert np.array_equal(pvps, read_pvp)
     assert support_arrays.keys() == read_support_arrays.keys()
@@ -140,7 +140,7 @@ def test_roundtrip(tmp_path):
         for f in support_arrays
     )
     assert lxml.etree.tostring(
-        reader.cphd_xmltree, method="c14n"
+        reader.metadata.xmltree, method="c14n"
     ) == lxml.etree.tostring(basis_etree, method="c14n")
 
 
@@ -200,21 +200,17 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
     if not is_masked:
         mx = mx.filled(0)
 
-    cphd_plan = skcphd.CphdPlan(
-        file_header=skcphd.CphdFileHeaderFields(
-            classification="UNCLASSIFIED",
-            release_info="UNRESTRICTED",
-        ),
-        cphd_xmltree=basis_etree,
+    cphd_plan = skcphd.Metadata(
+        xmltree=basis_etree,
     )
     out_cphd = tmp_path / "out.cphd"
-    with open(out_cphd, "wb") as f, skcphd.CphdWriter(f, cphd_plan) as writer:
+    with open(out_cphd, "wb") as f, skcphd.Writer(f, cphd_plan) as writer:
         if is_masked and not nodata_in_xml:
             with pytest.raises(ValueError, match="nodata.*does not match.*"):
                 writer.write_support_array(sa_id, mx)
             return
         writer.write_support_array(sa_id, mx)
 
-    with open(out_cphd, "rb") as f, skcphd.CphdReader(f) as reader:
+    with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         read_sa = reader.read_support_array(sa_id)
         assert np.array_equal(mx, read_sa)

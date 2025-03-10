@@ -169,8 +169,8 @@ class CrsdConsistency(con.ConsistencyChecker):
                 ppps = None
             except etree.XMLSyntaxError:
                 infile.seek(0, os.SEEK_SET)
-                reader = skcrsd.CrsdReader(infile)
-                crsdroot = reader.crsd_xmltree
+                reader = skcrsd.Reader(infile)
+                crsdroot = reader.metadata.xmltree
                 infile.seek(0, os.SEEK_SET)
                 _, kvp_list = skcrsd.read_file_header(infile)
                 pvps = {}
@@ -210,7 +210,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         """
         assert self.filename is not None
         assert self.kvp_list is not None
-        with open(self.filename, "rb") as fd, skcrsd.CrsdReader(fd) as reader:
+        with open(self.filename, "rb") as fd, skcrsd.Reader(fd) as reader:
             return reader.read_support_array(sa_id)
 
     def _get_channel_pvps(self, channel_id):
@@ -1827,7 +1827,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             xml_offset = int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"])
             with open(self.filename, "rb") as fd:
                 header_and_pad = fd.read(xml_offset)
-            end_of_header = header_and_pad.find(skcrsd.CRSD_SECTION_TERMINATOR)
+            end_of_header = header_and_pad.find(skcrsd.SECTION_TERMINATOR)
             with self.need("section terminator exists before XML block"):
                 assert end_of_header > 0
             with self.need("pad between header and XML is zeros"):
@@ -1850,7 +1850,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             with open(self.filename, "rb") as fd:
                 fd.seek(xml_offset + xml_size)
                 with self.need("section terminator at end of XML block"):
-                    assert fd.read(2) == skcrsd.CRSD_SECTION_TERMINATOR
+                    assert fd.read(2) == skcrsd.SECTION_TERMINATOR
 
     def check_pad_before_binary_blocks(self):
         """Pad before binary blocks is null bytes"""

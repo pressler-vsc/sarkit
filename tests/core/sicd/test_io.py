@@ -59,9 +59,9 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
     schema = lxml.etree.XMLSchema(file=sksicd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
 
-    nitf_plan = sksicd.SicdNitfPlan(
-        sicd_xmltree=basis_etree,
-        header_fields={
+    metadata = sksicd.NitfMetadata(
+        xmltree=basis_etree,
+        file_header_part={
             "ostaid": "ostaid",
             "ftitle": "ftitle",
             # Data is unclassified.  These fields are filled for testing purposes only.
@@ -86,7 +86,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
             "oname": "oname",
             "ophone": "ophone",
         },
-        is_fields={
+        im_subheader_part={
             "tgtid": "tgtid",
             "iid2": "iid2",
             # Data is unclassified.  These fields are filled for testing purposes only.
@@ -111,7 +111,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
             "isorce": "isorce",
             "icom": ["first comment", "second comment"],
         },
-        des_fields={
+        de_subheader_part={
             # Data is unclassified.  These fields are filled for testing purposes only.
             "security": {
                 "clas": "U",
@@ -138,7 +138,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
         },
     )
     with out_sicd.open("wb") as f:
-        with sksicd.SicdNitfWriter(f, nitf_plan) as writer:
+        with sksicd.NitfWriter(f, metadata) as writer:
             half_rows, half_cols = np.asarray(basis_array.shape) // 2
             writer.write_image(basis_array[:half_rows, :half_cols], start=(0, 0))
             writer.write_image(
@@ -151,16 +151,11 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
                 basis_array[half_rows:, :half_cols], start=(half_rows, 0)
             )
 
-    with out_sicd.open("rb") as f, sksicd.SicdNitfReader(f) as reader:
+    with out_sicd.open("rb") as f, sksicd.NitfReader(f) as reader:
         read_array = reader.read_image()
 
-    schema.assertValid(reader.sicd_xmltree)
-    assert lxml.etree.tostring(
-        reader.sicd_xmltree, method="c14n"
-    ) == lxml.etree.tostring(nitf_plan.sicd_xmltree, method="c14n")
-    assert nitf_plan.header_fields == reader.header_fields
-    assert nitf_plan.is_fields == reader.is_fields
-    assert nitf_plan.des_fields == reader.des_fields
+    schema.assertValid(reader.metadata.xmltree)
+    assert metadata == reader.metadata
     assert np.array_equal(basis_array, read_array)
 
 
@@ -188,7 +183,7 @@ def test_nitfheaderfields_from_header():
     header.ONAME = "oname"
     header.OPHONE = "ophone"
 
-    fields = sksicd.SicdNitfHeaderFields._from_header(header)
+    fields = sksicd.NitfFileHeaderPart._from_header(header)
     assert fields.ostaid == header.OSTAID
     assert fields.ftitle == header.FTITLE
     assert fields.security.clas == header.Security.CLAS
@@ -238,7 +233,7 @@ def test_nitfimagesegmentfields_from_header():
     header.Security.SRDT = ""
     header.Security.CTLN = "ctln_h"
 
-    fields = sksicd.SicdNitfImageSegmentFields._from_header(header)
+    fields = sksicd.NitfImSubheaderPart._from_header(header)
     assert fields.isorce == header.ISORCE
     assert fields.icom == comments
     assert fields.security.clas == header.Security.CLAS
@@ -282,7 +277,7 @@ def test_nitfdesegmentfields_from_header():
     header.Security.SRDT = ""
     header.Security.CTLN = "ctln_h"
 
-    fields = sksicd.SicdNitfDESegmentFields._from_header(header)
+    fields = sksicd.NitfDeSubheaderPart._from_header(header)
     assert fields.desshrp == header.UserHeader.DESSHRP
     assert fields.desshli == header.UserHeader.DESSHLI
     assert fields.desshlin == header.UserHeader.DESSHLIN

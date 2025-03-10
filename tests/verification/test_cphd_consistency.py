@@ -23,12 +23,8 @@ def example_cphd_file(tmp_path_factory):
     cphd_etree = etree.parse(good_cphd_xml_path)
     xmlhelp = skcphd.XmlHelper(cphd_etree)
 
-    cphd_plan = skcphd.CphdPlan(
-        file_header=skcphd.CphdFileHeaderFields(
-            classification="UNCLASSIFIED",
-            release_info="UNRESTRICTED",
-        ),
-        cphd_xmltree=cphd_etree,
+    cphd_plan = skcphd.Metadata(
+        xmltree=cphd_etree,
     )
     pvp_dtype = skcphd.get_pvp_dtype(cphd_etree)
 
@@ -84,7 +80,7 @@ def example_cphd_file(tmp_path_factory):
     tmp_cphd = (
         tmp_path_factory.mktemp("data") / good_cphd_xml_path.with_suffix(".cphd").name
     )
-    with open(tmp_cphd, "wb") as f, skcphd.CphdWriter(f, cphd_plan) as cw:
+    with open(tmp_cphd, "wb") as f, skcphd.Writer(f, cphd_plan) as cw:
         cw.write_pvp("1", pvps)
         cw.write_signal("1", signal)
     assert not main([str(tmp_cphd), "--signal-data"])

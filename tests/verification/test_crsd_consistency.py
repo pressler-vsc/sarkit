@@ -473,14 +473,6 @@ def test_global_frcvminmax(crsd_con, name):
     assert_failures(crsd_con, f"{name} matches")
 
 
-def test_ref_tx_id(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("Test not applicable to CRSDrcv")
-    crsd_con.crsdroot.find("{*}TxSequence/{*}RefTxId").text += "_bad"
-    crsd_con.check("check_reftxid")
-    assert_failures(crsd_con, "extant TxSequence")
-
-
 # only applicable to CRSDsar
 def test_ref_tx_id_sar(example_crsdsar_file):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
@@ -490,14 +482,6 @@ def test_ref_tx_id_sar(example_crsdsar_file):
     ).text += "_bad"
     crsd_con.check("check_reftxid")
     assert_failures(crsd_con, "reference channel")
-
-
-def test_fxresponse_id(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("Test not applicable to CRSDrcv")
-    crsd_con.crsdroot.find("{*}TxSequence/{*}Parameters/{*}FxResponseId").text += "_bad"
-    crsd_con.check("check_fxresponse_id", allow_prefix=True)
-    assert_failures(crsd_con, "extant FxResponseArray")
 
 
 def test_xm_id_lfm(crsd_con):
@@ -522,15 +506,6 @@ def test_xm_id_notlfm_missing_xmid(crsd_con):
     assert_failures(crsd_con, "XMId is present")
 
 
-def test_xm_id_notlfm_invalid_xmid(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("Test not applicable to CRSDrcv")
-    assert crsd_con.crsdroot.find("{*}TxSequence/{*}TxWFType").text == "LFM w XM"
-    crsd_con.crsdroot.find("{*}TxSequence/{*}Parameters/{*}XMId").text += "_bad"
-    crsd_con.check("check_xm_id", allow_prefix=True)
-    assert_failures(crsd_con, "XMId refers to an extant XMArray")
-
-
 def test_ref_pulse_index(crsd_con):
     if crsd_con.crsd_type == "CRSDrcv":
         pytest.skip("Test not applicable to CRSDrcv")
@@ -539,22 +514,6 @@ def test_ref_pulse_index(crsd_con):
     ).text += "99999999"
     crsd_con.check("check_ref_pulse_index", allow_prefix=True)
     assert_failures(crsd_con, "extant pulse")
-
-
-def test_tx_antenna_apc(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("Test not applicable to CRSDrcv")
-    crsd_con.crsdroot.find("{*}TxSequence/{*}Parameters/{*}TxAPCId").text += "_bad"
-    crsd_con.check("check_tx_antenna", allow_prefix=True)
-    assert_failures(crsd_con, "TxAPCId refers to an extant APC")
-
-
-def test_tx_antenna_pat(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("Test not applicable to CRSDrcv")
-    crsd_con.crsdroot.find("{*}TxSequence/{*}Parameters/{*}TxAPATId").text += "_bad"
-    crsd_con.check("check_tx_antenna", allow_prefix=True)
-    assert_failures(crsd_con, "TxAPATId refers to an extant AntPattern")
 
 
 def test_txrefpoint(crsd_con):
@@ -887,14 +846,6 @@ def test_xm_pulse_length_too_long(crsd_con):
     assert_failures(crsd_con, "pulse fits")
 
 
-def test_refchid(crsd_con):
-    if crsd_con.crsd_type == "CRSDtx":
-        pytest.skip("Test not applicable to CRSDtx")
-    crsd_con.crsdroot.find("{*}Channel/{*}RefChId").text += "_bad"
-    crsd_con.check("check_refchid")
-    assert_failures(crsd_con, "extant Channel")
-
-
 def test_refvectorindex_notexist(crsd_con):
     if crsd_con.crsd_type == "CRSDtx":
         pytest.skip("Test not applicable to CRSDtx")
@@ -1161,22 +1112,6 @@ def test_fcvminmax_min(crsd_con, name, offset):
     pvp[name][0] += offset
     crsd_con.check("check_frcvminmax", allow_prefix=True)
     assert_failures(crsd_con, name)
-
-
-def test_rcv_antenna_apc(crsd_con):
-    if crsd_con.crsd_type == "CRSDtx":
-        pytest.skip("Test not applicable to CRSDtx")
-    crsd_con.crsdroot.find("{*}Channel/{*}Parameters/{*}RcvAPCId").text += "_bad"
-    crsd_con.check("check_rcv_antenna", allow_prefix=True)
-    assert_failures(crsd_con, "RcvAPCId refers to an extant APC")
-
-
-def test_rcv_antenna_pat(crsd_con):
-    if crsd_con.crsd_type == "CRSDtx":
-        pytest.skip("Test not applicable to CRSDtx")
-    crsd_con.crsdroot.find("{*}Channel/{*}Parameters/{*}RcvAPATId").text += "_bad"
-    crsd_con.check("check_rcv_antenna", allow_prefix=True)
-    assert_failures(crsd_con, "RcvAPATId refers to an extant AntPattern")
 
 
 def test_rcvstart_not_increasing(crsd_con):
@@ -1455,22 +1390,11 @@ def test_dwell_array_coverage_x1y1(dwell_array_patched_crsd_con):
 
 # only applicable to CRSDsar
 @pytest.mark.parametrize("name", ["COD", "Dwell"])
-def test_check_dwell_ids_num(example_crsdsar_file, name):
+def test_check_num_coddwell_times(example_crsdsar_file, name):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
     crsd_con.crsdroot.find(f"{{*}}DwellPolynomials/{{*}}Num{name}Times").text = "2"
-    crsd_con.check(f"check_{name.lower()}time_ids")
+    crsd_con.check(f"check_num{name.lower()}times")
     assert_failures(crsd_con, "Num.* is correct")
-
-
-# only applicable to CRSDsar
-@pytest.mark.parametrize("name", ["COD", "Dwell"])
-def test_check_dwell_ids_duplicate(example_crsdsar_file, name):
-    crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
-    crsd_con.crsdroot.find(f"{{*}}DwellPolynomials/{{*}}Num{name}Times").text = "2"
-    node = crsd_con.crsdroot.find(f"{{*}}DwellPolynomials/{{*}}{name}Time")
-    node.addnext(copy.deepcopy(node))
-    crsd_con.check(f"check_{name.lower()}time_ids")
-    assert_failures(crsd_con, "Identifiers are unique")
 
 
 def test_scene_iarp_ecf_llh_mismatch(crsd_con):
@@ -1799,20 +1723,6 @@ def test_segment_list_num_segments(example_crsdsar_file):
     assert_failures(crsd_con, "NumSegments is correct")
 
 
-# SegmentList is only in CRSDsar
-def test_segment_list_duplicate_segment_ids(example_crsdsar_file):
-    crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
-    crsd_con.crsdroot.find(
-        "{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}NumSegments"
-    ).text = "2"
-    seg = crsd_con.crsdroot.find(
-        "{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment"
-    )
-    seg.addnext(copy.copy(seg))
-    crsd_con.check("check_segment_list")
-    assert_failures(crsd_con, "Identifiers are unique")
-
-
 @pytest.mark.parametrize("field", ["StartLine", "StartSample", "EndLine", "EndSample"])
 def test_segment_list_in_grid_low(example_crsdsar_file, field):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
@@ -1874,32 +1784,8 @@ def test_num_support_arrays(crsd_con):
     _replace_plane_with_hae(crsd_con)
     num_support = crsd_con.crsdroot.find("{*}Data/{*}Support/{*}NumSupportArrays")
     num_support.text = str(int(num_support.text) + 1)
-    crsd_con.check("check_support_array_ids")
-    assert crsd_con.failures()
-
-
-def test_support_array_bad_id(crsd_con):
-    crsd_con.crsdroot.find("{*}Data/{*}Support/{*}SupportArray/{*}SAId").text += "_bad"
-    crsd_con.check("check_support_array_ids")
-    assert crsd_con.failures()
-
-
-def test_support_array_duplicate_id_data(crsd_con):
-    dup_id = crsd_con.crsdroot.find(
-        "{*}Data/{*}Support/{*}SupportArray[1]/{*}SAId"
-    ).text
-    crsd_con.crsdroot.find(
-        "{*}Data/{*}Support/{*}SupportArray[2]/{*}SAId"
-    ).text = dup_id
-    crsd_con.check("check_support_array_ids")
-    assert_failures(crsd_con, "are unique")
-
-
-def test_support_array_duplicate_id_support(crsd_con):
-    dup_id = crsd_con.crsdroot.find("{*}SupportArray/{*}*[1]/{*}Identifier").text
-    crsd_con.crsdroot.find("{*}SupportArray/{*}*[2]/{*}Identifier").text = dup_id
-    crsd_con.check("check_support_array_ids")
-    assert_failures(crsd_con, "are unique")
+    crsd_con.check("check_numsupportarrays")
+    assert_failures(crsd_con, "NumSupportArrays is correct")
 
 
 def test_support_array_bytes_per_element(crsd_con):
@@ -1916,34 +1802,8 @@ def test_num_txsequence(crsd_con):
         pytest.skip("test not applicable with CRSDrcv")
     num_seq = crsd_con.crsdroot.find("{*}Data/{*}Transmit/{*}NumTxSequences")
     num_seq.text = str(int(num_seq.text) + 1)
-    crsd_con.check("check_transmit_sequence_ids")
-    assert crsd_con.failures()
-
-
-def test_txsequence_bad_id(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("test not applicable with CRSDrcv")
-    crsd_con.crsdroot.find("{*}Data/{*}Transmit/{*}TxSequence/{*}TxId").text += "_bad"
-    crsd_con.check("check_transmit_sequence_ids")
-    assert crsd_con.failures()
-
-
-def test_transmit_sequence_duplicate_id_data(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("test not applicable with CRSDrcv")
-    seq = crsd_con.crsdroot.find("{*}Data/{*}Transmit/{*}TxSequence")
-    seq.addnext(copy.deepcopy(seq))
-    crsd_con.check("check_transmit_sequence_ids")
-    assert_failures(crsd_con, "are unique")
-
-
-def test_transmit_sequence_duplicate_id_txsequence(crsd_con):
-    if crsd_con.crsd_type == "CRSDrcv":
-        pytest.skip("test not applicable with CRSDrcv")
-    param = crsd_con.crsdroot.find("{*}TxSequence/{*}Parameters")
-    param.addnext(copy.deepcopy(param))
-    crsd_con.check("check_transmit_sequence_ids")
-    assert_failures(crsd_con, "are unique")
+    crsd_con.check("check_numtxsequences")
+    assert_failures(crsd_con, "NumTxSequences is correct")
 
 
 def test_numbytesppp(crsd_con):
@@ -1985,34 +1845,8 @@ def test_num_channnels(crsd_con):
         pytest.skip("test not applicable with CRSDtx")
     num_chan = crsd_con.crsdroot.find("{*}Data/{*}Receive/{*}NumCRSDChannels")
     num_chan.text = str(int(num_chan.text) + 1)
-    crsd_con.check("check_channel_ids")
-    assert crsd_con.failures()
-
-
-def test_channel_bad_id(crsd_con):
-    if crsd_con.crsd_type == "CRSDtx":
-        pytest.skip("test not applicable with CRSDtx")
-    crsd_con.crsdroot.find("{*}Data/{*}Receive/{*}Channel/{*}ChId").text += "_bad"
-    crsd_con.check("check_channel_ids")
-    assert crsd_con.failures()
-
-
-def test_channel_duplicate_id_data(crsd_con):
-    if crsd_con.crsd_type == "CRSDtx":
-        pytest.skip("test not applicable with CRSDtx")
-    dup = crsd_con.crsdroot.find("{*}Data/{*}Receive/{*}Channel")
-    dup.addnext(copy.deepcopy(dup))
-    crsd_con.check("check_channel_ids")
-    assert_failures(crsd_con, "are unique")
-
-
-def test_channel_duplicate_id_channel(crsd_con):
-    if crsd_con.crsd_type == "CRSDtx":
-        pytest.skip("test not applicable with CRSDtx")
-    dup = crsd_con.crsdroot.find("{*}Channel/{*}Parameters")
-    dup.addnext(copy.deepcopy(dup))
-    crsd_con.check("check_channel_ids")
-    assert_failures(crsd_con, "are unique")
+    crsd_con.check("check_numcrsdchannels")
+    assert_failures(crsd_con, "NumCRSDChannels is correct")
 
 
 def test_numbytespvp(crsd_con):
@@ -2126,23 +1960,8 @@ def test_error_mono_bistatic_bistatic_used(example_crsdsar_file):
 @pytest.mark.parametrize("short", ["ACF", "APC", "APAT"])
 def test_check_antenna_ids_count(crsd_con, short):
     crsd_con.crsdroot.find(f"{{*}}Antenna/{{*}}Num{short}s").text += "1"
-    crsd_con.check("check_antenna_ids")
-    assert_failures(crsd_con, f"Num{short}s matches number of")
-
-
-@pytest.mark.parametrize("name", ["AntCoordFrame", "AntPhaseCenter", "AntPattern"])
-def test_check_antenna_ids_unique(crsd_con, name):
-    crsd_con.crsdroot.find(
-        f"{{*}}Antenna/{{*}}{name}[2]/{{*}}Identifier"
-    ).text = crsd_con.crsdroot.find(f"{{*}}Antenna/{{*}}{name}[1]/{{*}}Identifier").text
-    crsd_con.check("check_antenna_ids")
-    assert_failures(crsd_con, "are unique")
-
-
-def test_check_antenna_acf_exists(crsd_con):
-    crsd_con.crsdroot.find("{*}Antenna/{*}AntPhaseCenter/{*}ACFId").text += "_bad"
-    crsd_con.check("check_antenna_ids")
-    assert_failures(crsd_con, "extant AntCoordFrame")
+    crsd_con.check(f"check_num{short.lower()}s")
+    assert_failures(crsd_con, f"Num{short}s is correct")
 
 
 def test_check_ant_pol_ref(crsd_con):

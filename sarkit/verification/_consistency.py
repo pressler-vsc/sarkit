@@ -505,7 +505,6 @@ class ConsistencyChecker(object):
         parser.add_argument(
             "--color",
             action=argparse.BooleanOptionalAction,
-            dest="color",
             help="colorize output",
         )
 

@@ -12,7 +12,7 @@ import os
 import pathlib
 import re
 import struct
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import numpy.polynomial.polynomial as npp
@@ -72,58 +72,50 @@ def get_by_id(xml, path, id_val):
 class CphdConsistency(con.ConsistencyChecker):
     """Check CPHD file structure and metadata for internal consistency
 
+    `CphdConsistency` objects should be instantiated using `from_file` or `from_parts`.
+
     Parameters
     ----------
-    cphdroot : lxml.etree.Element or lxml.etree.ElementTree
-        CPHD XML metadata
-    filename : str, optional
-        Path to CPHD file
-    schema_override : str, optional
+    cphd_xml : lxml.etree.Element or lxml.etree.ElementTree
+        CPHD XML
+    file_type_header : str, optional
+        File type header from the first line of the file
+    kvp_list : dict of {str : str}, optional
+        Key-Value pair list of header fields
+    pvps : dict of {str : ndarray}, optional
+        CPHD Per-Vector-Parameters keyed by channel identifier
+    schema_override : `path-like object`, optional
         Path to CPHD XML Schema (Bypass auto selection of CPHD schema)
-    version_override : str, optional
-        Bypass auto detection of CPHD version.  Required if schema_override is specified.  eg: "1.1.0"
-    kvp_list : dict[str, str], optional
-        CPHD key-value pairs list
-    pvps : dict[str, np.ndarray], optional
-        numpy structured array of PVPs
-    check_signal_data : bool, optional
-        Should the signal array be checked for invalid values
+    file : `file object`, optional
+        CPHD file; when specified, portions of the file not specified in other parameters may be read
     """
 
     def __init__(
         self,
-        cphdroot,
-        filename=None,
-        schema_override=None,
-        version_override=None,
+        cphd_xml,
+        *,
+        file_type_header=None,
         kvp_list=None,
         pvps=None,
-        check_signal_data=False,
+        schema_override=None,
+        file=None,
     ):
         super().__init__()
-        self.cphdroot = etree.fromstring(
-            etree.tostring(cphdroot)
-        )  # handle element or tree -> element
-        self.filename = filename
+        # handle element or tree -> element
+        try:
+            self.cphdroot = cphd_xml.getroot()
+        except AttributeError:
+            self.cphdroot = cphd_xml.getroottree().getroot()
         self.xmlhelp = skcphd.XmlHelper(self.cphdroot.getroottree())
+
+        self.file_type_header = file_type_header
         self.kvp_list = kvp_list
         self.pvps = pvps
 
-        if schema_override:
-            if version_override is None:
-                raise ValueError("Version must be specified when overriding schema")
-            self.version = version_override
-            self.schema = schema_override
-        else:
-            self.version = version_override or self._version_lookup()
-            if self.version is None:
-                raise ValueError("Unable to determine CPHD version from XML namespace")
-            urn = {v["version"]: k for k, v in skcphd.VERSION_INFO.items()}[
-                self.version
-            ]
-            self.schema = skcphd.VERSION_INFO[urn]["schema"]
+        ns = etree.QName(self.cphdroot).namespace
+        self.schema = schema_override or skcphd.VERSION_INFO.get(ns, {}).get("schema")
 
-        self.check_signal_data = check_signal_data
+        self.file = file
 
         channel_ids = [
             x.text for x in self.cphdroot.findall("./{*}Data/{*}Channel/{*}Identifier")
@@ -150,65 +142,176 @@ class CphdConsistency(con.ConsistencyChecker):
 
     @staticmethod
     def from_file(
-        filename: str,
+        file,
         schema: Optional[str] = None,
-        version: Optional[str] = None,
-        check_signal_data: Optional[bool] = False,
+        thorough: bool = False,
     ) -> "CphdConsistency":
         """Create a CphdConsistency object from a file
 
         Parameters
         ----------
-        filename : str
-            Path to CPHD file or CPHD XML file
+        file : `file object`
+            CPHD or CPHD XML file to check
         schema : str, optional
             Path to CPHD XML Schema. If None, tries to find a version-specific schema
-        version : str, optional
-            Bypass auto detection of CPHD version.  Required if schema_override is specified.  eg: "1.1.0"
-        check_signal_data : bool, optional
-            Should the signal array be checked for invalid values
+        thorough : bool, optional
+            Run checks that may seek/read through large portions of the file.
+            file must stay open to run checks. Ignored if file is CPHD XML.
 
         Returns
         -------
         CphdConsistency
+            The initialized consistency checker object
+
+        See Also
+        --------
+        from_parts
+
+        Examples
+        --------
+        Use `from_file` to check an XML file:
+
+        .. testsetup::
+
+            import pathlib
+            import tempfile
+
+            import sarkit.cphd as skcphd
+            import lxml.etree
+            meta = skcphd.Metadata(
+                xmltree=lxml.etree.parse("data/example-cphd-1.0.1.xml"),
+            )
+            tmpdir = tempfile.TemporaryDirectory()
+            tmppath = pathlib.Path(tmpdir.name)
+            file = pathlib.Path(tmpdir.name) / "example.cphd"
+            with file.open("wb") as f, skcphd.Writer(f, meta) as w:
+                f.seek(
+                    w._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
+                    + w._file_header_kvp["SIGNAL_BLOCK_SIZE"]
+                    - 1
+                )
+                f.write(b"0")
+
+        .. testcleanup::
+
+            tmpdir.cleanup()
+
+        .. doctest::
+
+            >>> import sarkit.verification as skver
+
+            >>> with open("data/example-cphd-1.0.1.xml", "r") as f:
+            ...     con = skver.CphdConsistency.from_file(f)
+            >>> con.check()
+            >>> bool(con.passes())
+            True
+            >>> bool(con.failures())
+            False
+
+        Use `from_file` to check a CPHD file, with and without thorough checks:
+
+        .. doctest::
+
+            >>> with file.open("rb") as f:
+            ...     con_thorough = skver.CphdConsistency.from_file(f, thorough=True)
+            ...     con = skver.CphdConsistency.from_file(f)
+            ...     con_thorough.check()  # thorough checks require open file
+            >>> con.check()  # without thorough, open file only used for construction
+            >>> print(len(con.skips()) > len(con_thorough.skips()))
+            True
         """
-        with open(filename, "rb") as infile:
-            try:
-                cphdroot = etree.parse(infile)
-                kvp_list = None
-                pvps = None
-            except etree.XMLSyntaxError:
-                infile.seek(0, os.SEEK_SET)
-                reader = skcphd.Reader(infile)
-                cphdroot = reader.metadata.xmltree
-                infile.seek(0, os.SEEK_SET)
-                _, kvp_list = skcphd.read_file_header(infile)
-                pvps = {}
-                for channel_node in cphdroot.findall("./{*}Data/{*}Channel"):
-                    channel_id = channel_node.findtext("./{*}Identifier")
-                    pvps[channel_id] = reader.read_pvps(channel_id)
+        kwargs: dict[str, Any] = {"schema_override": schema}
+        try:
+            cphd_xmltree = etree.parse(file)
+        except etree.XMLSyntaxError:
+            file.seek(0, os.SEEK_SET)
+            reader = skcphd.Reader(file)
+            cphd_xmltree = reader.metadata.xmltree
+            file.seek(0, os.SEEK_SET)
+            file_type_header, kvp_list = skcphd.read_file_header(file)
+            pvps = {}
+            for channel_node in cphd_xmltree.findall("./{*}Data/{*}Channel"):
+                channel_id = channel_node.findtext("./{*}Identifier")
+                pvps[channel_id] = reader.read_pvps(channel_id)
+            kwargs.update(
+                {
+                    "file_type_header": file_type_header,
+                    "kvp_list": kvp_list,
+                    "pvps": pvps,
+                }
+            )
+            if thorough:
+                kwargs["file"] = file
 
         return CphdConsistency(
-            cphdroot,
-            filename=filename,
-            schema_override=schema,
-            version_override=version,
-            kvp_list=kvp_list,
-            pvps=pvps,
-            check_signal_data=check_signal_data,
+            cphd_xmltree,
+            **kwargs,
         )
 
-    def _version_lookup(self):
-        """Returns the version string associated with the XML instance or None if a match is not found."""
-        this_ns = etree.QName(self.cphdroot).namespace
-        if this_ns is None:
-            return None
-        for schema_info in skcphd.VERSION_INFO.values():
-            schema_path = schema_info.get("schema")
-            if schema_path is not None and this_ns == etree.parse(
-                schema_path
-            ).getroot().get("targetNamespace"):
-                return schema_info["version"]
+    @staticmethod
+    def from_parts(
+        cphd_xml: "etree.Element | etree.ElementTree",
+        file_type_header: Optional[str] = None,
+        kvp_list: Optional[dict[str, str]] = None,
+        pvps: Optional[dict[str, np.ndarray]] = None,
+        schema: Optional[str] = None,
+    ) -> "CphdConsistency":
+        """Create a CphdConsistency object from assorted parts
+
+        Parameters
+        ----------
+        cphd_xml : lxml.etree.Element or lxml.etree.ElementTree
+            CPHD XML
+        file_type_header : str, optional
+            File type header from the first line of the file
+        kvp_list : dict of {str : str}, optional
+            Key-Value pair list of header fields
+        pvps : dict of {str : ndarray], optional
+            CPHD Per-Vector-Parameters keyed by channel identifier
+        schema : str, optional
+            Path to CPHD XML Schema. If None, tries to find a version-specific schema
+
+        Returns
+        -------
+        CphdConsistency
+            The initialized consistency checker object
+
+        See Also
+        --------
+        from_file
+
+        Examples
+        --------
+        Use `from_parts` to check a parsed XML element tree:
+
+        .. doctest::
+
+            >>> import lxml.etree
+            >>> import sarkit.verification as skver
+            >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+            >>> con = skver.CphdConsistency.from_parts(cphd_xmltree)
+            >>> con.check()
+            >>> bool(con.passes())
+            True
+            >>> bool(con.failures())
+            False
+
+        Use `from_parts` to check a parsed XML element tree and an invalid file type header:
+
+        .. doctest::
+
+            >>> con = skver.CphdConsistency.from_parts(cphd_xmltree, file_type_header="CPHD/INVALID\\n")
+            >>> con.check()
+            >>> bool(con.failures())
+            True
+        """
+        return CphdConsistency(
+            cphd_xml=cphd_xml,
+            file_type_header=file_type_header,
+            kvp_list=kvp_list,
+            pvps=pvps,
+            schema_override=schema,
+        )
 
     def _get_channel_pvps(self, channel_id):
         """
@@ -241,19 +344,15 @@ class CphdConsistency(con.ConsistencyChecker):
         return polygon
 
     def check_file_type_header(self):
-        """Version in File Type Header matches the version in the XML."""
+        """File type header is consistent with the XML."""
         with self.precondition():
-            assert self.version is not None
-            assert self.filename is not None
-            with open(self.filename, "rb") as fd:
-                first_line = fd.readline().decode()
-            assert first_line.startswith("CPHD/")
-            assert first_line.endswith("\n")
-            file_type_header_version = first_line[len("CPHD/") : -1]
-            with self.need(
-                "version in File Type Header matches the version in the XML"
-            ):
-                assert self.version == file_type_header_version
+            assert self.file_type_header is not None
+            version = skcphd.VERSION_INFO.get(
+                etree.QName(self.cphdroot).namespace, {}
+            ).get("version")
+            assert version is not None
+            with self.need("File type header is consistent with the XML"):
+                assert self.file_type_header == f"CPHD/{version}\n"
 
     def check_header_kvp_list(self):
         """Asserts that the required keys are in the header KVP list."""
@@ -1216,26 +1315,22 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.need("Channel signal fits in signal block"):
                 assert int(self.kvp_list["SIGNAL_BLOCK_SIZE"]) >= signal_end
             with self.precondition():
-                assert self.check_signal_data
-                assert self.filename is not None
+                assert self.file is not None
                 assert format_string == "CF8"
-
-                with open(self.filename, "rb") as fp:
-                    fp.seek(signal_file_offset, os.SEEK_SET)
-                    samples_remaining = num_vectors * num_samples
-                    max_read_bytes = 2**20
-                    max_read_samples = max_read_bytes // signal_dtype.itemsize
-                    while samples_remaining:
-                        data = fp.read(
-                            signal_dtype.itemsize
-                            * min(max_read_samples, samples_remaining)
-                        )
-                        with self.need("Channel signal fits within file"):
-                            assert data
-                        signal = np.frombuffer(data, signal_dtype.newbyteorder(">"))
-                        with self.need("All signal samples are finite and not NaN"):
-                            assert np.all(np.isfinite(signal))
-                        samples_remaining -= len(signal)
+                self.file.seek(signal_file_offset, os.SEEK_SET)
+                samples_remaining = num_vectors * num_samples
+                max_read_bytes = 2**20
+                max_read_samples = max_read_bytes // signal_dtype.itemsize
+                while samples_remaining:
+                    data = self.file.read(
+                        signal_dtype.itemsize * min(max_read_samples, samples_remaining)
+                    )
+                    with self.need("Channel signal fits within file"):
+                        assert data
+                    signal = np.frombuffer(data, signal_dtype.newbyteorder(">"))
+                    with self.need("All signal samples are finite and not NaN"):
+                        assert np.all(np.isfinite(signal))
+                    samples_remaining -= len(signal)
 
     @per_channel
     def check_channel_normal_signal_pvp(self, channel_id, channel_node):
@@ -1260,23 +1355,22 @@ class CphdConsistency(con.ConsistencyChecker):
             assert self.kvp_list is not None
             with self.want("XML appears early in the file"):
                 assert int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"]) < 2**28
-            assert self.filename is not None
-            with open(self.filename, "rb") as fp:
-                before_xml = fp.read(int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"]))
-                first_form_feed = before_xml.find("\f\n".encode("utf-8"))
-                with self.need("header section terminator exists before XML"):
-                    assert b"\f\n" in before_xml
-                with self.want("Pad is 0"):
-                    assert np.all(
-                        np.frombuffer(before_xml[first_form_feed + 2 :], dtype=np.uint8)
-                        == 0
-                    )
+            assert self.file is not None
+            self.file.seek(0, os.SEEK_SET)
+            before_xml = self.file.read(int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"]))
+            first_form_feed = before_xml.find("\f\n".encode("utf-8"))
+            with self.need("header section terminator exists before XML"):
+                assert b"\f\n" in before_xml
+            with self.want("Pad is 0"):
+                assert np.all(
+                    np.frombuffer(before_xml[first_form_feed + 2 :], dtype=np.uint8)
+                    == 0
+                )
 
     def check_pad_after_xml(self):
         """The pad after XML is 0."""
         with self.precondition():
             assert self.kvp_list is not None
-            assert self.filename is not None
             xml_end = int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"]) + int(
                 self.kvp_list["XML_BLOCK_SIZE"]
             )
@@ -1293,14 +1387,13 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.need(f"{next_block} comes after XML"):
                 assert num_bytes_after_xml - 2 >= 0
 
-            with open(self.filename, "rb") as fp:
-                fp.seek(xml_end, os.SEEK_SET)
-                bytes_after_xml = fp.read(num_bytes_after_xml)
-                terminator = bytes_after_xml[:2]
-                pad = np.array(
-                    struct.unpack(f"{num_bytes_after_xml - 2}B", bytes_after_xml[2:])
-                )
-
+            assert self.file is not None
+            self.file.seek(xml_end, os.SEEK_SET)
+            bytes_after_xml = self.file.read(num_bytes_after_xml)
+            terminator = bytes_after_xml[:2]
+            pad = np.array(
+                struct.unpack(f"{num_bytes_after_xml - 2}B", bytes_after_xml[2:])
+            )
             with self.need("Section terminator exists"):
                 assert terminator == b"\f\n"
             with self.want("Pad is 0"):
@@ -1310,7 +1403,6 @@ class CphdConsistency(con.ConsistencyChecker):
         """The pad after support arrays is 0."""
         with self.precondition():
             assert self.kvp_list is not None
-            assert self.filename is not None
             assert "SUPPORT_BLOCK_BYTE_OFFSET" in self.kvp_list
             support_end = int(self.kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"]) + int(
                 self.kvp_list["SUPPORT_BLOCK_SIZE"]
@@ -1321,13 +1413,12 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.need("PVP comes after Support"):
                 assert num_bytes_after_support >= 0
 
-            with open(self.filename, "rb") as fp:
-                fp.seek(support_end, os.SEEK_SET)
-                bytes_after_support = fp.read(num_bytes_after_support)
-                bytes_after_support = np.array(
-                    struct.unpack(f"{num_bytes_after_support}B", bytes_after_support)
-                )
-
+            assert self.file is not None
+            self.file.seek(support_end, os.SEEK_SET)
+            bytes_after_support = self.file.read(num_bytes_after_support)
+            bytes_after_support = np.array(
+                struct.unpack(f"{num_bytes_after_support}B", bytes_after_support)
+            )
             with self.want("Pad is 0"):
                 assert np.all(bytes_after_support == 0)
 
@@ -1335,7 +1426,6 @@ class CphdConsistency(con.ConsistencyChecker):
         """The pad after PVPs is 0."""
         with self.precondition():
             assert self.kvp_list is not None
-            assert self.filename is not None
             pvp_end = int(self.kvp_list["PVP_BLOCK_BYTE_OFFSET"]) + int(
                 self.kvp_list["PVP_BLOCK_SIZE"]
             )
@@ -1345,13 +1435,12 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.need("Signal comes after PVP"):
                 assert num_bytes_after_pvp >= 0
 
-            with open(self.filename, "rb") as fp:
-                fp.seek(pvp_end, os.SEEK_SET)
-                bytes_after_pvp = fp.read(num_bytes_after_pvp)
-                bytes_after_pvp = np.array(
-                    struct.unpack(f"{num_bytes_after_pvp}B", bytes_after_pvp)
-                )
-
+            assert self.file is not None
+            self.file.seek(pvp_end, os.SEEK_SET)
+            bytes_after_pvp = self.file.read(num_bytes_after_pvp)
+            bytes_after_pvp = np.array(
+                struct.unpack(f"{num_bytes_after_pvp}B", bytes_after_pvp)
+            )
             with self.want("Pad is 0"):
                 assert np.all(bytes_after_pvp == 0)
 
@@ -1406,9 +1495,10 @@ class CphdConsistency(con.ConsistencyChecker):
         """Signal is at the end of the file."""
         with self.precondition():
             assert self.kvp_list is not None
-            assert self.filename is not None
+            assert self.file is not None
             with self.need("Signal is at the end of the file"):
-                file_size = os.stat(self.filename).st_size
+                self.file.seek(0, os.SEEK_END)
+                file_size = self.file.tell()
                 assert file_size == int(
                     self.kvp_list["SIGNAL_BLOCK_BYTE_OFFSET"]
                 ) + int(self.kvp_list["SIGNAL_BLOCK_SIZE"])
@@ -1960,24 +2050,21 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a CPHD and display inconsistencies"
     )
-    parser.add_argument("file_name", help="CPHD or CPHD XML to check")
+    parser.add_argument(
+        "file_name", type=pathlib.Path, help="CPHD or CPHD XML to check"
+    )
     parser.add_argument(
         "--schema",
         type=pathlib.Path,
         help="Use a supplied schema file (attempts version-specific schema if omitted)",
     )
     parser.add_argument(
-        "--version",
-        type=str,
-        help=(
-            "Perfom checks for a specific version of CPHD. "
-            "Attempts auto-detection if omitted. Required if using --schema"
-        ),
-    )
-    parser.add_argument(
-        "--signal-data",
+        "--thorough",
         action="store_true",
-        help="Check the signal data for NaN and +/- Inf",
+        help=(
+            "Run checks that may seek/read through large portions of the file. "
+            "Ignored when file_name is XML"
+        ),
     )
     CphdConsistency.add_cli_args(parser)
     return parser
@@ -1985,17 +2072,13 @@ def _parser():
 
 def main(args=None):
     config = _parser().parse_args(args)
-
-    if config.schema is not None and config.version is None:
-        raise RuntimeError("--version must be specified if using --schema")
-
-    cphd_con = CphdConsistency.from_file(
-        filename=config.file_name,
-        schema=config.schema,
-        version=config.version,
-        check_signal_data=config.signal_data,
-    )
-    return cphd_con.run_cli(config)
+    with config.file_name.open("rb") as f:
+        cphd_con = CphdConsistency.from_file(
+            file=f,
+            schema=config.schema,
+            thorough=config.thorough,
+        )
+        return cphd_con.run_cli(config)
 
 
 if __name__ == "__main__":  # pragma: no cover

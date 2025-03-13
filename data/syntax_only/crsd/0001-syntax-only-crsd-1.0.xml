@@ -1,4 +1,4 @@
-<CRSDsar xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0.0_NEXT">
+<CRSDsar xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25">
     <ProductInfo>
         <ProductName>The CRSDsar Product Name</ProductName>
         <Classification>UNCLASSIFIED</Classification>
@@ -202,60 +202,74 @@
         <Support>
             <NumSupportArrays>7</NumSupportArrays>
             <SupportArray>
-                <Identifier>the response</Identifier>
+                <SAId>the response</SAId>
                 <NumRows>1</NumRows>
                 <NumCols>100</NumCols>
                 <BytesPerElement>8</BytesPerElement>
                 <ArrayByteOffset>0</ArrayByteOffset>
             </SupportArray>
             <SupportArray>
-                <Identifier>transmit_array</Identifier>
+                <SAId>transmit_array</SAId>
                 <NumRows>21</NumRows>
                 <NumCols>21</NumCols>
                 <BytesPerElement>8</BytesPerElement>
                 <ArrayByteOffset>800</ArrayByteOffset>
             </SupportArray>
             <SupportArray>
-                <Identifier>transmit_element</Identifier>
+                <SAId>transmit_element</SAId>
                 <NumRows>2</NumRows>
                 <NumCols>2</NumCols>
                 <BytesPerElement>8</BytesPerElement>
                 <ArrayByteOffset>4328</ArrayByteOffset>
             </SupportArray>
             <SupportArray>
-                <Identifier>receive_array</Identifier>
+                <SAId>receive_array</SAId>
                 <NumRows>21</NumRows>
                 <NumCols>21</NumCols>
                 <BytesPerElement>8</BytesPerElement>
                 <ArrayByteOffset>4360</ArrayByteOffset>
             </SupportArray>
             <SupportArray>
-                <Identifier>receive_element</Identifier>
+                <SAId>receive_element</SAId>
                 <NumRows>2</NumRows>
                 <NumCols>2</NumCols>
                 <BytesPerElement>8</BytesPerElement>
                 <ArrayByteOffset>7888</ArrayByteOffset>
             </SupportArray>
             <SupportArray>
-                <Identifier>IAZ array</Identifier>
+                <SAId>IAZ array</SAId>
                 <NumRows>2</NumRows>
                 <NumCols>2</NumCols>
                 <BytesPerElement>4</BytesPerElement>
                 <ArrayByteOffset>7920</ArrayByteOffset>
             </SupportArray>
             <SupportArray>
-                <Identifier>Added array</Identifier>
+                <SAId>Added array</SAId>
                 <NumRows>2</NumRows>
                 <NumCols>2</NumCols>
                 <BytesPerElement>2</BytesPerElement>
                 <ArrayByteOffset>7936</ArrayByteOffset>
+            </SupportArray>
+            <SupportArray>
+                <SAId>XM Identifier</SAId>
+                <NumRows>24</NumRows>
+                <NumCols>8</NumCols>
+                <BytesPerElement>2</BytesPerElement>
+                <ArrayByteOffset>9999</ArrayByteOffset>
+            </SupportArray>
+            <SupportArray>
+                <SAId>DwellTime ID</SAId>
+                <NumRows>24</NumRows>
+                <NumCols>8</NumCols>
+                <BytesPerElement>2</BytesPerElement>
+                <ArrayByteOffset>9999</ArrayByteOffset>
             </SupportArray>
         </Support>
         <Transmit>
             <NumBytesPPP>208</NumBytesPPP>
             <NumTxSequences>1</NumTxSequences>
             <TxSequence>
-                <Identifier>the sequence</Identifier>
+                <TxId>the sequence</TxId>
                 <NumPulses>560</NumPulses>
                 <PPPArrayByteOffset>0</PPPArrayByteOffset>
             </TxSequence>
@@ -273,7 +287,7 @@
                 </Processing>
             </SignalCompression>
             <Channel>
-                <Identifier>the channel</Identifier>
+                <ChId>the channel</ChId>
                 <NumVectors>560</NumVectors>
                 <NumSamples>246</NumSamples>
                 <SignalArrayByteOffset>0</SignalArrayByteOffset>
@@ -282,7 +296,7 @@
         </Receive>
     </Data>
     <TxSequence>
-        <RefTxID>the sequence</RefTxID>
+        <RefTxId>the sequence</RefTxId>
         <TxWFType>LFM w XM</TxWFType>
         <Parameters>
             <Identifier>the sequence</Identifier>
@@ -493,31 +507,31 @@
         </RcvParameters>
     </ReferenceGeometry>
     <SupportArray>
-        <AntGainPhase>
+        <GainPhaseArray>
             <Identifier>transmit_array</Identifier>
             <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
             <X0>-0.0003830770078408768</X0>
             <Y0>-0.0003830770078408768</Y0>
             <XSS>3.8307700784087685e-05</XSS>
             <YSS>3.8307700784087685e-05</YSS>
-        </AntGainPhase>
-        <AntGainPhase>
+        </GainPhaseArray>
+        <GainPhaseArray>
             <Identifier>transmit_element</Identifier>
             <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
             <X0>-1.0</X0>
             <Y0>-1.0</Y0>
             <XSS>2.0</XSS>
             <YSS>2.0</YSS>
-        </AntGainPhase>
-        <AntGainPhase>
+        </GainPhaseArray>
+        <GainPhaseArray>
             <Identifier>receive_array</Identifier>
             <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
             <X0>-0.0003830770078408768</X0>
             <Y0>-0.0003830770078408768</Y0>
             <XSS>3.8307700784087685e-05</XSS>
             <YSS>3.8307700784087685e-05</YSS>
-        </AntGainPhase>
-        <AntGainPhase>
+        </GainPhaseArray>
+        <GainPhaseArray>
             <Identifier>receive_element</Identifier>
             <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
             <X0>-1.0</X0>
@@ -525,7 +539,7 @@
             <XSS>2.0</XSS>
             <YSS>2.0</YSS>
             <NODATA>FEEDFACEDEADBEEF</NODATA>
-        </AntGainPhase>
+        </GainPhaseArray>
         <FxResponseArray>
             <Identifier>the response</Identifier>
             <ElementFormat>Amp=F4;Phase=F4;</ElementFormat>
@@ -744,7 +758,7 @@
     <Antenna>
         <NumACFs>2</NumACFs>
         <NumAPCs>2</NumAPCs>
-        <NumAntPats>2</NumAntPats>
+        <NumAPATs>2</NumAPATs>
         <AntCoordFrame>
             <Identifier>receive</Identifier>
         </AntCoordFrame>
@@ -773,7 +787,7 @@
             <Identifier>transmit</Identifier>
             <FreqZero>10000000000.0</FreqZero>
             <ArrayGPId>transmit_array</ArrayGPId>
-            <ElementGPId>transmit_element</ElementGPId>
+            <ElemGPId>transmit_element</ElemGPId>
             <EBFreqShift>
                 <DCXSF>1.0</DCXSF>
                 <DCYSF>1.0</DCYSF>
@@ -796,7 +810,7 @@
             <Identifier>receive</Identifier>
             <FreqZero>10000000000.0</FreqZero>
             <ArrayGPId>receive_array</ArrayGPId>
-            <ElementGPId>receive_element</ElementGPId>
+            <ElemGPId>receive_element</ElemGPId>
             <EBFreqShift>
                 <DCXSF>1.0</DCXSF>
                 <DCYSF>1.0</DCYSF>

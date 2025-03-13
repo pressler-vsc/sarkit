@@ -33,11 +33,10 @@ DEFINED_HEADER_KEYS: Final[set] = {
 }
 
 VERSION_INFO: Final[dict] = {
-    "http://api.nsgreg.nga.mil/schema/crsd/1.0.0_NEXT": {
-        # TBD
+    "http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25": {
         "version": "1.0",
-        "date": "2024-12-30T00:00:00Z",
-        "schema": SCHEMA_DIR / "NGA.STND.0080-1_1.0_DRAFT_CRSD_DIDD_2024_12_30.xsd",
+        "date": "2025-02-25T00:00:00Z",
+        "schema": SCHEMA_DIR / "CRSD_schema_V1.0_DRAFT_2025_02_25.xsd",
     },
 }
 
@@ -189,7 +188,7 @@ class Reader:
         import sarkit.crsd as skcrsd
         import lxml.etree
         meta = skcrsd.Metadata(
-            xmltree=lxml.etree.parse("data/example-crsd-1.0.0.2024-12-30.xml")
+            xmltree=lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
         )
 
         file = pathlib.Path(tmpdir.name) / "foo"
@@ -205,11 +204,11 @@ class Reader:
 
         >>> import sarkit.crsd as skcrsd
         >>> with file.open("rb") as f, skcrsd.Reader(f) as r:
-        ...     sa_id = r.metadata.xmltree.findtext("{*}Data/{*}Support//{*}Identifier")
+        ...     sa_id = r.metadata.xmltree.findtext("{*}Data/{*}Support//{*}SAId")
         ...     sa = r.read_support_array(sa_id)
-        ...     tx_id = r.metadata.xmltree.findtext("{*}Data/{*}Transmit//{*}Identifier")
+        ...     tx_id = r.metadata.xmltree.findtext("{*}Data/{*}Transmit//{*}TxId")
         ...     txseq = r.read_ppps(tx_id)
-        ...     ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Receive/{*}Channel/{*}Identifier")
+        ...     ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Receive/{*}Channel/{*}ChId")
         ...     sig, pvp = r.read_channel(ch_id)
     """
 
@@ -307,7 +306,7 @@ class Reader:
 
         """
         channel_info = self.metadata.xmltree.find(
-            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
+            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
         num_samp = int(channel_info.find("./{*}NumSamples").text)
@@ -340,7 +339,7 @@ class Reader:
 
         """
         channel_info = self.metadata.xmltree.find(
-            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
+            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_identifier}']"
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
 
@@ -384,7 +383,7 @@ class Reader:
 
         """
         channel_info = self.metadata.xmltree.find(
-            f"{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}Identifier='{sequence_identifier}']"
+            f"{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}TxId='{sequence_identifier}']"
         )
         num_pulse = int(channel_info.find("./{*}NumPulses").text)
 
@@ -402,7 +401,7 @@ class Reader:
         dtype = binary_format_string_to_dtype(elem_format.text).newbyteorder("B")
 
         sa_info = self.metadata.xmltree.find(
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{sa_identifier}']"
+            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{sa_identifier}']"
         )
         num_rows = int(sa_info.find("./{*}NumRows").text)
         num_cols = int(sa_info.find("./{*}NumCols").text)
@@ -461,12 +460,12 @@ class Writer:
 
         >>> import lxml.etree
 
-        >>> xmltree = lxml.etree.parse("data/example-crsd-1.0.0.2024-12-30.xml")
+        >>> xmltree = lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
         >>> first_sequence = xmltree.find("{*}Data/{*}Transmit/{*}TxSequence")
-        >>> tx_id = first_sequence.findtext("{*}Identifier")
+        >>> tx_id = first_sequence.findtext("{*}TxId")
         >>> num_p = int(first_sequence.findtext("{*}NumPulses"))
         >>> first_channel = xmltree.find("{*}Data/{*}Receive/{*}Channel")
-        >>> ch_id = first_channel.findtext("{*}Identifier")
+        >>> ch_id = first_channel.findtext("{*}ChId")
         >>> num_v = int(first_channel.findtext("{*}NumVectors"))
         >>> num_s = int(first_channel.findtext("{*}NumSamples"))
         >>> sig_format = xmltree.findtext("{*}Data/{*}Receive/{*}SignalArrayFormat")
@@ -509,7 +508,7 @@ class Writer:
                 crsd_xmltree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text
             )
             for seq_node in crsd_xmltree.findall("./{*}Data/{*}Transmit/{*}TxSequence"):
-                sequence_identifier = seq_node.find("./{*}Identifier").text
+                sequence_identifier = seq_node.find("./{*}TxId").text
                 sequence_ppp_offset = int(seq_node.find("./{*}PPPArrayByteOffset").text)
                 sequence_ppp_size = (
                     int(seq_node.find("./{*}NumPulses").text) * ppp_itemsize
@@ -528,7 +527,7 @@ class Writer:
                 crsd_xmltree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text
             )
             for chan_node in crsd_xmltree.findall("./{*}Data/{*}Receive/{*}Channel"):
-                channel_identifier = chan_node.find("./{*}Identifier").text
+                channel_identifier = chan_node.find("./{*}ChId").text
                 channel_signal_offset = int(
                     chan_node.find("./{*}SignalArrayByteOffset").text
                 )
@@ -552,7 +551,7 @@ class Writer:
 
         self._sa_size_offsets = {}
         for sa_node in crsd_xmltree.findall("./{*}Data/{*}Support/{*}SupportArray"):
-            sa_identifier = sa_node.find("./{*}Identifier").text
+            sa_identifier = sa_node.find("./{*}SAId").text
             sa_offset = int(sa_node.find("./{*}ArrayByteOffset").text)
             sa_size = (
                 int(sa_node.find("./{*}NumRows").text)
@@ -771,7 +770,7 @@ class Writer:
         channel_names = set(
             node.text
             for node in self._metadata.xmltree.findall(
-                "./{*}Data/{*}Receive/{*}Channel/{*}Identifier"
+                "./{*}Data/{*}Receive/{*}Channel/{*}ChId"
             )
         )
         missing_signal_channels = channel_names - self._signal_arrays_written
@@ -789,7 +788,7 @@ class Writer:
         sequence_names = set(
             node.text
             for node in self._metadata.xmltree.findall(
-                "./{*}Data/{*}Transmit/{*}TxSequence/{*}Identifier"
+                "./{*}Data/{*}Transmit/{*}TxSequence/{*}TxId"
             )
         )
         missing_ppp_sequences = sequence_names - self._ppp_arrays_written
@@ -801,7 +800,7 @@ class Writer:
         sa_names = set(
             node.text
             for node in self._metadata.xmltree.findall(
-                "./{*}Data/{*}SupportArray/{*}Identifier"
+                "./{*}Data/{*}SupportArray/{*}SAId"
             )
         )
         missing_sa = sa_names - self._support_arrays_written

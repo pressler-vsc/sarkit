@@ -9,7 +9,7 @@ DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def test_roundtrip(tmp_path, caplog):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.0.2024-12-30.xml")
+    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0-draft.2025-02-25.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
@@ -55,7 +55,7 @@ def test_roundtrip(tmp_path, caplog):
 
     support_arrays = {}
     for data_sa_elem in basis_etree.findall("./{*}Data/{*}Support/{*}SupportArray"):
-        sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
+        sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}SAId"))
         nrows = xmlhelp.load_elem(data_sa_elem.find("./{*}NumRows"))
         ncols = xmlhelp.load_elem(data_sa_elem.find("./{*}NumCols"))
         format_str = basis_etree.findtext(

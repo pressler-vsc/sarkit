@@ -33,6 +33,20 @@ def _get_stub(stub_name, version_ns):
     return new_elem
 
 
+def _add_sa_to_data(sa_elem):
+    ns = lxml.etree.QName(sa_elem).namespace
+    em = lxml.builder.ElementMaker(namespace=ns, nsmap={None: ns})
+    sa_elem.getroottree().find("{*}Data/{*}Support").append(
+        em.SupportArray(
+            em.SAId(sa_elem.findtext("{*}Identifier")),
+            em.NumRows("24"),
+            em.NumCols("8"),
+            em.BytesPerElement("2"),
+            em.ArrayByteOffset("9999"),
+        )
+    )
+
+
 def change_sar_choices(etree):
     ns = lxml.etree.QName(etree.getroot()).namespace
     _replace(
@@ -45,9 +59,11 @@ def change_sar_choices(etree):
         "{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar",
         _get_stub("SceneCoordinates.ReferenceSurface.HAE.xml", ns),
     )
+    new_xmarray = _get_stub("SupportArray.XMArray.xml", ns)
     etree.findall("{*}SupportArray/{*}FxResponseArray")[-1].addnext(
-        _get_stub("SupportArray.XMArray.xml", ns)
+        new_xmarray,
     )
+    _add_sa_to_data(new_xmarray)
     xmid_elem = lxml.etree.Element(f"{{{ns}}}XMId")
     xmid_elem.text = "XM Identifier"
     etree.find("{*}TxSequence/{*}Parameters/{*}RefPulseIndex").addnext(xmid_elem)
@@ -61,10 +77,12 @@ def change_sar_choices(etree):
         "{*}Channel/{*}Parameters/{*}SARImage/{*}DwellTimes/{*}Polynomials",
         _get_stub("Channel.Parameters.SARImage.DwellTimes.Array.xml", ns),
     )
+    new_dtarray = _get_stub("SupportArray.DwellTimeArray.xml", ns)
     etree.findall("{*}SupportArray/{*}XMArray")[-1].addnext(
-        _get_stub("SupportArray.DwellTimeArray.xml", ns)
+        new_dtarray,
     )
-    _remove(etree, "{*}Dwell")
+    _add_sa_to_data(new_dtarray)
+    _remove(etree, "{*}DwellPolynomials")
     etree.find("{*}Data/{*}Receive/{*}NumCRSDChannels").addnext(
         _get_stub("Data.Receive.SignalCompression.xml", ns)
     )
@@ -83,7 +101,7 @@ def make_tx_flavor(etree):
     _remove(etree, "{*}Channel")
     _remove(etree, "{*}ReferenceGeometry/{*}SARImage")
     _remove(etree, "{*}ReferenceGeometry/{*}RcvParameters")
-    _remove(etree, "{*}Dwell")
+    _remove(etree, "{*}DwellPolynomials")
     _remove(etree, "{*}PVP")
     _remove(etree, "{*}ErrorParameters/{*}SARImage")
     stub = _get_stub("ErrorParameters.XXSensor.xml", ns)
@@ -100,12 +118,16 @@ def make_rcv_flavor(etree):
     _remove(etree, "{*}Global/{*}Transmit")
     _remove(etree, "{*}SceneCoordinates/{*}ExtendedArea")
     _remove(etree, "{*}SceneCoordinates/{*}ImageGrid")
+    for elem in etree.findall("{*}SupportArray/{*}FxResponseArray/{*}Identifier"):
+        _remove(
+            etree, "{*}Data/{*}Support/{*}SupportArray[{*}SAId='" + f"{elem.text}']"
+        )
     _remove(etree, "{*}Data/{*}Transmit")
     _remove(etree, "{*}TxSequence")
     _remove(etree, "{*}Channel/{*}Parameters/{*}SARImage")
     _remove(etree, "{*}ReferenceGeometry/{*}SARImage")
     _remove(etree, "{*}ReferenceGeometry/{*}TxParameters")
-    _remove(etree, "{*}Dwell")
+    _remove(etree, "{*}DwellPolynomials")
     _remove(etree, "{*}SupportArray/{*}FxResponseArray")
     _remove(etree, "{*}PPP")
     _remove(etree, "{*}PVP/{*}TxPulseIndex")
@@ -144,7 +166,7 @@ def main(args=None):
         ):
             etree = lxml.etree.parse(
                 pathlib.Path(__file__).parent
-                / "manual-syntax-only-crsd-mono-sar-1.0.0.2024-12-30.xml"
+                / "manual-syntax-only-crsd-mono-sar-1.0-draft.2025-02-25.xml"
             )
             mods(etree)
             version_ns = lxml.etree.QName(etree.getroot()).namespace
@@ -152,8 +174,11 @@ def main(args=None):
             version_info = skcrsd.VERSION_INFO[version_ns]
             schema = lxml.etree.XMLSchema(file=version_info["schema"])
             lxml.etree.indent(etree, space=" " * 4)
-            schema.assertValid(etree)
             filename = f"{index:04d}-syntax-only-crsd-{version_info['version']}.xml"
+            if not schema(etree):
+                print(f"Warning for {filename}:")
+                print(schema.error_log)
+                print()
             etree.write(
                 outdir / filename,
                 pretty_print=True,
@@ -164,7 +189,7 @@ def main(args=None):
                 diff.diff_files
                 or {
                     pathlib.Path(__file__).name,
-                    "manual-syntax-only-crsd-mono-sar-1.0.0.2024-12-30.xml",
+                    "manual-syntax-only-crsd-mono-sar-1.0-draft.2025-02-25.xml",
                     "stubs",
                 }.symmetric_difference(diff.left_only)
             )

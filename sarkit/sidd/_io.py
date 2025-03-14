@@ -189,7 +189,7 @@ class NitfProductImageMetadata:
     im_subheader_part: NitfImSubheaderPart
     de_subheader_part: NitfDeSubheaderPart
     legends: list[NitfLegendMetadata] = dataclasses.field(default_factory=list)
-    lookup_table: npt.ArrayLike | None = None
+    lookup_table: npt.NDArray | None = None
 
     def __post_init__(self):
         _validate_xml(self.xmltree)
@@ -465,7 +465,9 @@ class NitfReader:
                             NitfProductSupportXmlMetadata(xmltree, de_subheader_part)
                         )
                 elif "SICD" in xmltree.getroot().tag:
-                    de_subheader_part = sksicd.NitfDeSubheaderPart._from_header(des_header)
+                    de_subheader_part = sksicd.NitfDeSubheaderPart._from_header(
+                        des_header
+                    )
                     self.metadata.sicd_xmls.append(
                         NitfSicdXmlMetadata(xmltree, de_subheader_part)
                     )
@@ -610,9 +612,6 @@ class NitfWriter:
         self._ntf["FileHeader"]["ONAME"].value = self._metadata.file_header_part.oname
         self._ntf["FileHeader"]["OPHONE"].value = self._metadata.file_header_part.ophone
 
-        image_segment_collections = {}  # image_num -> [image_segment, ...]
-        image_segment_coordinates = {}  # image_num -> [(first_row, last_row, first_col, last_col), ...]
-        current_start_row = 0
         _, _, seginfos = segmentation_algorithm(
             (img.xmltree for img in self._metadata.images)
         )
@@ -622,17 +621,7 @@ class NitfWriter:
 
         for idx, seginfo in enumerate(seginfos):
             subhdr = self._ntf["ImageSegments"][idx]["SubHeader"]
-            if seginfo.ialvl == 0:
-                # first segment of each SAR image is attached to the CCS
-                current_start_row = 0
             image_num = int(seginfo.iid1[4:7]) - 1
-            image_segment_collections.setdefault(image_num, [])
-            image_segment_coordinates.setdefault(image_num, [])
-            image_segment_collections[image_num].append(idx)
-            image_segment_coordinates[image_num].append(
-                (current_start_row, current_start_row + seginfo.nrows, 0, seginfo.ncols)
-            )
-            current_start_row += seginfo.nrows
 
             imageinfo = self._metadata.images[image_num]
             xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.xmltree)
@@ -669,6 +658,11 @@ class NitfWriter:
                 subhdr[f"IREPBAND{bandnum + 1:05d}"].value = irepband
 
             if "LU" in pixel_type:
+                if imageinfo.lookup_table is None:
+                    raise ValueError(
+                        f"lookup table must be set for PixelType={pixel_type}"
+                    )
+
                 if pixel_type == "RGB8LU":
                     subhdr["NLUTS00001"].value = 3
                     subhdr["NELUT00001"].value = 256
@@ -773,10 +767,7 @@ class NitfWriter:
             subhdr = deseg["SubHeader"]
             sidd_uh = self._ntf["DESegments"][0]["SubHeader"]["DESSHF"]
 
-            xmlns = (
-                lxml.etree.QName(prodinfo.xmltree.getroot()).namespace
-                or ""
-            )
+            xmlns = lxml.etree.QName(prodinfo.xmltree.getroot()).namespace or ""
 
             subhdr["DESID"].value = "XML_DATA_CONTENT"
             subhdr["DESVER"].value = 1

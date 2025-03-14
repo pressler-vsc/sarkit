@@ -497,8 +497,14 @@ def test_NitfProductImageMetadata():  # noqa N802
     )
     assert image_info.im_subheader_part.tgtid == im_subheader_part["tgtid"]
     assert image_info.im_subheader_part.iid2 == im_subheader_part["iid2"]
-    assert image_info.im_subheader_part.security.clas == im_subheader_part["security"]["clas"]
-    assert image_info.de_subheader_part.security.clas == de_subheader_part["security"]["clas"]
+    assert (
+        image_info.im_subheader_part.security.clas
+        == im_subheader_part["security"]["clas"]
+    )
+    assert (
+        image_info.de_subheader_part.security.clas
+        == de_subheader_part["security"]["clas"]
+    )
 
     # Can't have lookup table for MONO8I
     with pytest.raises(

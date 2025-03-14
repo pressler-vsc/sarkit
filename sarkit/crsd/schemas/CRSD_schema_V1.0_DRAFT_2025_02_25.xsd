@@ -2,8 +2,10 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
    elementFormDefault="qualified"
    attributeFormDefault="unqualified"
-   targetNamespace="http://api.nsgreg.nga.mil/schema/crsd/1.0.0_NEXT"
-   xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0.0_NEXT">
+   targetNamespace="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25"
+   xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25"
+   xmlns:ns="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25"
+   version="2025-02-25">
 
 <!-- CRSD TYPES -->
    
@@ -652,7 +654,7 @@
 
    <xs:complexType name="SupportArraySizeType">
       <xs:sequence>
-         <xs:element name="Identifier" type="NonEmptyStringType"/>
+         <xs:element name="SAId" type="NonEmptyStringType"/>
          <xs:element name="NumRows" type="xs:positiveInteger"/>
          <xs:element name="NumCols" type="xs:positiveInteger"/>
          <xs:element name="BytesPerElement" type="xs:positiveInteger"/>
@@ -667,7 +669,7 @@
          <xs:element name="TxSequence" maxOccurs="unbounded">
             <xs:complexType>
                <xs:sequence>
-                  <xs:element name="Identifier" type="NonEmptyStringType"/>
+                  <xs:element name="TxId" type="NonEmptyStringType"/>
                   <xs:element name="NumPulses" type="xs:positiveInteger"/>
                   <xs:element name="PPPArrayByteOffset" type="xs:nonNegativeInteger"/>
                </xs:sequence>
@@ -678,7 +680,7 @@
 
    <xs:complexType name="ChannelSizeType">
       <xs:sequence>
-         <xs:element name="Identifier" type="NonEmptyStringType"/>
+         <xs:element name="ChId" type="NonEmptyStringType"/>
          <xs:element name="NumVectors" type="xs:positiveInteger"/>
          <xs:element name="NumSamples" type="xs:positiveInteger"/>
          <xs:element name="SignalArrayByteOffset" type="xs:nonNegativeInteger"/>
@@ -771,7 +773,7 @@
 
    <xs:complexType name="TransmitSequenceParametersType">
       <xs:sequence>
-         <xs:element name="RefTxID" type="NonEmptyStringType"/>
+         <xs:element name="RefTxId" type="NonEmptyStringType"/>
          <xs:element name="TxWFType" type="TxWaveformEnum"/>
          <xs:element name="Parameters" maxOccurs="unbounded">
             <xs:complexType>
@@ -1041,16 +1043,16 @@
       </xs:sequence>
    </xs:group>
 
-   <xs:simpleType name="AntGainPhaseFormatEnum">
+   <xs:simpleType name="GainPhaseArrayFormatEnum">
       <xs:restriction base="ElementFormatType">
          <xs:enumeration value="Gain=F4;Phase=F4;"/>
       </xs:restriction>
    </xs:simpleType>
 
-   <xs:complexType name="AntGainPhaseType">
+   <xs:complexType name="GainPhaseArrayType">
       <xs:sequence>
          <xs:element name="Identifier" type="NonEmptyStringType"/>
-         <xs:element name="ElementFormat" type="AntGainPhaseFormatEnum"/>
+         <xs:element name="ElementFormat" type="GainPhaseArrayFormatEnum"/>
          <xs:group ref="SupportArrayCore"/>
       </xs:sequence>
    </xs:complexType>
@@ -1129,7 +1131,7 @@
 
    <xs:complexType name="SupportArraySARType">
       <xs:sequence>
-         <xs:element name="AntGainPhase" type="AntGainPhaseType" maxOccurs="unbounded"/>
+         <xs:element name="GainPhaseArray" type="GainPhaseArrayType" maxOccurs="unbounded"/>
          <xs:element name="FxResponseArray" type="FxResponseArrayType" maxOccurs="unbounded"/>
          <xs:element name="XMArray" type="XMArrayType" minOccurs="0" maxOccurs="unbounded"/>  <!-- required for WF Types w/ XM-->
          <xs:element name="DwellTimeArray" type="DwellTimeArrayType" minOccurs="0" maxOccurs="unbounded"/>
@@ -1140,7 +1142,7 @@
 
    <xs:complexType name="SupportArrayTxType">
       <xs:sequence>
-         <xs:element name="AntGainPhase" type="AntGainPhaseType" maxOccurs="unbounded"/>
+         <xs:element name="GainPhaseArray" type="GainPhaseArrayType" maxOccurs="unbounded"/>
          <xs:element name="FxResponseArray" type="FxResponseArrayType" maxOccurs="unbounded"/>
          <xs:element name="XMArray" type="XMArrayType" minOccurs="0" maxOccurs="unbounded"/>  <!-- required for WF Types w/ XM -->
          <xs:element name="IAZArray" type="IAZArrayType" minOccurs="0" maxOccurs="unbounded"/>
@@ -1150,7 +1152,7 @@
 
    <xs:complexType name="SupportArrayRcvType">
       <xs:sequence>
-         <xs:element name="AntGainPhase" type="AntGainPhaseType" maxOccurs="unbounded"/>
+         <xs:element name="GainPhaseArray" type="GainPhaseArrayType" maxOccurs="unbounded"/>
          <xs:element name="IAZArray" type="IAZArrayType" minOccurs="0" maxOccurs="unbounded"/>
          <xs:element name="AddedSupportArray" type="AddedSupportArrayType" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
@@ -1329,7 +1331,7 @@
          <xs:element name="Identifier" type="NonEmptyStringType"/>
          <xs:element name="FreqZero" type="PositiveDoubleType"/>
          <xs:element name="ArrayGPId" type="NonEmptyStringType"/>
-         <xs:element name="ElementGPId" type="NonEmptyStringType"/>
+         <xs:element name="ElemGPId" type="NonEmptyStringType"/>
          <xs:element name="EBFreqShift" type="DCXYScaleType"/>
          <xs:element name="MLFreqDilation" type="DCXYScaleType"/>
          <xs:element name="GainBSPoly" type="Poly1DType"/>
@@ -1350,7 +1352,7 @@
       <xs:sequence>
          <xs:element name="NumACFs" type="xs:positiveInteger"/>
          <xs:element name="NumAPCs" type="xs:positiveInteger"/>
-         <xs:element name="NumAntPats" type="xs:positiveInteger"/>
+         <xs:element name="NumAPATs" type="xs:positiveInteger"/>
          <xs:element name="AntCoordFrame" type="AntCoordFrameType" maxOccurs="unbounded"/>
          <xs:element name="AntPhaseCenter" type="AntPhaseCenterType" maxOccurs="unbounded"/>
          <xs:element name="AntPattern" type="AntPatternType" maxOccurs="unbounded"/>
@@ -1544,6 +1546,111 @@
             <xs:element name="GeoInfo" type="GeoInfoType" minOccurs="0" maxOccurs="unbounded"/>
          </xs:sequence>
       </xs:complexType>
+
+      <!-- Unique Identifier References -->
+      <!-- ACF_ID -->
+      <xs:key name="ACF_ID-rcv">
+         <xs:selector xpath="ns:Antenna/ns:AntCoordFrame"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="AntPhaseCenterACFIdReference-rcv" refer="ACF_ID-rcv">
+         <xs:selector xpath="ns:Antenna/ns:AntPhaseCenter"></xs:selector>
+         <xs:field xpath="ns:ACFId"></xs:field>
+      </xs:keyref>
+
+      <!-- APAT_ID -->
+      <xs:key name="APAT_ID-rcv">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="ChannelRcvAPATIdReference-rcv" refer="APAT_ID-rcv">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:RcvAPATId"></xs:field>
+      </xs:keyref>
+
+      <!-- APC_ID -->
+      <xs:key name="APC_ID-rcv">
+         <xs:selector xpath="ns:Antenna/ns:AntPhaseCenter"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="ChannelRcvAPCIdReference-rcv" refer="APC_ID-rcv">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:RcvAPCId"></xs:field>
+      </xs:keyref>
+
+      <!-- Ch_ID -->
+      <xs:key name="Ch_ID-rcv">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="DataReceiveChannelIdentifierReference-rcv" refer="Ch_ID-rcv">
+         <xs:selector xpath="ns:Data/ns:Receive/ns:Channel"></xs:selector>
+         <xs:field xpath="ns:ChId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="ChannelRefChIdReference-rcv" refer="Ch_ID-rcv">
+         <xs:selector xpath="ns:Channel"></xs:selector>
+         <xs:field xpath="ns:RefChId"></xs:field>
+      </xs:keyref>
+
+      <!-- Ch_ID reverse 1:1-->
+      <xs:key name="ReverseCh_ID-rcv">
+         <xs:selector xpath="ns:Data/ns:Receive/ns:Channel"></xs:selector>
+         <xs:field xpath="ns:ChId"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="ChannelParametersIdentififerCrossReference-rcv" refer="ReverseCh_ID-rcv">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:keyref>
+
+      <!-- GP_ID -->
+      <xs:key name="GP_ID-rcv">
+         <xs:selector xpath="ns:SupportArray/ns:GainPhaseArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="AntPatternArrayGPIdReference-rcv" refer="GP_ID-rcv">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:ArrayGPId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="AntPatternElemGPIdReference-rcv" refer="GP_ID-rcv">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:ElemGPId"></xs:field>
+      </xs:keyref>
+
+      <!-- SA_ID -->
+      <xs:key name="SA_ID-rcv">
+         <xs:selector xpath="ns:SupportArray/*"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="DataSupportArrayIdentifierReference-rcv" refer="SA_ID-rcv">
+         <xs:selector xpath="ns:Data/ns:Support/ns:SupportArray"></xs:selector>
+         <xs:field xpath="ns:SAId"></xs:field>
+      </xs:keyref>
+
+      <!-- SA_ID reverse 1:1 -->
+      <xs:key name="ReverseSA_ID-rcv">
+         <xs:selector xpath="ns:Data/ns:Support/ns:SupportArray"></xs:selector>
+         <xs:field xpath="ns:SAId"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="SupportArrayIdentifierCrossReference-rcv" refer="ReverseSA_ID-rcv">
+         <xs:selector xpath="ns:SupportArray/*"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:keyref>
+
+      <!-- Added PVP Names -->
+      <xs:unique name="AddedPVPName-rcv">
+         <xs:selector xpath="ns:PVP/ns:AddedPVP"></xs:selector>
+         <xs:field xpath="ns:Name"></xs:field>
+      </xs:unique>
    </xs:element>
 
    <xs:element name="CRSDtx">
@@ -1563,6 +1670,133 @@
             <xs:element name="GeoInfo" type="GeoInfoType" minOccurs="0" maxOccurs="unbounded"/>
          </xs:sequence>
       </xs:complexType>
+
+      <!-- Unique Identifier References -->
+      <!-- ACF_ID -->
+      <xs:key name="ACF_ID-tx">
+         <xs:selector xpath="ns:Antenna/ns:AntCoordFrame"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="AntPhaseCenterACFIdReference-tx" refer="ACF_ID-tx">
+         <xs:selector xpath="ns:Antenna/ns:AntPhaseCenter"></xs:selector>
+         <xs:field xpath="ns:ACFId"></xs:field>
+      </xs:keyref>
+
+      <!-- APAT_ID -->
+      <xs:key name="APAT_ID-tx">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceTxAPATIdReference-tx" refer="APAT_ID-tx">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:TxAPATId"></xs:field>
+      </xs:keyref>
+
+      <!-- APC_ID -->
+      <xs:key name="APC_ID-tx">
+         <xs:selector xpath="ns:Antenna/ns:AntPhaseCenter"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceTxAPCIdReference-tx" refer="APC_ID-tx">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:TxAPCId"></xs:field>
+      </xs:keyref>
+
+      <!-- FxResp_ID -->
+      <xs:key name="FxResp_ID-tx">
+         <xs:selector xpath="ns:SupportArray/ns:FxResponseArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceFxResponseIdReference-tx" refer="FxResp_ID-tx">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:FxResponseId"></xs:field>
+      </xs:keyref>
+
+      <!-- GP_ID -->
+      <xs:key name="GP_ID-tx">
+         <xs:selector xpath="ns:SupportArray/ns:GainPhaseArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="AntPatternArrayGPIdReference-tx" refer="GP_ID-tx">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:ArrayGPId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="AntPatternElemGPIdReference-tx" refer="GP_ID-tx">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:ElemGPId"></xs:field>
+      </xs:keyref>
+
+      <!-- SA_ID -->
+      <xs:key name="SA_ID-tx">
+         <xs:selector xpath="ns:SupportArray/*"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="DataSupportArrayIdentifierReference-tx" refer="SA_ID-tx">
+         <xs:selector xpath="ns:Data/ns:Support/ns:SupportArray"></xs:selector>
+         <xs:field xpath="ns:SAId"></xs:field>
+      </xs:keyref>
+
+      <!-- SA_ID reverse 1:1 -->
+      <xs:key name="ReverseSA_ID-tx">
+         <xs:selector xpath="ns:Data/ns:Support/ns:SupportArray"></xs:selector>
+         <xs:field xpath="ns:SAId"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="SupportArrayIdentifierCrossReference-tx" refer="ReverseSA_ID-tx">
+         <xs:selector xpath="ns:SupportArray/*"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:keyref>
+
+      <!-- Tx_ID -->
+      <xs:key name="Tx_ID-tx">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TransmitTxSequenceIdReference-tx" refer="Tx_ID-tx">
+         <xs:selector xpath="ns:Data/ns:Transmit/ns:TxSequence"></xs:selector>
+         <xs:field xpath="ns:TxId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="TxSequenceRefTxIdReference-tx" refer="Tx_ID-tx">
+         <xs:selector xpath="ns:TxSequence"></xs:selector>
+         <xs:field xpath="ns:RefTxId"></xs:field>
+      </xs:keyref>
+
+      <!-- Tx_ID reverse 1:1 -->
+      <xs:key name="ReverseTx_ID-tx">
+         <xs:selector xpath="ns:Data/ns:Transmit/ns:TxSequence"></xs:selector>
+         <xs:field xpath="ns:TxId"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="DataTxIdCrossReference-tx" refer="ReverseTx_ID-tx">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:keyref>
+
+      <!-- XM_ID -->
+      <xs:key name="XM_ID-tx">
+         <xs:selector xpath="ns:SupportArray/ns:XMArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceXMIdReference-tx" refer="XM_ID-tx">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:XMId"></xs:field>
+      </xs:keyref>
+
+      <!-- Added PPP Names -->
+      <xs:unique name="AddedPPPName-tx">
+         <xs:selector xpath="ns:PPP/ns:AddedPPP"></xs:selector>
+         <xs:field xpath="ns:Name"></xs:field>
+      </xs:unique>
    </xs:element>
 
    <xs:element name="CRSDsar">
@@ -1578,7 +1812,7 @@
             <xs:element name="TxSequence" type="TransmitSequenceParametersType"/>
             <xs:element name="Channel" type="ReceiveChannelParametersSARType"/>
             <xs:element name="ReferenceGeometry" type="ReferenceGeometryParametersSARType"/>
-            <xs:element name="Dwell" type="DwellTimeParametersType" minOccurs="0"/>
+            <xs:element name="DwellPolynomials" type="DwellTimeParametersType" minOccurs="0"/>
             <xs:element name="SupportArray" type="SupportArraySARType"/>
             <xs:element name="PPP" type="PerPulseParametersType"/>
             <xs:element name="PVP" type="PVPSARType"/>
@@ -1587,5 +1821,218 @@
             <xs:element name="GeoInfo" type="GeoInfoType" minOccurs="0" maxOccurs="unbounded"/>
          </xs:sequence>
       </xs:complexType>
+
+      <!-- Unique Identifier References -->
+      <!-- ACF_ID -->
+      <xs:key name="ACF_ID-sar">
+         <xs:selector xpath="ns:Antenna/ns:AntCoordFrame"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="AntPhaseCenterACFIdReference-sar" refer="ACF_ID-sar">
+         <xs:selector xpath="ns:Antenna/ns:AntPhaseCenter"></xs:selector>
+         <xs:field xpath="ns:ACFId"></xs:field>
+      </xs:keyref>
+
+      <!-- APAT_ID -->
+      <xs:key name="APAT_ID-sar">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceTxAPATIdReference-sar" refer="APAT_ID-sar">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:TxAPATId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="ChannelRcvAPATIdReference-sar" refer="APAT_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:RcvAPATId"></xs:field>
+      </xs:keyref>
+
+      <!-- APC_ID -->
+      <xs:key name="APC_ID-sar">
+         <xs:selector xpath="ns:Antenna/ns:AntPhaseCenter"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceTxAPCIdReference-sar" refer="APC_ID-sar">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:TxAPCId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="ChannelRcvAPCIdReference-sar" refer="APC_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:RcvAPCId"></xs:field>
+      </xs:keyref>
+
+      <!-- Ch_ID -->
+      <xs:key name="Ch_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="DataReceiveChannelIdentifierReference-sar" refer="Ch_ID-sar">
+         <xs:selector xpath="ns:Data/ns:Receive/ns:Channel"></xs:selector>
+         <xs:field xpath="ns:ChId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="ChannelRefChIdReference-sar" refer="Ch_ID-sar">
+         <xs:selector xpath="ns:Channel"></xs:selector>
+         <xs:field xpath="ns:RefChId"></xs:field>
+      </xs:keyref>
+
+      <!-- Ch_ID reverse 1:1-->
+      <xs:key name="ReverseCh_ID-sar">
+         <xs:selector xpath="ns:Data/ns:Receive/ns:Channel"></xs:selector>
+         <xs:field xpath="ns:ChId"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="ChannelParametersIdentififerCrossReference-sar" refer="ReverseCh_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:keyref>
+
+      <!-- COD_ID -->
+      <xs:key name="COD_ID-sar">
+         <xs:selector xpath="ns:DwellPolynomials/ns:CODTime"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="SARImageCODIdReference-sar" refer="COD_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters/ns:SARImage/ns:DwellTimes/ns:Polynomials"></xs:selector>
+         <xs:field xpath="ns:CODId"></xs:field>
+      </xs:keyref>
+
+      <!-- DT_ID -->
+      <xs:key name="DT_ID-sar">
+         <xs:selector xpath="ns:DwellPolynomials/ns:DwellTime"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="SARImageDwellIdReference" refer="DT_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters/ns:SARImage/ns:DwellTimes/ns:Polynomials"></xs:selector>
+         <xs:field xpath="ns:DwellId"></xs:field>
+      </xs:keyref>
+
+      <!-- DTA_ID -->
+      <xs:key name="DTA_ID-sar">
+         <xs:selector xpath="ns:SupportArray/ns:DwellTimeArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="SARImageDTAIdReference" refer="DTA_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters/ns:SARImage/ns:DwellTimes/ns:Array"></xs:selector>
+         <xs:field xpath="ns:DTAId"></xs:field>
+      </xs:keyref>
+
+      <!-- FxResp_ID -->
+      <xs:key name="FxResp_ID-sar">
+         <xs:selector xpath="ns:SupportArray/ns:FxResponseArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceFxResponseIdReference-sar" refer="FxResp_ID-sar">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:FxResponseId"></xs:field>
+      </xs:keyref>
+
+      <!-- GP_ID -->
+      <xs:key name="GP_ID-sar">
+         <xs:selector xpath="ns:SupportArray/ns:GainPhaseArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="AntPatternArrayGPIdReference-sar" refer="GP_ID-sar">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:ArrayGPId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="AntPatternElemGPIdReference-sar" refer="GP_ID-sar">
+         <xs:selector xpath="ns:Antenna/ns:AntPattern"></xs:selector>
+         <xs:field xpath="ns:ElemGPId"></xs:field>
+      </xs:keyref>
+
+      <!-- SA_ID -->
+      <xs:key name="SA_ID-sar">
+         <xs:selector xpath="ns:SupportArray/*"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="DataSupportArrayIdentifierReference-sar" refer="SA_ID-sar">
+         <xs:selector xpath="ns:Data/ns:Support/ns:SupportArray"></xs:selector>
+         <xs:field xpath="ns:SAId"></xs:field>
+      </xs:keyref>
+
+      <!-- SA_ID reverse 1:1 -->
+      <xs:key name="ReverseSA_ID-sar">
+         <xs:selector xpath="ns:Data/ns:Support/ns:SupportArray"></xs:selector>
+         <xs:field xpath="ns:SAId"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="SupportArrayIdentifierCrossReference-sar" refer="ReverseSA_ID-sar">
+         <xs:selector xpath="ns:SupportArray/*"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:keyref>
+
+      <!-- Seg_ID -->
+      <xs:key name="Seg_ID-sar">
+         <xs:selector xpath="ns:SceneCoordinates/ns:ImageGrid/ns:SegmentList/ns:Segment"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <!-- Tx_ID -->
+      <xs:key name="Tx_ID-sar">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TransmitTxSequenceIdReference-sar" refer="Tx_ID-sar">
+         <xs:selector xpath="ns:Data/ns:Transmit/ns:TxSequence"></xs:selector>
+         <xs:field xpath="ns:TxId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="TxSequenceRefTxIdReference-sar" refer="Tx_ID-sar">
+         <xs:selector xpath="ns:TxSequence"></xs:selector>
+         <xs:field xpath="ns:RefTxId"></xs:field>
+      </xs:keyref>
+
+      <xs:keyref name="SARImageTxIdReference-sar" refer="Tx_ID-sar">
+         <xs:selector xpath="ns:Channel/ns:Parameters/ns:SARImage"></xs:selector>
+         <xs:field xpath="ns:TxId"></xs:field>
+      </xs:keyref>
+
+      <!-- Tx_ID reverse 1:1 -->
+      <xs:key name="ReverseTx_ID-sar">
+         <xs:selector xpath="ns:Data/ns:Transmit/ns:TxSequence"></xs:selector>
+         <xs:field xpath="ns:TxId"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="DataTxIdCrossReference-sar" refer="ReverseTx_ID-sar">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:keyref>
+
+      <!-- XM_ID -->
+      <xs:key name="XM_ID-sar">
+         <xs:selector xpath="ns:SupportArray/ns:XMArray"></xs:selector>
+         <xs:field xpath="ns:Identifier"></xs:field>
+      </xs:key>
+
+      <xs:keyref name="TxSequenceXMIdReference-sar" refer="XM_ID-sar">
+         <xs:selector xpath="ns:TxSequence/ns:Parameters"></xs:selector>
+         <xs:field xpath="ns:XMId"></xs:field>
+      </xs:keyref>
+
+      <!-- Added PVP and PPP Names -->
+      <xs:unique name="AddedPVPName-sar">
+         <xs:selector xpath="ns:PVP/ns:AddedPVP"></xs:selector>
+         <xs:field xpath="ns:Name"></xs:field>
+      </xs:unique>
+
+      <xs:unique name="AddedPPPName-sar">
+         <xs:selector xpath="ns:PPP/ns:AddedPPP"></xs:selector>
+         <xs:field xpath="ns:Name"></xs:field>
+      </xs:unique>
    </xs:element>
 </xs:schema>

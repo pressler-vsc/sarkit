@@ -20,15 +20,13 @@ Data Structure & File Format
 .. autosummary::
    :toctree: generated/
 
-   SicdNitfHeaderFields
-   SicdNitfSecurityFields
-   SicdNitfImageSegmentFields
-   SicdNitfDESegmentFields
-   SicdNitfReader
-   SicdNitfPlan
-   SicdNitfWriter
-   image_segment_sizing_calculations
-   SizingImhdr
+   NitfSecurityFields
+   NitfFileHeaderPart
+   NitfImSubheaderPart
+   NitfDeSubheaderPart
+   NitfReader
+   NitfMetadata
+   NitfWriter
 
 XML Metadata
 ============
@@ -172,13 +170,13 @@ SICD 1.4.0
 from ._io import (
     PIXEL_TYPES,
     VERSION_INFO,
-    SicdNitfDESegmentFields,
-    SicdNitfHeaderFields,
-    SicdNitfImageSegmentFields,
-    SicdNitfPlan,
-    SicdNitfReader,
-    SicdNitfSecurityFields,
-    SicdNitfWriter,
+    NitfDeSubheaderPart,
+    NitfFileHeaderPart,
+    NitfImSubheaderPart,
+    NitfMetadata,
+    NitfReader,
+    NitfSecurityFields,
+    NitfWriter,
     SizingImhdr,
     image_segment_sizing_calculations,
 )
@@ -223,17 +221,17 @@ __all__ = [
     "LatLonHaeType",
     "LatLonType",
     "MtxType",
+    "NitfDeSubheaderPart",
+    "NitfFileHeaderPart",
+    "NitfImSubheaderPart",
+    "NitfMetadata",
+    "NitfReader",
+    "NitfSecurityFields",
+    "NitfWriter",
     "ParameterType",
     "Poly2dType",
     "PolyType",
     "RowColType",
-    "SicdNitfDESegmentFields",
-    "SicdNitfHeaderFields",
-    "SicdNitfImageSegmentFields",
-    "SicdNitfPlan",
-    "SicdNitfReader",
-    "SicdNitfSecurityFields",
-    "SicdNitfWriter",
     "SizingImhdr",
     "TxtType",
     "XdtType",

@@ -3,6 +3,7 @@ Functions to read and write SIDD files.
 """
 
 import collections
+import copy
 import dataclasses
 import datetime
 import importlib
@@ -104,18 +105,18 @@ ILOC_MAX: Final[int] = 99_999
 
 
 # SICD implementation happens to match, reuse it
-class SiddNitfSecurityFields(sksicd.SicdNitfSecurityFields):
-    __doc__ = sksicd.SicdNitfSecurityFields.__doc__
+class NitfSecurityFields(sksicd.NitfSecurityFields):
+    __doc__ = sksicd.NitfSecurityFields.__doc__
 
 
 # SICD implementation happens to match, reuse it
-class SiddNitfHeaderFields(sksicd.SicdNitfHeaderFields):
-    __doc__ = sksicd.SicdNitfHeaderFields.__doc__
+class NitfFileHeaderPart(sksicd.NitfFileHeaderPart):
+    __doc__ = sksicd.NitfFileHeaderPart.__doc__
 
 
 @dataclasses.dataclass(kw_only=True)
-class SiddNitfImageSegmentFields:
-    """NITF image header fields which are set according to a Program Specific Implementation Document
+class NitfImSubheaderPart:
+    """NITF image subheader fields which are set according to a Program Specific Implementation Document
 
     Attributes
     ----------
@@ -123,7 +124,7 @@ class SiddNitfImageSegmentFields:
         Target Identifier
     iid2 : str
         Image Identifier 2
-    security : :py:class:`SiddNitfSecurityFields`
+    security : NitfSecurityFields
         Security Tags with "IS" prefix
     icom : list of str
         Image Comments
@@ -132,7 +133,7 @@ class SiddNitfImageSegmentFields:
     ## IS fields are applied to all segments
     tgtid: str = ""
     iid2: str = ""
-    security: SiddNitfSecurityFields
+    security: NitfSecurityFields
     icom: list[str] = dataclasses.field(default_factory=list)
 
     @classmethod
@@ -141,56 +142,59 @@ class SiddNitfImageSegmentFields:
         return cls(
             tgtid=image_header["TGTID"].value,
             iid2=image_header["IID2"].value,
-            security=SiddNitfSecurityFields._from_nitf_fields("IS", image_header),
+            security=NitfSecurityFields._from_nitf_fields("IS", image_header),
             icom=[val.value for val in image_header.find_all("ICOM\\d+")],
         )
 
     def __post_init__(self):
         if isinstance(self.security, dict):
-            self.security = SiddNitfSecurityFields(**self.security)
+            self.security = NitfSecurityFields(**self.security)
 
 
 # SICD implementation happens to match, reuse it
-class SiddNitfDESegmentFields(sksicd.SicdNitfDESegmentFields):
-    __doc__ = sksicd.SicdNitfDESegmentFields.__doc__
+class NitfDeSubheaderPart(sksicd.NitfDeSubheaderPart):
+    __doc__ = sksicd.NitfDeSubheaderPart.__doc__
 
 
 @dataclasses.dataclass
-class SiddNitfPlanProductImageInfo:
-    """Metadata necessary for describing the plan to add a product image to a SIDD
+class NitfLegendMetadata:
+    """SIDD NITF legend metadata"""
+
+    def __post_init__(self):
+        raise NotImplementedError()
+
+
+@dataclasses.dataclass(kw_only=True)
+class NitfProductImageMetadata:
+    """SIDD NITF product image metadata
 
     Attributes
     ----------
-    sidd_xmltree : lxml.etree.ElementTree
+    xmltree : lxml.etree.ElementTree
         SIDD product metadata XML ElementTree
-    is_fields : :py:class:`SiddNitfImageSegmentFields`
+    im_subheader_part : NitfImSubheaderPart
         NITF Image Segment Header fields which can be set
-    des_fields : :py:class:`SiddNitfDESegmentFields`
+    de_subheader_part : :NitfDeSubheaderPart
         NITF DE Segment Header fields which can be set
+    legends : list of NitfLegendMetadata
+        Metadata for legend(s) attached to this image
     lookup_table : ndarray or None
         Mapping from raw to display pixel values. Required for "LU" pixel types.
         Table must be 256 elements.
         For MONO8LU, table must have dtype of np.uint8 or np.uint16.
         For RGB8LU, table must have dtype of ``PIXEL_TYPES["RGB24I"]["dtype"]``.
-
-    See Also
-    --------
-    SiddNitfPlan
-    SiddNitfPlanLegendInfo
-    SiddNitfPlanDedInfo
-    SiddNitfPlanProductSupportXmlInfo
-    SiddNitfPlanSicdXmlInfo
     """
 
-    sidd_xmltree: lxml.etree.ElementTree
-    is_fields: SiddNitfImageSegmentFields
-    des_fields: SiddNitfDESegmentFields
-    lookup_table: npt.ArrayLike | None
+    xmltree: lxml.etree.ElementTree
+    im_subheader_part: NitfImSubheaderPart
+    de_subheader_part: NitfDeSubheaderPart
+    legends: list[NitfLegendMetadata] = dataclasses.field(default_factory=list)
+    lookup_table: npt.ArrayLike | None = None
 
     def __post_init__(self):
-        _validate_xml(self.sidd_xmltree)
+        _validate_xml(self.xmltree)
 
-        xml_helper = sksidd.XmlHelper(self.sidd_xmltree)
+        xml_helper = sksidd.XmlHelper(self.xmltree)
         pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
 
         if self.lookup_table is not None:
@@ -214,265 +218,96 @@ class SiddNitfPlanProductImageInfo:
                 f"lookup_table type mismatch.  {pixel_type=}  {lut_dtype=}"
             )
 
-        if isinstance(self.is_fields, dict):
-            self.is_fields = SiddNitfImageSegmentFields(**self.is_fields)
-            self.des_fields = SiddNitfDESegmentFields(**self.des_fields)
+        if isinstance(self.im_subheader_part, dict):
+            self.im_subheader_part = NitfImSubheaderPart(**self.im_subheader_part)
+            self.de_subheader_part = NitfDeSubheaderPart(**self.de_subheader_part)
 
 
 @dataclasses.dataclass
-class SiddNitfPlanLegendInfo:
-    """Metadata necessary for describing the plan to add a legend to a SIDD
-
-    See Also
-    --------
-    SiddNitfPlan
-    SiddNitfPlanProductImageInfo
-    SiddNitfPlanDedInfo
-    SiddNitfPlanProductSupportXmlInfo
-    SiddNitfPlanSicdXmlInfo
-    """
+class NitfDedMetadata:
+    """SIDD NITF DED metadata"""
 
     def __post_init__(self):
         raise NotImplementedError()
 
 
 @dataclasses.dataclass
-class SiddNitfPlanDedInfo:
-    """Metadata necessary for describing the plan to add Digital Elevation Data (DED) to a SIDD
-
-    See Also
-    --------
-    SiddNitfPlan
-    SiddNitfPlanProductImageInfo
-    SiddNitfPlanLegendInfo
-    SiddNitfPlanProductSupportXmlInfo
-    SiddNitfPlanSicdXmlInfo
-    """
-
-    def __post_init__(self):
-        raise NotImplementedError()
-
-
-@dataclasses.dataclass
-class SiddNitfPlanProductSupportXmlInfo:
-    """Metadata necessary for describing the plan to add a Product Support XML to a SIDD
-
-    See Also
-    --------
-    SiddNitfPlan
-    SiddNitfPlanProductImageInfo
-    SiddNitfPlanLegendInfo
-    SiddNitfPlanDedInfo
-    SiddNitfPlanSicdXmlInfo
-    """
-
-    product_support_xmltree: lxml.etree.ElementTree
-    des_fields: SiddNitfDESegmentFields
-
-    def __post_init__(self):
-        if isinstance(self.des_fields, dict):
-            self.des_fields = SiddNitfDESegmentFields(**self.des_fields)
-
-
-@dataclasses.dataclass
-class SiddNitfPlanSicdXmlInfo:
-    """Metadata necessary for describing the plan to add SICD XML to a SIDD
-
-    See Also
-    --------
-    SiddNitfPlan
-    SiddNitfPlanProductImageInfo
-    SiddNitfPlanLegendInfo
-    SiddNitfPlanDedInfo
-    SiddNitfPlanProductSupportXmlInfo
-    """
-
-    sicd_xmltree: lxml.etree.ElementTree
-    des_fields: sksicd.SicdNitfDESegmentFields
-
-    def __post_init__(self):
-        if isinstance(self.des_fields, dict):
-            self.des_fields = sksicd.SicdNitfDESegmentFields(**self.des_fields)
-
-
-class SiddNitfPlan:
-    """Class describing the plan for creating a SIDD NITF Container
-
-    Parameters
-    ----------
-    header_fields : :py:class:`SiddNitfHeaderFields`
-        NITF Header fields
+class NitfProductSupportXmlMetadata:
+    """SIDD NITF product support XML metadata
 
     Attributes
     ----------
-    header_fields : :py:class:`SiddNitfHeaderFields`
-        NITF File Header fields which can be set
-    images : list of :py:class:`SiddNitfPlanProductImageInfo`
-        List of image information
-    legends : list of :py:class:`SiddNitfPlanLegendInfo`
-        List of legend information
-    ded : :py:class:`SiddNitfPlanDedInfo`
-        DED information
-    product_support_xmls : list of :py:class:`SiddNitfPlanProductSupportXmlInfo`
-        List of SICD XML information
-    sicd_xmls : list of :py:class:`SiddNitfPlanSicdXmlInfo`
-        List of SICD XML information
-
-    See Also
-    --------
-    SiddNitfReader
-    SiddNitfWriter
-    SiddNitfSecurityFields
-    SiddNitfHeaderFields
-    SiddNitfImageSegmentFields
-    SiddNitfDESegmentFields
-    SiddNitfPlanProductImageInfo
-    SiddNitfPlanLegendInfo
+    xmltree : lxml.etree.ElementTree
+        SIDD product support XML
+    de_subheader_part : NitfDeSubheaderPart
+        NITF DES subheader fields which can be set
     """
 
-    def __init__(self, header_fields: SiddNitfHeaderFields | dict):
-        self.header_fields = header_fields
-        if isinstance(self.header_fields, dict):
-            self.header_fields = SiddNitfHeaderFields(**self.header_fields)
-        self._images: list[SiddNitfPlanProductImageInfo] = []
-        self._legends: list[SiddNitfPlanLegendInfo] = []
-        self._ded: SiddNitfPlanDedInfo | None = None
-        self._product_support_xmls: list[SiddNitfPlanProductSupportXmlInfo] = []
-        self._sicd_xmls: list[SiddNitfPlanSicdXmlInfo] = []
+    xmltree: lxml.etree.ElementTree
+    de_subheader_part: NitfDeSubheaderPart
 
-    @property
-    def images(self) -> list[SiddNitfPlanProductImageInfo]:
-        return self._images
+    def __post_init__(self):
+        if isinstance(self.de_subheader_part, dict):
+            self.de_subheader_part = NitfDeSubheaderPart(**self.de_subheader_part)
 
-    @property
-    def legends(self) -> list[SiddNitfPlanLegendInfo]:
-        return self._legends
 
-    @property
-    def ded(self) -> SiddNitfPlanDedInfo | None:
-        return self._ded
+@dataclasses.dataclass
+class NitfSicdXmlMetadata:
+    """SIDD NITF SICD XML metadata
 
-    @property
-    def product_support_xmls(self) -> list[SiddNitfPlanProductSupportXmlInfo]:
-        return self._product_support_xmls
+    Attributes
+    ----------
+    xmltree : lxml.etree.ElementTree
+        SICD XML
+    de_subheader_part : NitfDeSubheaderPart
+        NITF DES subheader fields which can be set
+    """
 
-    @property
-    def sicd_xmls(self) -> list[SiddNitfPlanSicdXmlInfo]:
-        return self._sicd_xmls
+    xmltree: lxml.etree.ElementTree
+    de_subheader_part: sksicd.NitfDeSubheaderPart
 
-    def add_image(
-        self,
-        sidd_xmltree: lxml.etree.ElementTree,
-        is_fields: SiddNitfImageSegmentFields,
-        des_fields: SiddNitfDESegmentFields,
-        lookup_table: npt.ArrayLike | None = None,
-    ) -> int:
-        """Add a SAR product to the plan
-
-        Parameters
-        ----------
-        sidd_xmltree : lxml.etree.ElementTree
-            SIDD XML ElementTree
-        is_fields : :py:class:`SiddNitfImageSegmentFields`
-            NITF Image Segment Header fields which can be set
-        des_fields : :py:class:`SiddNitfDESegmentFields`
-            NITF DE Segment Header fields which can be set
-        lookup_table : ndarray, optional
-            Mapping from raw to display pixel values. Required for "LU" pixel types.
-            Must be 256 elements.
-
-        Returns
-        -------
-        int
-            The image number of the newly added SAR image
-        """
-        self._images.append(
-            SiddNitfPlanProductImageInfo(
-                sidd_xmltree,
-                is_fields=is_fields,
-                des_fields=des_fields,
-                lookup_table=lookup_table,
+    def __post_init__(self):
+        if isinstance(self.de_subheader_part, dict):
+            self.de_subheader_part = sksicd.NitfDeSubheaderPart(
+                **self.de_subheader_part
             )
-        )
-        return len(self._images) - 1
-
-    def add_product_support_xml(
-        self, ps_xmltree: lxml.etree.ElementTree, des_fields: SiddNitfDESegmentFields
-    ) -> int:
-        """Add a Product Support XML to the plan
-
-        Parameters
-        ----------
-        ps_xmltree : lxml.etree.ElementTree
-            Product Support XML ElementTree
-        des_fields : :py:class:`SiddNitfDESegmentFields`
-            NITF DE Segment Header fields which can be set
-
-        Returns
-        -------
-        int
-            The index of the newly added Product Support XML
-        """
-        self.product_support_xmls.append(
-            SiddNitfPlanProductSupportXmlInfo(ps_xmltree, des_fields)
-        )
-        return len(self.product_support_xmls) - 1
-
-    def add_sicd_xml(
-        self,
-        sicd_xmltree: lxml.etree.ElementTree,
-        des_fields: sksicd.SicdNitfDESegmentFields,
-    ) -> int:
-        """Add a SICD XML to the plan
-
-        Parameters
-        ----------
-        sicd_xmltree : lxml.etree.ElementTree
-            SICD XML ElementTree
-        des_fields : :py:class:`sicdio.SicdNitfDESegmentFields`
-            NITF DE Segment Header fields which can be set
-
-        Returns
-        -------
-        int
-            The index of the newly added SICD XML
-        """
-        self.sicd_xmls.append(SiddNitfPlanSicdXmlInfo(sicd_xmltree, des_fields))
-        return len(self.sicd_xmls) - 1
-
-    def add_legend(
-        self, attached_to: int, location: tuple[int, int], shape: tuple[int, int]
-    ) -> int:
-        """Add a Legend to the plan
-
-        Parameters
-        ----------
-        attached_to : int
-            SAR image number to attach legend to
-        location : tuple of int
-            (row, column) of the SAR image to place first legend pixel
-        shape : tuple of int
-            Dimension of the legend (Number of Rows, Number of Columns)
-
-        """
-        raise NotImplementedError()
-
-    def add_ded(self, shape: tuple[int, int]) -> int:
-        """Add a DED to the plan
-
-        Parameters
-        ----------
-        shape : tuple of int
-            Dimension of the DED (Number of Rows, Number of Columns)
-
-        """
-        raise NotImplementedError()
 
 
-class SiddNitfReader:
+@dataclasses.dataclass(kw_only=True)
+class NitfMetadata:
+    """Settable SIDD NITF metadata
+
+    Attributes
+    ----------
+    file_header_part : NitfFileHeaderPart
+        NITF file header fields which can be set
+    images : list of NitfProductImageMetadata
+        Settable metadata for the product image(s)
+    ded : NitfDedMetadata or None
+        Settable metadata for the Digital Elevation Data
+    product_support_xmls : list of NitfProductSupportXmlMetadata
+        Settable metadata for the product support XML(s)
+    sicd_xmls : list of NitfSicdXmlMetadata
+        Settable metadata for the SICD XML(s)
+    """
+
+    file_header_part: NitfFileHeaderPart
+    images: list[NitfProductImageMetadata] = dataclasses.field(default_factory=list)
+    ded: NitfDedMetadata | None = None
+    product_support_xmls: list[NitfProductSupportXmlMetadata] = dataclasses.field(
+        default_factory=list
+    )
+    sicd_xmls: list[NitfSicdXmlMetadata] = dataclasses.field(default_factory=list)
+
+    def __post_init__(self):
+        if isinstance(self.file_header_part, dict):
+            self.file_header_part = NitfFileHeaderPart(**self.file_header_part)
+
+
+class NitfReader:
     """Read a SIDD NITF
 
-    A SiddNitfReader object should be used as a context manager in a ``with`` statement.
+    A NitfReader object should be used as a context manager in a ``with`` statement.
     Attributes, but not methods, can be safely accessed outside of the context manager's context.
 
     Parameters
@@ -480,25 +315,56 @@ class SiddNitfReader:
     file : `file object`
         SIDD NITF file to read
 
-    Examples
-    --------
-    >>> with sidd_path.open('rb') as file, SiddNitfReader(file) as reader:
-    ...     sidd_xmltree = reader.images[0].sidd_xmltree
-    ...     pixels = reader.read_image(0)
-
     Attributes
     ----------
-    images : list of :py:class:`SiddNitfPlanProductImageInfo`
-    header_fields : :py:class:`SiddNitfHeaderFields`
-    product_support_xmls : list of :py:class:`SiddNitfPlanProductSupportXmlInfo`
-    sicd_xmls : list of :py:class:`SiddNitfPlanSicdXmlInfo`
-    plan : :py:class:`SiddNitfPlan`
-        A SiddNitfPlan object suitable for use in a SiddNitfWriter
+    metadata : NitfMetadata
+        SIDD NITF metadata
 
     See Also
     --------
-    SiddNitfPlan
-    SiddNitfWriter
+    NitfWriter
+
+    Examples
+    --------
+
+    .. testsetup:: sidd_io
+
+        import lxml.etree
+        import numpy as np
+
+        import sarkit.sidd as sksidd
+
+        sidd_xml = lxml.etree.parse("data/example-sidd-3.0.0.xml")
+        sec = {"security": {"clas": "U"}}
+        meta = sksidd.NitfMetadata(
+            file_header_part={"ostaid": "sksidd stn", "ftitle": "sarkit example", **sec},
+            images=[
+                sksidd.NitfProductImageMetadata(
+                    xmltree=sidd_xml,
+                    im_subheader_part=sec,
+                    de_subheader_part=sec,
+                )
+            ],
+        )
+        img_to_write = np.zeros(
+            sksidd.XmlHelper(sidd_xml).load("{*}Measurement/{*}PixelFootprint"),
+            dtype=sksidd.PIXEL_TYPES[sidd_xml.findtext("{*}Display/{*}PixelType")]["dtype"],
+        )
+        file = pathlib.Path(tmpdir.name) / "foo"
+        with file.open("wb") as f, sksidd.NitfWriter(f, meta) as w:
+            w.write_image(0, img_to_write)
+
+    .. doctest:: sidd_io
+
+        >>> import sarkit.sidd as sksidd
+        >>> with file.open("rb") as f, sksidd.NitfReader(f) as r:
+        ...     img = r.read_image(0)
+
+        >>> print(r.metadata.images[0].xmltree.getroot().tag)
+        {urn:SIDD:3.0.0}SIDD
+
+        >>> print(r.metadata.file_header_part.ftitle)
+        sarkit example
     """
 
     def __init__(self, file):
@@ -528,8 +394,8 @@ class SiddNitfReader:
             image_segment_collections.setdefault(image_num, [])
             image_segment_collections[image_num].append(idx)
 
-        self.header_fields = SiddNitfHeaderFields._from_header(self._ntf["FileHeader"])
-        self.plan = SiddNitfPlan(header_fields=self.header_fields)
+        file_header_part = NitfFileHeaderPart._from_header(self._ntf["FileHeader"])
+        self.metadata = NitfMetadata(file_header_part=file_header_part)
 
         image_number = 0
         for idx, deseg in enumerate(self._ntf["DESegments"]):
@@ -545,12 +411,12 @@ class SiddNitfReader:
                     continue
 
                 if "SIDD" in xmltree.getroot().tag:
-                    nitf_de_fields = SiddNitfDESegmentFields._from_header(des_header)
-                    if len(self.plan.images) < len(image_segment_collections):
+                    de_subheader_part = NitfDeSubheaderPart._from_header(des_header)
+                    if len(self.metadata.images) < len(image_segment_collections):
                         # user settable fields should be the same for all image segments
                         im_idx = im_segments[image_number][0]
                         im_subhdr = self._ntf["ImageSegments"][im_idx]["SubHeader"]
-                        im_fields = SiddNitfImageSegmentFields._from_header(im_subhdr)
+                        im_subhdeader_part = NitfImSubheaderPart._from_header(im_subhdr)
                         pixel_type = xmltree.findtext("./{*}Display/{*}PixelType")
                         lookup_table = None
                         if "LU" in pixel_type:
@@ -584,35 +450,35 @@ class SiddNitfReader:
                                 raise ValueError(
                                     f"Unsupported NLUTS={im_subhdr['NLUTS00001'].value}"
                                 )
-
-                        self.plan.add_image(
-                            sidd_xmltree=xmltree,
-                            is_fields=im_fields,
-                            des_fields=nitf_de_fields,
-                            lookup_table=lookup_table,
+                        self.metadata.images.append(
+                            NitfProductImageMetadata(
+                                xmltree=xmltree,
+                                im_subheader_part=im_subhdeader_part,
+                                de_subheader_part=de_subheader_part,
+                                lookup_table=lookup_table,
+                            )
                         )
                         image_number += 1
                     else:
                         # No matching product image, treat it as a product support XML
-                        self.plan.add_product_support_xml(xmltree, nitf_de_fields)
+                        self.metadata.product_support_xmls.append(
+                            NitfProductSupportXmlMetadata(xmltree, de_subheader_part)
+                        )
                 elif "SICD" in xmltree.getroot().tag:
-                    nitf_de_fields = sksicd.SicdNitfDESegmentFields._from_header(
-                        des_header
+                    de_subheader_part = sksicd.NitfDeSubheaderPart._from_header(des_header)
+                    self.metadata.sicd_xmls.append(
+                        NitfSicdXmlMetadata(xmltree, de_subheader_part)
                     )
-                    self.plan.add_sicd_xml(xmltree, nitf_de_fields)
                 else:
-                    nitf_de_fields = SiddNitfDESegmentFields._from_header(des_header)
-                    self.plan.add_product_support_xml(xmltree, nitf_de_fields)
+                    de_subheader_part = NitfDeSubheaderPart._from_header(des_header)
+                    self.metadata.product_support_xmls.append(
+                        NitfProductSupportXmlMetadata(xmltree, de_subheader_part)
+                    )
 
         # TODO Legends
         # TODO DED
-        assert not self.plan.legends
-        assert not self.plan.ded
-
-    @property
-    def images(self) -> list[SiddNitfPlanProductImageInfo]:
-        """List of images contained in the SIDD"""
-        return self.plan.images
+        assert not any(x.legends for x in self.metadata.images)
+        assert not self.metadata.ded
 
     def read_image(self, image_number: int) -> npt.NDArray:
         """Read the entire pixel array
@@ -628,7 +494,7 @@ class SiddNitfReader:
             SIDD image array
         """
         self._file_object.seek(0)
-        xml_helper = sksidd.XmlHelper(self.images[image_number].sidd_xmltree)
+        xml_helper = sksidd.XmlHelper(self.metadata.images[image_number].xmltree)
         shape = xml_helper.load("{*}Measurement/{*}PixelFootprint")
         dtype = PIXEL_TYPES[xml_helper.load("{*}Display/{*}PixelType")][
             "dtype"
@@ -659,16 +525,6 @@ class SiddNitfReader:
 
         return image_pixels
 
-    @property
-    def product_support_xmls(self) -> list[SiddNitfPlanProductSupportXmlInfo]:
-        """List of Product Support XML instances contained in the SIDD"""
-        return self.plan.product_support_xmls
-
-    @property
-    def sicd_xmls(self) -> list[SiddNitfPlanSicdXmlInfo]:
-        """List of SICD XML contained in the SIDD"""
-        return self.plan.sicd_xmls
-
     def __enter__(self):
         return self
 
@@ -676,58 +532,89 @@ class SiddNitfReader:
         return
 
 
-class SiddNitfWriter:
+class NitfWriter:
     """Write a SIDD NITF
 
-    A SiddNitfWriter object should be used as a context manager in a ``with`` statement.
+    A NitfWriter object should be used as a context manager in a ``with`` statement.
 
     Parameters
     ----------
     file : `file object`
         SIDD NITF file to write
-    nitf_plan : :py:class:`SiddNitfPlan`
-        NITF plan object
-
-    Notes
-    -----
-    nitf_plan should not be modified after creation of a writer
-
-    Examples
-    --------
-    >>> plan = SiddNitfPlan(header_fields=SiddNitfHeaderFields(ostaid='my location',
-    ...                                                        security=SiddNitfSecurityFields(clas='U')))
-    >>> image_index = plan.add_image(is_fields=SiddNitfImageSegmentFields(security=SiddNitfSecurityFields(clas='U')),
-    ...                              des_fields=SiddNitfDESegmentFields(security=SiddNitfSecurityFields(clas='U')))
-    >>> with output_path.open('wb') as file, SiddNitfWriter(file, plan) as writer:
-    ...     writer.write_image(image_index, pixel_array)
+    metadata : NitfMetadata
+        SIDD NITF metadata to write (copied on construction)
 
     See Also
     --------
-    SiddNitfPlan
-    SiddNitfReader
+    NitfReader
+
+    Examples
+    --------
+    Write a SIDD NITF with a single product image
+
+    .. doctest::
+
+        >>> import sarkit.sidd as sksidd
+
+    Build the product image description and pixels
+
+    .. doctest::
+
+        >>> import lxml.etree
+        >>> sidd_xml = lxml.etree.parse("data/example-sidd-3.0.0.xml")
+
+        >>> sec = sksidd.NitfSecurityFields(clas="U")
+        >>> img_meta = sksidd.NitfProductImageMetadata(
+        ...     xmltree=sidd_xml,
+        ...     im_subheader_part=sksidd.NitfImSubheaderPart(security=sec),
+        ...     de_subheader_part=sksidd.NitfDeSubheaderPart(security=sec),
+        ... )
+
+        >>> import numpy as np
+        >>> img_to_write = np.zeros(
+        ...     sksidd.XmlHelper(sidd_xml).load("{*}Measurement/{*}PixelFootprint"),
+        ...     dtype=sksidd.PIXEL_TYPES[sidd_xml.findtext("{*}Display/{*}PixelType")]["dtype"],
+        ... )
+
+    Place the product image in a NITF metadata object
+
+    .. doctest::
+
+        >>> meta = sksidd.NitfMetadata(
+        ...     file_header_part=sksidd.NitfFileHeaderPart(ostaid="my station", security=sec),
+        ...     images=[img_meta],
+        ... )
+
+    Write the SIDD NITF to a file
+
+    .. doctest::
+
+        >>> from tempfile import NamedTemporaryFile
+        >>> outfile = NamedTemporaryFile()
+        >>> with sksidd.NitfWriter(outfile, meta) as w:
+        ...     w.write_image(0, img_to_write)
     """
 
-    def __init__(self, file, nitf_plan):
-        self._file_object = file
-        self._nitf_plan = nitf_plan
-
-        self._images_written = set()
+    def __init__(self, file, metadata: NitfMetadata):
+        self._file = file
+        self._metadata = copy.deepcopy(metadata)
+        self._images_written: set[int] = set()
         now_dt = datetime.datetime.now(datetime.timezone.utc)
 
         self._ntf = sarkit._nitf_io.Nitf()
-        self._ntf["FileHeader"]["OSTAID"].value = self._nitf_plan.header_fields.ostaid
-        self._ntf["FileHeader"]["FTITLE"].value = self._nitf_plan.header_fields.ftitle
-        self._nitf_plan.header_fields.security._set_nitf_fields(
+        self._ntf["FileHeader"]["OSTAID"].value = self._metadata.file_header_part.ostaid
+        self._ntf["FileHeader"]["FTITLE"].value = self._metadata.file_header_part.ftitle
+        self._metadata.file_header_part.security._set_nitf_fields(
             "FS", self._ntf["FileHeader"]
         )
-        self._ntf["FileHeader"]["ONAME"].value = self._nitf_plan.header_fields.oname
-        self._ntf["FileHeader"]["OPHONE"].value = self._nitf_plan.header_fields.ophone
+        self._ntf["FileHeader"]["ONAME"].value = self._metadata.file_header_part.oname
+        self._ntf["FileHeader"]["OPHONE"].value = self._metadata.file_header_part.ophone
 
         image_segment_collections = {}  # image_num -> [image_segment, ...]
         image_segment_coordinates = {}  # image_num -> [(first_row, last_row, first_col, last_col), ...]
         current_start_row = 0
         _, _, seginfos = segmentation_algorithm(
-            (img.sidd_xmltree for img in self._nitf_plan.images)
+            (img.xmltree for img in self._metadata.images)
         )
         self._ntf["FileHeader"]["NUMI"].value = len(
             seginfos
@@ -747,8 +634,8 @@ class SiddNitfWriter:
             )
             current_start_row += seginfo.nrows
 
-            imageinfo = self._nitf_plan.images[image_num]
-            xml_helper = sksidd.XmlHelper(imageinfo.sidd_xmltree)
+            imageinfo = self._metadata.images[image_num]
+            xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.xmltree)
             pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
             pixel_info = PIXEL_TYPES[pixel_type]
 
@@ -758,9 +645,9 @@ class SiddNitfWriter:
             subhdr["IDATIM"].value = xml_helper.load(
                 "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}CollectionDateTime"
             ).strftime("%Y%m%d%H%M%S")
-            subhdr["TGTID"].value = imageinfo.is_fields.tgtid
-            subhdr["IID2"].value = imageinfo.is_fields.iid2
-            imageinfo.is_fields.security._set_nitf_fields("IS", subhdr)
+            subhdr["TGTID"].value = imageinfo.im_subheader_part.tgtid
+            subhdr["IID2"].value = imageinfo.im_subheader_part.iid2
+            imageinfo.im_subheader_part.security._set_nitf_fields("IS", subhdr)
             subhdr["ISORCE"].value = xml_helper.load(
                 "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}SensorName"
             )
@@ -774,8 +661,8 @@ class SiddNitfWriter:
             subhdr["ICORDS"].value = "G"
             subhdr["IGEOLO"].value = seginfo.igeolo
             subhdr["IC"].value = "NC"
-            subhdr["NICOM"].value = len(imageinfo.is_fields.icom)
-            for icomidx, icom in enumerate(imageinfo.is_fields.icom):
+            subhdr["NICOM"].value = len(imageinfo.im_subheader_part.icom)
+            for icomidx, icom in enumerate(imageinfo.im_subheader_part.icom):
                 subhdr[f"ICOM{icomidx + 1}"].value = icom
             subhdr["NBANDS"].value = len(pixel_info["IREPBANDn"])
             for bandnum, irepband in enumerate(pixel_info["IREPBANDn"]):
@@ -832,34 +719,34 @@ class SiddNitfWriter:
                 // 8
             )
 
-        # TODO image segments for legends
-        assert not self._nitf_plan.legends
-        # TODO image segments for DED
-        assert not self._nitf_plan.ded
+        # TODO add image_managers for legends
+        assert not any(x.legends for x in self._metadata.images)
+        # TODO add image_managers for DED
+        assert not self._metadata.ded
 
         # DE Segments
         self._ntf["FileHeader"]["NUMDES"].value = (
-            len(self._nitf_plan.images)
-            + len(self._nitf_plan.product_support_xmls)
-            + len(self._nitf_plan.sicd_xmls)
+            len(self._metadata.images)
+            + len(self._metadata.product_support_xmls)
+            + len(self._metadata.sicd_xmls)
         )
 
         desidx = 0
         to_write = []
-        for imageinfo in self._nitf_plan.images:
-            xmlns = lxml.etree.QName(imageinfo.sidd_xmltree.getroot()).namespace
-            xml_helper = sksidd.XmlHelper(imageinfo.sidd_xmltree)
+        for imageinfo in self._metadata.images:
+            xmlns = lxml.etree.QName(imageinfo.xmltree.getroot()).namespace
+            xml_helper = sksidd.XmlHelper(imageinfo.xmltree)
 
             deseg = self._ntf["DESegments"][desidx]
             subhdr = deseg["SubHeader"]
             subhdr["DESID"].value = "XML_DATA_CONTENT"
             subhdr["DESVER"].value = 1
-            imageinfo.des_fields.security._set_nitf_fields("DES", subhdr)
+            imageinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
             subhdr["DESSHL"].value = 773
             subhdr["DESSHF"]["DESCRC"].value = 99999
             subhdr["DESSHF"]["DESSHFT"].value = "XML"
             subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            subhdr["DESSHF"]["DESSHRP"].value = imageinfo.des_fields.desshrp
+            subhdr["DESSHF"]["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
             subhdr["DESSHF"]["DESSHSI"].value = SPECIFICATION_IDENTIFIER
             subhdr["DESSHF"]["DESSHSV"].value = VERSION_INFO[xmlns]["version"]
             subhdr["DESSHF"]["DESSHSD"].value = VERSION_INFO[xmlns]["date"]
@@ -870,58 +757,58 @@ class SiddNitfWriter:
             for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
                 desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
             subhdr["DESSHF"]["DESSHLPG"].value = desshlpg
-            subhdr["DESSHF"]["DESSHLI"].value = imageinfo.des_fields.desshli
-            subhdr["DESSHF"]["DESSHLIN"].value = imageinfo.des_fields.desshlin
-            subhdr["DESSHF"]["DESSHABS"].value = imageinfo.des_fields.desshabs
+            subhdr["DESSHF"]["DESSHLI"].value = imageinfo.de_subheader_part.desshli
+            subhdr["DESSHF"]["DESSHLIN"].value = imageinfo.de_subheader_part.desshlin
+            subhdr["DESSHF"]["DESSHABS"].value = imageinfo.de_subheader_part.desshabs
 
-            xml_bytes = lxml.etree.tostring(imageinfo.sidd_xmltree)
+            xml_bytes = lxml.etree.tostring(imageinfo.xmltree)
             deseg["DESDATA"].size = len(xml_bytes)
             to_write.append((deseg["DESDATA"].get_offset(), xml_bytes))
 
             desidx += 1
 
         # Product Support XML DES
-        for prodinfo in self._nitf_plan.product_support_xmls:
+        for prodinfo in self._metadata.product_support_xmls:
             deseg = self._ntf["DESegments"][desidx]
             subhdr = deseg["SubHeader"]
             sidd_uh = self._ntf["DESegments"][0]["SubHeader"]["DESSHF"]
 
             xmlns = (
-                lxml.etree.QName(prodinfo.product_support_xmltree.getroot()).namespace
+                lxml.etree.QName(prodinfo.xmltree.getroot()).namespace
                 or ""
             )
 
             subhdr["DESID"].value = "XML_DATA_CONTENT"
             subhdr["DESVER"].value = 1
-            prodinfo.des_fields.security._set_nitf_fields("DES", subhdr)
+            prodinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
             subhdr["DESSHL"].value = 773
             subhdr["DESSHF"]["DESCRC"].value = 99999
             subhdr["DESSHF"]["DESSHFT"].value = "XML"
             subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            subhdr["DESSHF"]["DESSHRP"].value = prodinfo.des_fields.desshrp
+            subhdr["DESSHF"]["DESSHRP"].value = prodinfo.de_subheader_part.desshrp
             subhdr["DESSHF"]["DESSHSI"].value = sidd_uh["DESSHSI"].value
             subhdr["DESSHF"]["DESSHSV"].value = "v" + sidd_uh["DESSHSV"].value
             subhdr["DESSHF"]["DESSHSD"].value = sidd_uh["DESSHSD"].value
             subhdr["DESSHF"]["DESSHTN"].value = xmlns
             subhdr["DESSHF"]["DESSHLPG"].value = ""
-            subhdr["DESSHF"]["DESSHLI"].value = prodinfo.des_fields.desshli
-            subhdr["DESSHF"]["DESSHLIN"].value = prodinfo.des_fields.desshlin
-            subhdr["DESSHF"]["DESSHABS"].value = prodinfo.des_fields.desshabs
+            subhdr["DESSHF"]["DESSHLI"].value = prodinfo.de_subheader_part.desshli
+            subhdr["DESSHF"]["DESSHLIN"].value = prodinfo.de_subheader_part.desshlin
+            subhdr["DESSHF"]["DESSHABS"].value = prodinfo.de_subheader_part.desshabs
 
-            xml_bytes = lxml.etree.tostring(prodinfo.product_support_xmltree)
+            xml_bytes = lxml.etree.tostring(prodinfo.xmltree)
             deseg["DESDATA"].size = len(xml_bytes)
             to_write.append((deseg["DESDATA"].get_offset(), xml_bytes))
 
             desidx += 1
 
         # SICD XML DES
-        for sicd_xml_info in self._nitf_plan.sicd_xmls:
+        for sicd_xml_info in self._metadata.sicd_xmls:
             deseg = self._ntf["DESegments"][desidx]
-            sksicd.SicdNitfWriter._set_de_segment(
-                deseg, sicd_xml_info.sicd_xmltree, sicd_xml_info.des_fields
+            sksicd.NitfWriter._set_de_segment(
+                deseg, sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
             )
 
-            xml_bytes = lxml.etree.tostring(sicd_xml_info.sicd_xmltree)
+            xml_bytes = lxml.etree.tostring(sicd_xml_info.xmltree)
             deseg["DESDATA"].size = len(xml_bytes)
             to_write.append((deseg["DESDATA"].get_offset(), xml_bytes))
 
@@ -952,7 +839,7 @@ class SiddNitfWriter:
             If not given, `array` must be the full SIDD image.
         """
 
-        xml_helper = sksidd.XmlHelper(self._nitf_plan.images[image_number].sidd_xmltree)
+        xml_helper = sksidd.XmlHelper(self._metadata.images[image_number].xmltree)
         pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
         if PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
             raise ValueError(
@@ -1010,14 +897,14 @@ class SiddNitfWriter:
             input_array = array
 
         for imseg, first_row in zip(imsegs, first_rows):
-            self._file_object.seek(imseg["Data"].get_offset(), os.SEEK_SET)
+            self._file.seek(imseg["Data"].get_offset(), os.SEEK_SET)
 
             # Could break this into blocks to reduce memory usage from byte swapping
             raw_array = input_array[
                 first_row : first_row + imseg["SubHeader"]["NROWS"].value
             ]
             raw_array = raw_array.astype(raw_dtype.newbyteorder(">"), copy=False)
-            raw_array.tofile(self._file_object)
+            raw_array.tofile(self._file)
 
         self._images_written.add(image_number)
 
@@ -1047,7 +934,7 @@ class SiddNitfWriter:
         return self
 
     def __exit__(self, *args, **kwargs):
-        images_expected = set(range(len(self._nitf_plan.images)))
+        images_expected = set(range(len(self._metadata.images)))
         images_missing = images_expected - self._images_written
         if images_missing:
             logger.warning(
@@ -1077,7 +964,7 @@ def segmentation_algorithm(
 
     Parameters
     ----------
-    sicd_xmltrees : iterable of lxml.etree.ElementTree
+    sidd_xmltrees : iterable of lxml.etree.ElementTree
         SIDD XML Metadata instances
 
     Returns
@@ -1086,7 +973,7 @@ def segmentation_algorithm(
         Number of NITF image segments
     fhdr_li: list of int
         Length of each NITF image segment
-    seginfos: list of :py:class:`SegmentationImhdr`
+    imhdr: list of SegmentationImhdr
         Image Segment subheader information
     """
     z = 0

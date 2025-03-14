@@ -53,6 +53,16 @@ add_module_names = False
 
 # doctest
 doctest_test_doctest_blocks = ""  # don't test unmarked blocks
+doctest_global_setup = """
+import pathlib
+import tempfile
+tmpdir = tempfile.TemporaryDirectory()
+tmppath = pathlib.Path(tmpdir.name)
+"""
+doctest_global_cleanup = """
+tmpdir.cleanup()
+"""
+doctest_show_successes = False
 
 # intersphinx
 intersphinx_mapping = {
@@ -66,4 +76,5 @@ numpydoc_xref_param_type = True
 numpydoc_xref_ignore = {"optional", "of"}
 numpydoc_validation_checks = {
     "PR10",  # requires a space before the colon separating the parameter name and type
+    "GL07",  # Sections are in the wrong order
 }

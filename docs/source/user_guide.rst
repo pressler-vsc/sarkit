@@ -27,37 +27,38 @@ Some features require additional dependencies which can be installed using packa
 
 Reading and writing files
 =========================
-SARkit provides reader/writer classes that are intended to be used as context managers and plan classes that are used to
-describe file contents and metadata prior to writing.
+SARkit provides reader/writer classes that are intended to be used as context managers and metadata classes that are
+used to describe settable metadata.
 
 .. list-table::
 
    * - Format
      - Reader
-     - Plan
+     - Metadata
      - Writer
    * - ⛔ CRSD [Draft] ⛔
-     - :py:class:`~sarkit.crsd.CrsdReader`
-     - :py:class:`~sarkit.crsd.CrsdPlan`
-     - :py:class:`~sarkit.crsd.CrsdWriter`
+     - :py:class:`~sarkit.crsd.Reader`
+     - :py:class:`~sarkit.crsd.Metadata`
+     - :py:class:`~sarkit.crsd.Writer`
    * - CPHD
-     - :py:class:`~sarkit.cphd.CphdReader`
-     - :py:class:`~sarkit.cphd.CphdPlan`
-     - :py:class:`~sarkit.cphd.CphdWriter`
+     - :py:class:`~sarkit.cphd.Reader`
+     - :py:class:`~sarkit.cphd.Metadata`
+     - :py:class:`~sarkit.cphd.Writer`
    * - SICD
-     - :py:class:`~sarkit.sicd.SicdNitfReader`
-     - :py:class:`~sarkit.sicd.SicdNitfPlan`
-     - :py:class:`~sarkit.sicd.SicdNitfWriter`
+     - :py:class:`~sarkit.sicd.NitfReader`
+     - :py:class:`~sarkit.sicd.NitfMetadata`
+     - :py:class:`~sarkit.sicd.NitfWriter`
    * - SIDD
-     - :py:class:`~sarkit.sidd.SiddNitfReader`
-     - :py:class:`~sarkit.sidd.SiddNitfPlan`
-     - :py:class:`~sarkit.sidd.SiddNitfWriter`
+     - :py:class:`~sarkit.sidd.NitfReader`
+     - :py:class:`~sarkit.sidd.NitfMetadata`
+     - :py:class:`~sarkit.sidd.NitfWriter`
 
 
 Reading
 -------
 
-Readers are instantiated with a `file object` and file contents are accessed via format-specific attributes and methods.
+Readers are instantiated with a `file object` and file contents are accessed via the ``metadata`` attribute and
+format-specific methods.
 In general, only the container information is accessed upon instantiation; further file access is deferred until
 data access methods are called.
 This pattern makes it faster to read components out of large files and is especially valuable for metadata access which
@@ -65,104 +66,92 @@ is often a small fraction of the size of a SAR data file.
 
 .. testsetup::
 
-   import pathlib
-   import tempfile
-
    import lxml.etree
    import numpy as np
 
    import sarkit.sicd as sksicd
 
-   tmpdir = tempfile.TemporaryDirectory()
-   tmppath = pathlib.Path(tmpdir.name)
    example_sicd = tmppath / "example.sicd"
    sec = {"security": {"clas": "U"}}
    parser = lxml.etree.XMLParser(remove_blank_text=True)
    example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml", parser)
-   sicd_plan = sksicd.SicdNitfPlan(
-       sicd_xmltree=example_sicd_xmltree,
-       header_fields={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
-       is_fields={"isorce": "this sensor"} | sec,
-       des_fields=sec,
+   sicd_meta = sksicd.NitfMetadata(
+       xmltree=example_sicd_xmltree,
+       file_header_part={"ostaid": "nowhere", "ftitle": "SARkit example SICD FTITLE"} | sec,
+       im_subheader_part={"isorce": "this sensor"} | sec,
+       de_subheader_part=sec,
    )
-   with open(example_sicd, "wb") as f, sksicd.SicdNitfWriter(f, sicd_plan):
+   with open(example_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
        pass  # don't currently care about the pixels
-
-
-.. testcleanup::
-
-   tmpdir.cleanup()
 
 .. doctest::
 
-   >>> with example_sicd.open("rb") as f, sksicd.SicdNitfReader(f) as reader:
+   >>> with example_sicd.open("rb") as f, sksicd.NitfReader(f) as reader:
    ...     pixels = reader.read_image()
    ...     pixels.shape
    (5727, 2362)
 
-   # Reader attributes, but not methods, can be safely accessed outside of the
+   # Metadata, but not methods, can be safely accessed outside of the
    # context manager's context
 
    # Access specific NITF fields that are called out in the SAR standards
-   >>> reader.header_fields.ftitle
+   >>> reader.metadata.file_header_part.ftitle
    'SARkit example SICD FTITLE'
 
    # XML metadata is returned as lxml.etree.ElementTree objects
-   >>> (reader.sicd_xmltree.findtext(".//{*}FullImage/{*}NumRows"),
-   ...  reader.sicd_xmltree.findtext(".//{*}FullImage/{*}NumCols"))
+   >>> (reader.metadata.xmltree.findtext(".//{*}FullImage/{*}NumRows"),
+   ...  reader.metadata.xmltree.findtext(".//{*}FullImage/{*}NumCols"))
    ('5727', '2362')
 
 
-Plans
------
+Metadata
+--------
 
-``Plan`` objects contain everything except the data.
+``Metadata`` objects contain all of the standard-specific settable metadata.
 This includes XML instance(s) and container metadata (PDD-settable NITF fields, CPHD header fields, etc.).
-SARkit relies on plans because for many of the SAR standards it is more efficient to know up front what a file will
-contain before writing.
 
-Plans can be built from their components:
+Metadata objects can be built from their components:
 
 .. doctest::
 
-   >>> plan_a = sksicd.SicdNitfPlan(
-   ...     sicd_xmltree=example_sicd_xmltree,
-   ...     header_fields={"ostaid": "my location", "security": {"clas": "U"}},
-   ...     is_fields={"isorce": "my sensor", "security": {"clas": "U"}},
-   ...     des_fields={"security": {"clas": "U"}},
+   >>> new_metadata = sksicd.NitfMetadata(
+   ...     xmltree=example_sicd_xmltree,
+   ...     file_header_part={"ostaid": "my location", "security": {"clas": "U"}},
+   ...     im_subheader_part={"isorce": "my sensor", "security": {"clas": "U"}},
+   ...     de_subheader_part={"security": {"clas": "U"}},
    ... )
 
-Plans are also available from readers:
+Metadata objects are also available from readers:
 
 .. doctest::
 
-   >>> plan_b = reader.nitf_plan
+   >>> read_metadata = reader.metadata
 
 
 Writing
 -------
 
-Writers are instantiated with a `file object` and a ``Plan`` object.
+Writers are instantiated with a `file object` and a ``Metadata`` object.
+SARkit relies on upfront metadata because for many of the SAR standards it is more efficient to know what a file will
+contain before writing.
 Similar to reading, instantiating a writer sets up the file while data is written using format-specific methods.
-
-.. warning:: Plans should not be modified after creation of a writer.
 
 .. doctest::
 
    >>> written_sicd = tmppath / "written.sicd"
-   >>> with written_sicd.open("wb") as f, sksicd.SicdNitfWriter(f, plan_b) as writer:
+   >>> with written_sicd.open("wb") as f, sksicd.NitfWriter(f, read_metadata) as writer:
    ...     writer.write_image(pixels)
 
    >>> with written_sicd.open("rb") as f:
    ...     f.read(9).decode()
    'NITF02.10'
 
-SARkit sanity checks some aspects on write but it is up to the user to ensure consistency of the plan and data:
+SARkit sanity checks some aspects on write but it is up to the user to ensure consistency of the metadata and data:
 
 .. doctest::
 
    >>> bad_sicd = tmppath / "bad.sicd"
-   >>> with bad_sicd.open("wb") as f, sksicd.SicdNitfWriter(f, plan_b) as writer:
+   >>> with bad_sicd.open("wb") as f, sksicd.NitfWriter(f, read_metadata) as writer:
    ...     writer.write_image(pixels.view(np.uint8))
    Traceback (most recent call last):
    ValueError: Array dtype (uint8) does not match expected dtype (complex64) for PixelType=RE32F_IM32F
@@ -180,7 +169,7 @@ For simple operations, `xml.etree.ElementTree` and/or `lxml` are often sufficien
 
 .. doctest::
 
-   >>> reader.sicd_xmltree.findtext(".//{*}ModeType")
+   >>> example_sicd_xmltree.findtext(".//{*}ModeType")
    'SPOTLIGHT'
 
 For complicated metadata, SARkit provides XML helper classes that can be used to transcode between XML and more
@@ -207,7 +196,7 @@ XmlHelpers are instantiated with an `lxml.etree.ElementTree` which can then be m
 .. doctest::
 
    >>> import sarkit.sicd as sksicd
-   >>> xmlhelp = sksicd.XmlHelper(reader.sicd_xmltree)
+   >>> xmlhelp = sksicd.XmlHelper(example_sicd_xmltree)
    >>> xmlhelp.load(".//{*}ModeType")
    'SPOTLIGHT'
 
@@ -216,7 +205,7 @@ can be used when you already have an element object:
 
 .. doctest::
 
-   >>> tcoa_poly_elem = reader.sicd_xmltree.find(".//{*}TimeCOAPoly")
+   >>> tcoa_poly_elem = example_sicd_xmltree.find(".//{*}TimeCOAPoly")
    >>> xmlhelp.load_elem(tcoa_poly_elem)
    array([[1.2206226]])
 
@@ -236,7 +225,7 @@ shortcuts for ``find`` + :py:class:`~sarkit.sicd.XmlHelper.load_elem` /
 .. doctest::
 
    # find + set_elem/load_elem
-   >>> elem = reader.sicd_xmltree.find("{*}ImageData/{*}SCPPixel")
+   >>> elem = example_sicd_xmltree.find("{*}ImageData/{*}SCPPixel")
    >>> xmlhelp.set_elem(elem, [123, 456])
    >>> xmlhelp.load_elem(elem)
    array([123, 456])

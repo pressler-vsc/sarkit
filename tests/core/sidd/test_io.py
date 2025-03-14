@@ -2,7 +2,7 @@ import itertools
 import pathlib
 import re
 
-import lxml
+import lxml.etree
 import numpy as np
 import pytest
 
@@ -84,8 +84,8 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             sarkit.sidd._io, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
 
-    nitf_plan = sksidd.SiddNitfPlan(
-        header_fields={
+    write_metadata = sksidd.NitfMetadata(
+        file_header_part={
             "ostaid": "ostaid",
             "ftitle": "ftitle",
             # Data is unclassified.  These fields are filled for testing purposes only.
@@ -111,167 +111,171 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             "ophone": "ophone",
         }
     )
-    nitf_plan.add_image(
-        basis_etree0,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            # Data is unclassified.  These fields are filled for testing purposes only.
-            "security": {
-                "clas": "S",
-                "clsy": "II",
-                "code": "code_i",
-                "ctlh": "ii",
-                "rel": "rel_i",
-                "dctp": "",
-                "dcdt": "",
-                "dcxm": "X2",
-                "dg": "R",
-                "dgdt": "20000202",
-                "cltx": "RL_i",
-                "catp": "D",
-                "caut": "caut_i",
-                "crsn": "B",
-                "srdt": "20000203",
-                "ctln": "ctln_i",
-            },
-            "icom": ["first comment", "second comment"],
-        },
-        des_fields={
-            # Data is unclassified.  These fields are filled for testing purposes only.
-            "security": {
-                "clas": "U",
-                "clsy": "DD",
-                "code": "code_d",
-                "ctlh": "dd",
-                "rel": "rel_d",
-                "dctp": "X",
-                "dcdt": "",
-                "dcxm": "X3",
-                "dg": "",
-                "dgdt": "20000302",
-                "cltx": "CH_d",
-                "catp": "M",
-                "caut": "caut_d",
-                "crsn": "C",
-                "srdt": "20000303",
-                "ctln": "ctln_d",
-            },
-            "desshrp": "desshrp",
-            "desshli": "desshli",
-            "desshlin": "desshlin",
-            "desshabs": "desshabs",
-        },
+    write_metadata.images.extend(
+        [
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree0,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    # Data is unclassified.  These fields are filled for testing purposes only.
+                    "security": {
+                        "clas": "S",
+                        "clsy": "II",
+                        "code": "code_i",
+                        "ctlh": "ii",
+                        "rel": "rel_i",
+                        "dctp": "",
+                        "dcdt": "",
+                        "dcxm": "X2",
+                        "dg": "R",
+                        "dgdt": "20000202",
+                        "cltx": "RL_i",
+                        "catp": "D",
+                        "caut": "caut_i",
+                        "crsn": "B",
+                        "srdt": "20000203",
+                        "ctln": "ctln_i",
+                    },
+                    "icom": ["first comment", "second comment"],
+                },
+                de_subheader_part={
+                    # Data is unclassified.  These fields are filled for testing purposes only.
+                    "security": {
+                        "clas": "U",
+                        "clsy": "DD",
+                        "code": "code_d",
+                        "ctlh": "dd",
+                        "rel": "rel_d",
+                        "dctp": "X",
+                        "dcdt": "",
+                        "dcxm": "X3",
+                        "dg": "",
+                        "dgdt": "20000302",
+                        "cltx": "CH_d",
+                        "catp": "M",
+                        "caut": "caut_d",
+                        "crsn": "C",
+                        "srdt": "20000303",
+                        "ctln": "ctln_d",
+                    },
+                    "desshrp": "desshrp",
+                    "desshli": "desshli",
+                    "desshlin": "desshlin",
+                    "desshabs": "desshabs",
+                },
+            ),
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree1,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                de_subheader_part={
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+            ),
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree2,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                de_subheader_part={
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+            ),
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree3,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                de_subheader_part={
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                lookup_table=lookup_table3,
+            ),
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree4,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                de_subheader_part={
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                lookup_table=lookup_table4,
+            ),
+            sksidd.NitfProductImageMetadata(
+                xmltree=basis_etree5,
+                im_subheader_part={
+                    "tgtid": "tgtid",
+                    "iid2": "iid2",
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                de_subheader_part={
+                    "security": {
+                        "clas": "U",
+                    },
+                },
+                lookup_table=lookup_table5,
+            ),
+        ]
     )
 
-    nitf_plan.add_image(
-        basis_etree1,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            "security": {
-                "clas": "U",
-            },
-        },
-        des_fields={
-            "security": {
-                "clas": "U",
-            },
-        },
-    )
-
-    nitf_plan.add_image(
-        basis_etree2,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            "security": {
-                "clas": "U",
-            },
-        },
-        des_fields={
-            "security": {
-                "clas": "U",
-            },
-        },
-    )
-
-    nitf_plan.add_image(
-        basis_etree3,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            "security": {
-                "clas": "U",
-            },
-        },
-        des_fields={
-            "security": {
-                "clas": "U",
-            },
-        },
-        lookup_table=lookup_table3,
-    )
-
-    nitf_plan.add_image(
-        basis_etree4,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            "security": {
-                "clas": "U",
-            },
-        },
-        des_fields={
-            "security": {
-                "clas": "U",
-            },
-        },
-        lookup_table=lookup_table4,
-    )
-
-    nitf_plan.add_image(
-        basis_etree5,
-        is_fields={
-            "tgtid": "tgtid",
-            "iid2": "iid2",
-            "security": {
-                "clas": "U",
-            },
-        },
-        des_fields={
-            "security": {
-                "clas": "U",
-            },
-        },
-        lookup_table=lookup_table5,
-    )
-
-    nitf_plan.add_sicd_xml(
-        sicd_xmltree=sicd_xmltree, des_fields={"security": {"clas": "U"}}
-    )
-
-    nitf_plan.add_sicd_xml(
-        sicd_xmltree=sicd_xmltree, des_fields={"security": {"clas": "U"}}
+    write_metadata.sicd_xmls.extend(
+        [
+            sksidd.NitfSicdXmlMetadata(
+                sicd_xmltree, de_subheader_part={"security": {"clas": "U"}}
+            )
+        ]
+        * 2
     )
 
     ps_xmltree0 = lxml.etree.ElementTree(
         lxml.etree.fromstring("<product><support/></product>")
-    )
-    nitf_plan.add_product_support_xml(
-        ps_xmltree=ps_xmltree0, des_fields={"security": {"clas": "U"}}
     )
     ps_xmltree1 = lxml.etree.ElementTree(
         lxml.etree.fromstring(
             '<product xmlns="https://example.com"><support/></product>'
         )
     )
-    nitf_plan.add_product_support_xml(
-        ps_xmltree=ps_xmltree1, des_fields={"security": {"clas": "U"}}
+    write_metadata.product_support_xmls.extend(
+        [
+            sksidd.NitfProductSupportXmlMetadata(
+                ps_xmltree0, {"security": {"clas": "U"}}
+            ),
+            sksidd.NitfProductSupportXmlMetadata(
+                ps_xmltree1, {"security": {"clas": "U"}}
+            ),
+        ]
     )
 
     with out_sidd.open("wb") as file:
-        with sksidd.SiddNitfWriter(file, nitf_plan) as writer:
+        with sksidd.NitfWriter(file, write_metadata) as writer:
             writer.write_image(0, basis_array0)
             writer.write_image(1, basis_array1)
             writer.write_image(2, basis_array2)
@@ -299,20 +303,21 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         assert num_expected_imseg == len(ntf["ImageSegments"])
 
     with out_sidd.open("rb") as file:
-        with sksidd.SiddNitfReader(file) as reader:
-            assert len(reader.images) == 6
-            assert len(reader.sicd_xmls) == 2
-            assert len(reader.product_support_xmls) == 2
+        with sksidd.NitfReader(file) as reader:
+            read_metadata = reader.metadata
+            assert len(read_metadata.images) == 6
+            assert len(read_metadata.sicd_xmls) == 2
+            assert len(read_metadata.product_support_xmls) == 2
             read_array0 = reader.read_image(0)
             read_array1 = reader.read_image(1)
             read_array2 = reader.read_image(2)
             read_array3 = reader.read_image(3)
             read_array4 = reader.read_image(4)
             read_array5 = reader.read_image(5)
-            read_xmltree = reader.images[0].sidd_xmltree
-            read_sicd_xmltree = reader.sicd_xmls[-1].sicd_xmltree
-            read_ps_xmltree0 = reader.product_support_xmls[0].product_support_xmltree
-            read_ps_xmltree1 = reader.product_support_xmls[1].product_support_xmltree
+            read_xmltree = read_metadata.images[0].xmltree
+            read_sicd_xmltree = read_metadata.sicd_xmls[-1].xmltree
+            read_ps_xmltree0 = read_metadata.product_support_xmls[0].xmltree
+            read_ps_xmltree1 = read_metadata.product_support_xmls[1].xmltree
 
     def _normalized(xmltree):
         return lxml.etree.tostring(xmltree, method="c14n")
@@ -322,9 +327,15 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     assert _normalized(read_ps_xmltree1) == _normalized(ps_xmltree1)
     assert _normalized(read_sicd_xmltree) == _normalized(sicd_xmltree)
 
-    assert nitf_plan.header_fields == reader.header_fields
-    assert nitf_plan.images[0].is_fields == reader.images[0].is_fields
-    assert nitf_plan.images[0].des_fields == reader.images[0].des_fields
+    assert write_metadata.file_header_part == read_metadata.file_header_part
+    assert (
+        write_metadata.images[0].im_subheader_part
+        == read_metadata.images[0].im_subheader_part
+    )
+    assert (
+        write_metadata.images[0].de_subheader_part
+        == read_metadata.images[0].de_subheader_part
+    )
     assert np.array_equal(basis_array0, read_array0)
     assert np.array_equal(basis_array1, read_array1)
     assert np.array_equal(basis_array2, read_array2)
@@ -333,13 +344,13 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     assert np.array_equal(basis_array5, read_array5)
 
     assert np.array_equal(
-        reader.images[3].lookup_table, nitf_plan.images[3].lookup_table
+        read_metadata.images[3].lookup_table, write_metadata.images[3].lookup_table
     )
     assert np.array_equal(
-        reader.images[4].lookup_table, nitf_plan.images[4].lookup_table
+        read_metadata.images[4].lookup_table, write_metadata.images[4].lookup_table
     )
     assert np.array_equal(
-        reader.images[5].lookup_table, nitf_plan.images[5].lookup_table
+        read_metadata.images[5].lookup_table, write_metadata.images[5].lookup_table
     )
 
 
@@ -462,32 +473,32 @@ def test_segmentation():
     assert expected_imhdrs == imhdrs
 
 
-def test_SiddNitfPlanProductImageInfo():  # noqa N802
-    sidd_xmltree = lxml.etree.parse(DATAPATH / "example-sidd-3.0.0.xml")
-    is_fields = {
+def test_NitfProductImageMetadata():  # noqa N802
+    xmltree = lxml.etree.parse(DATAPATH / "example-sidd-3.0.0.xml")
+    im_subheader_part = {
         "tgtid": "tgtid",
         "iid2": "iid2",
         "security": {
             "clas": "U",
         },
     }
-    des_fields = {
+    de_subheader_part = {
         "security": {
             "clas": "U",
         },
     }
 
-    assert sidd_xmltree.find("./{*}Display/{*}PixelType").text == "MONO8I"
-    image_info = sksidd.SiddNitfPlanProductImageInfo(
-        sidd_xmltree=sidd_xmltree,
-        is_fields=is_fields,
-        des_fields=des_fields,
+    assert xmltree.find("./{*}Display/{*}PixelType").text == "MONO8I"
+    image_info = sksidd.NitfProductImageMetadata(
+        xmltree=xmltree,
+        im_subheader_part=im_subheader_part,
+        de_subheader_part=de_subheader_part,
         lookup_table=None,
     )
-    assert image_info.is_fields.tgtid == is_fields["tgtid"]
-    assert image_info.is_fields.iid2 == is_fields["iid2"]
-    assert image_info.is_fields.security.clas == is_fields["security"]["clas"]
-    assert image_info.des_fields.security.clas == des_fields["security"]["clas"]
+    assert image_info.im_subheader_part.tgtid == im_subheader_part["tgtid"]
+    assert image_info.im_subheader_part.iid2 == im_subheader_part["iid2"]
+    assert image_info.im_subheader_part.security.clas == im_subheader_part["security"]["clas"]
+    assert image_info.de_subheader_part.security.clas == de_subheader_part["security"]["clas"]
 
     # Can't have lookup table for MONO8I
     with pytest.raises(
@@ -496,27 +507,27 @@ def test_SiddNitfPlanProductImageInfo():  # noqa N802
             "lookup_table type mismatch.  pixel_type='MONO8I'  lut_dtype=dtype('uint8')"
         ),
     ):
-        image_info = sksidd.SiddNitfPlanProductImageInfo(
-            sidd_xmltree=sidd_xmltree,
-            is_fields=is_fields,
-            des_fields=des_fields,
+        image_info = sksidd.NitfProductImageMetadata(
+            xmltree=xmltree,
+            im_subheader_part=im_subheader_part,
+            de_subheader_part=de_subheader_part,
             lookup_table=np.arange(256, dtype=np.uint8),
         )
 
-    sidd_xmltree.find("./{*}Display/{*}PixelType").text = "MONO8LU"
-    image_info = sksidd.SiddNitfPlanProductImageInfo(
-        sidd_xmltree=sidd_xmltree,
-        is_fields=is_fields,
-        des_fields=des_fields,
+    xmltree.find("./{*}Display/{*}PixelType").text = "MONO8LU"
+    image_info = sksidd.NitfProductImageMetadata(
+        xmltree=xmltree,
+        im_subheader_part=im_subheader_part,
+        de_subheader_part=de_subheader_part,
         lookup_table=np.arange(256, dtype=np.uint8),
     )
     assert image_info.lookup_table.shape == (256,)
     assert image_info.lookup_table.dtype == np.uint8
 
-    image_info = sksidd.SiddNitfPlanProductImageInfo(
-        sidd_xmltree=sidd_xmltree,
-        is_fields=is_fields,
-        des_fields=des_fields,
+    image_info = sksidd.NitfProductImageMetadata(
+        xmltree=xmltree,
+        im_subheader_part=im_subheader_part,
+        de_subheader_part=de_subheader_part,
         lookup_table=np.arange(256, dtype=np.uint16),
     )
     assert image_info.lookup_table.shape == (256,)
@@ -527,10 +538,10 @@ def test_SiddNitfPlanProductImageInfo():  # noqa N802
         RuntimeError,
         match="lookup_table type mismatch.  pixel_type='MONO8LU'  lut_dtype=None",
     ):
-        image_info = sksidd.SiddNitfPlanProductImageInfo(
-            sidd_xmltree=sidd_xmltree,
-            is_fields=is_fields,
-            des_fields=des_fields,
+        image_info = sksidd.NitfProductImageMetadata(
+            xmltree=xmltree,
+            im_subheader_part=im_subheader_part,
+            de_subheader_part=de_subheader_part,
             lookup_table=None,
         )
 
@@ -538,10 +549,10 @@ def test_SiddNitfPlanProductImageInfo():  # noqa N802
     with pytest.raises(
         ValueError, match="lookup_table must contain exactly 256 elements"
     ):
-        image_info = sksidd.SiddNitfPlanProductImageInfo(
-            sidd_xmltree=sidd_xmltree,
-            is_fields=is_fields,
-            des_fields=des_fields,
+        image_info = sksidd.NitfProductImageMetadata(
+            xmltree=xmltree,
+            im_subheader_part=im_subheader_part,
+            de_subheader_part=de_subheader_part,
             lookup_table=np.arange(255, dtype=np.uint8),
         )
 
@@ -552,20 +563,20 @@ def test_SiddNitfPlanProductImageInfo():  # noqa N802
             "lookup_table type mismatch.  pixel_type='MONO8LU'  lut_dtype=dtype('uint32')"
         ),
     ):
-        image_info = sksidd.SiddNitfPlanProductImageInfo(
-            sidd_xmltree=sidd_xmltree,
-            is_fields=is_fields,
-            des_fields=des_fields,
+        image_info = sksidd.NitfProductImageMetadata(
+            xmltree=xmltree,
+            im_subheader_part=im_subheader_part,
+            de_subheader_part=de_subheader_part,
             lookup_table=np.arange(256, dtype=np.uint32),
         )
 
-    sidd_xmltree.find("./{*}Display/{*}PixelType").text = "RGB8LU"
+    xmltree.find("./{*}Display/{*}PixelType").text = "RGB8LU"
     rgb_dtype = sksidd.PIXEL_TYPES["RGB24I"]["dtype"]
     good_rgb_lut = np.empty(256, dtype=rgb_dtype)
-    image_info = sksidd.SiddNitfPlanProductImageInfo(
-        sidd_xmltree=sidd_xmltree,
-        is_fields=is_fields,
-        des_fields=des_fields,
+    image_info = sksidd.NitfProductImageMetadata(
+        xmltree=xmltree,
+        im_subheader_part=im_subheader_part,
+        de_subheader_part=de_subheader_part,
         lookup_table=good_rgb_lut,
     )
     assert image_info.lookup_table.shape == (256,)
@@ -578,10 +589,10 @@ def test_SiddNitfPlanProductImageInfo():  # noqa N802
             "lookup_table type mismatch.  pixel_type='RGB8LU'  lut_dtype=None"
         ),
     ):
-        image_info = sksidd.SiddNitfPlanProductImageInfo(
-            sidd_xmltree=sidd_xmltree,
-            is_fields=is_fields,
-            des_fields=des_fields,
+        image_info = sksidd.NitfProductImageMetadata(
+            xmltree=xmltree,
+            im_subheader_part=im_subheader_part,
+            de_subheader_part=de_subheader_part,
             lookup_table=None,
         )
 
@@ -589,10 +600,10 @@ def test_SiddNitfPlanProductImageInfo():  # noqa N802
     with pytest.raises(
         ValueError, match="lookup_table must contain exactly 256 elements"
     ):
-        image_info = sksidd.SiddNitfPlanProductImageInfo(
-            sidd_xmltree=sidd_xmltree,
-            is_fields=is_fields,
-            des_fields=des_fields,
+        image_info = sksidd.NitfProductImageMetadata(
+            xmltree=xmltree,
+            im_subheader_part=im_subheader_part,
+            de_subheader_part=de_subheader_part,
             lookup_table=good_rgb_lut[:255],
         )
 
@@ -603,10 +614,10 @@ def test_SiddNitfPlanProductImageInfo():  # noqa N802
             "lookup_table type mismatch.  pixel_type='RGB8LU'  lut_dtype=dtype('uint8')"
         ),
     ):
-        image_info = sksidd.SiddNitfPlanProductImageInfo(
-            sidd_xmltree=sidd_xmltree,
-            is_fields=is_fields,
-            des_fields=des_fields,
+        image_info = sksidd.NitfProductImageMetadata(
+            xmltree=xmltree,
+            im_subheader_part=im_subheader_part,
+            de_subheader_part=de_subheader_part,
             lookup_table=np.arange(256, dtype=np.uint8),
         )
 

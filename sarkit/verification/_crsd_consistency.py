@@ -110,15 +110,11 @@ class CrsdConsistency(con.ConsistencyChecker):
 
         sequence_ids = [
             x.text
-            for x in self.crsdroot.findall(
-                "{*}Data/{*}Transmit/{*}TxSequence/{*}Identifier"
-            )
+            for x in self.crsdroot.findall("{*}Data/{*}Transmit/{*}TxSequence/{*}TxId")
         ]
         channel_ids = [
             x.text
-            for x in self.crsdroot.findall(
-                "{*}Data/{*}Receive/{*}Channel/{*}Identifier"
-            )
+            for x in self.crsdroot.findall("{*}Data/{*}Receive/{*}Channel/{*}ChId")
         ]
         # process decorated methods to generate per-sequence and per-channel tests
         # reverse the enumerated list so that we don't disturb indices on later iterations as we insert into the list
@@ -173,19 +169,19 @@ class CrsdConsistency(con.ConsistencyChecker):
                 ppps = None
             except etree.XMLSyntaxError:
                 infile.seek(0, os.SEEK_SET)
-                reader = skcrsd.CrsdReader(infile)
-                crsdroot = reader.crsd_xmltree
+                reader = skcrsd.Reader(infile)
+                crsdroot = reader.metadata.xmltree
                 infile.seek(0, os.SEEK_SET)
                 _, kvp_list = skcrsd.read_file_header(infile)
                 pvps = {}
                 for channel_node in crsdroot.findall("./{*}Data/{*}Receive/{*}Channel"):
-                    channel_id = channel_node.findtext("./{*}Identifier")
+                    channel_id = channel_node.findtext("./{*}ChId")
                     pvps[channel_id] = reader.read_pvps(channel_id)
                 ppps = {}
                 for sequence_node in crsdroot.findall(
                     "./{*}Data/{*}Transmit/{*}TxSequence"
                 ):
-                    sequence_id = sequence_node.findtext("./{*}Identifier")
+                    sequence_id = sequence_node.findtext("./{*}TxId")
                     ppps[sequence_id] = reader.read_ppps(sequence_id)
 
         return CrsdConsistency(
@@ -214,7 +210,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         """
         assert self.filename is not None
         assert self.kvp_list is not None
-        with open(self.filename, "rb") as fd, skcrsd.CrsdReader(fd) as reader:
+        with open(self.filename, "rb") as fd, skcrsd.Reader(fd) as reader:
             return reader.read_support_array(sa_id)
 
     def _get_channel_pvps(self, channel_id):
@@ -232,6 +228,14 @@ class CrsdConsistency(con.ConsistencyChecker):
         assert self.ppps is not None
         assert sequence_id in self.ppps
         return self.ppps[sequence_id]
+
+    def _check_num(self, num_match, elem_match):
+        """Need the number of elements found by elem_match to equal the value of the element found by num_match"""
+        num_elem = self.crsdroot.find(num_match)
+        num = int(num_elem.text)
+        num_of_elem = len(self.crsdroot.findall(elem_match))
+        with self.need(f"{etree.QName(num_elem).localname} is correct"):
+            assert num == num_of_elem
 
     def check_file_type_header(self):
         """Version in File Type Header matches the version in the XML."""
@@ -427,36 +431,16 @@ class CrsdConsistency(con.ConsistencyChecker):
                 ) == max(frcvmaxs)
 
     def check_reftxid(self):
-        """RefTxID refers to an extant TxSequence"""
+        """RefTxId equal to reference channel's transmit pulse sequence"""
         with self.precondition():
-            assert self.crsdroot.find("{*}TxSequence") is not None
-            ref_tx_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
-            with self.need("RefTxID refers to an extant TxSequence"):
-                assert (
-                    self.crsdroot.find(
-                        f"{{*}}TxSequence/{{*}}Parameters[{{*}}Identifier='{ref_tx_id}']"
-                    )
-                    is not None
-                )
-            assert self.crsdroot.find("{*}Channel") is not None
+            assert self.crsd_type == "CRSDsar"
+            ref_tx_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
             ref_chan_id = self.crsdroot.findtext("{*}Channel/{*}RefChId")
             ref_chan_tx_id = self.crsdroot.findtext(
                 f'{{*}}Channel/{{*}}Parameters[{{*}}Identifier="{ref_chan_id}"]/{{*}}SARImage/{{*}}TxId'
             )
-            with self.need("RefTxID is the TxId of the reference channel"):
+            with self.need("RefTxId is the TxId of the reference channel"):
                 assert ref_chan_tx_id == ref_tx_id
-
-    @per_sequence
-    def check_fxresponse_id(self, sequence_id, sequence_param_elem):
-        """FxResponseId refers to an extant FxResponseArray"""
-        fx_response_id = sequence_param_elem.findtext("{*}FxResponseId")
-        with self.need("FxResponseId refers to an extant FxResponseArray"):
-            assert (
-                self.crsdroot.find(
-                    f'{{*}}SupportArray/{{*}}FxResponseArray[{{*}}Identifier="{fx_response_id}"]'
-                )
-                is not None
-            )
 
     @per_sequence
     def check_xm_id(self, sequence_id, sequence_param_elem):
@@ -469,14 +453,6 @@ class CrsdConsistency(con.ConsistencyChecker):
             assert self.crsdroot.findtext("{*}TxSequence/{*}TxWFType") != "LFM"
             with self.need("XMId is present"):
                 assert sequence_param_elem.find("{*}XMId") is not None
-            xm_id = sequence_param_elem.findtext("{*}XMId")
-            with self.need("XMId refers to an extant XMArray"):
-                assert (
-                    self.crsdroot.find(
-                        f'{{*}}SupportArray/{{*}}XMArray[{{*}}Identifier="{xm_id}"]'
-                    )
-                    is not None
-                )
 
     @per_sequence
     def check_ref_pulse_index(self, sequence_id, sequence_param_elem):
@@ -484,32 +460,12 @@ class CrsdConsistency(con.ConsistencyChecker):
         ref_pulse_index = int(sequence_param_elem.findtext("{*}RefPulseIndex"))
         num_pulses = int(
             self.crsdroot.findtext(
-                f'{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}Identifier="{sequence_id}"]/{{*}}NumPulses'
+                f'{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}TxId="{sequence_id}"]/{{*}}NumPulses'
             )
         )
         with self.need("RefPulseIndex refers to an extant pulse"):
             # nonnegative is checked by the schema
             assert ref_pulse_index < num_pulses
-
-    @per_sequence
-    def check_tx_antenna(self, sequence_id, sequence_param_elem):
-        """Antenna references are valid"""
-        apc_id = sequence_param_elem.findtext("{*}TxAPCId")
-        apat_id = sequence_param_elem.findtext("{*}TxAPATId")
-        with self.need("TxAPCId refers to an extant APC"):
-            assert (
-                self.crsdroot.find(
-                    f'{{*}}Antenna/{{*}}AntPhaseCenter[{{*}}Identifier="{apc_id}"]'
-                )
-                is not None
-            )
-        with self.need("TxAPATId refers to an extant AntPattern"):
-            assert (
-                self.crsdroot.find(
-                    f'{{*}}Antenna/{{*}}AntPattern[{{*}}Identifier="{apat_id}"]'
-                )
-                is not None
-            )
 
     @per_sequence
     def check_txrefpoint(self, sequence_id, sequence_param_elem):
@@ -670,7 +626,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             xm_id = sequence_param_elem.findtext("{*}XMId")
             num_xm = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{xm_id}"]/{{*}}NumRows'
+                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{xm_id}"]/{{*}}NumRows'
                 )
             )
             with self.need("XMIndex >= 0"):
@@ -767,7 +723,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             fx_id = sequence_param_elem.findtext("{*}FxResponseId")
             num_fxr = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{fx_id}"]/{{*}}NumRows'
+                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{fx_id}"]/{{*}}NumRows'
                 )
             )
             with self.need("FxResponseIndex is non-negative"):
@@ -807,7 +763,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             )
             ns_xma = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{xm_id}"]/{{*}}NumCols'
+                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{xm_id}"]/{{*}}NumCols'
                 )
             )
             with self.need("half of TXmt is at least (close to) 500 XM samples"):
@@ -815,26 +771,13 @@ class CrsdConsistency(con.ConsistencyChecker):
             with self.need("pulse fits appropriately in the XM Array"):
                 assert np.round(txmtmax / 2 / ts_xma) <= (ns_xma - 1) // 2
 
-    def check_refchid(self):
-        """RefChId refers to an extant Channel"""
-        with self.precondition():
-            assert self.crsdroot.find("{*}Channel") is not None
-            ref_ch_id = self.crsdroot.findtext("{*}Channel/{*}RefChId")
-            with self.need("RefChId refers to an extant Channel"):
-                assert (
-                    self.crsdroot.find(
-                        f"{{*}}Channel/{{*}}Parameters[{{*}}Identifier='{ref_ch_id}']"
-                    )
-                    is not None
-                )
-
     @per_channel
     def check_refvectorindex(self, channel_id, channel_param_elem):
         """RefVectorIndex refers to an appropriate extant vector"""
         ref_vector_index = int(channel_param_elem.findtext("{*}RefVectorIndex"))
         num_vectors = int(
             self.crsdroot.findtext(
-                f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}Identifier='{channel_id}']/{{*}}NumVectors"
+                f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_id}']/{{*}}NumVectors"
             )
         )
         with self.need("RefVectorIndex refers to an extant vector"):
@@ -955,26 +898,6 @@ class CrsdConsistency(con.ConsistencyChecker):
                 assert frcvmin == con.Approx(pvp["FRCV1"].min())
             with self.need("FrcvMax matches FRCV2"):
                 assert frcvmax == con.Approx(pvp["FRCV2"].max())
-
-    @per_channel
-    def check_rcv_antenna(self, channel_id, channel_param_elem):
-        """Antenna references are valid"""
-        apc_id = channel_param_elem.findtext("{*}RcvAPCId")
-        apat_id = channel_param_elem.findtext("{*}RcvAPATId")
-        with self.need("RcvAPCId refers to an extant APC"):
-            assert (
-                self.crsdroot.find(
-                    f'{{*}}Antenna/{{*}}AntPhaseCenter[{{*}}Identifier="{apc_id}"]'
-                )
-                is not None
-            )
-        with self.need("RcvAPATId refers to an extant AntPattern"):
-            assert (
-                self.crsdroot.find(
-                    f'{{*}}Antenna/{{*}}AntPattern[{{*}}Identifier="{apat_id}"]'
-                )
-                is not None
-            )
 
     @per_channel
     def check_rcvrefpoint(self, channel_id, channel_param_elem):
@@ -1124,20 +1047,6 @@ class CrsdConsistency(con.ConsistencyChecker):
                 ) == con.Approx(ampv * np.exp(2j * np.pi * phasev), atol=1e-3)
 
     @per_channel
-    def check_sartxid(self, channel_id, channel_param_elem):
-        """Channel SARImage/TxId refers to an extant TxSequence"""
-        with self.precondition():
-            assert self.crsd_type == "CRSDsar"
-            txid = channel_param_elem.findtext("{*}SARImage/{*}TxId")
-            with self.need("TxId maps to extant TxSequence"):
-                assert (
-                    self.crsdroot.find(
-                        f'{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}Identifier="{txid}"]'
-                    )
-                    is not None
-                )
-
-    @per_channel
     def check_refvectorpulseindex(self, channel_id, channel_param_elem):
         """RefVectorPulseIndex is sane and matches PPP"""
         with self.precondition():
@@ -1148,7 +1057,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             txid = channel_param_elem.findtext("{*}SARImage/{*}TxId")
             num_pulses = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}Identifier="{txid}"]/{{*}}NumPulses'
+                    f'{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}TxId="{txid}"]/{{*}}NumPulses'
                 )
             )
             with self.need("RefVectorPulseIndex references an extant pulse"):
@@ -1160,50 +1069,6 @@ class CrsdConsistency(con.ConsistencyChecker):
                     assert (
                         pvp["TxPulseIndex"][ref_vector_index] == ref_vector_pulse_index
                     )
-
-    @per_channel
-    def check_dwell_ids(self, channel_id, channel_param_elem):
-        """Channel Dwell IDs refer to extant dwell descriptions"""
-        with self.precondition():
-            assert (
-                channel_param_elem.find("{*}SARImage/{*}DwellTimes/{*}Polynomials")
-                is not None
-            )
-            cod_id = channel_param_elem.findtext(
-                "{*}SARImage/{*}DwellTimes/{*}Polynomials/{*}CODId"
-            )
-            dwell_id = channel_param_elem.findtext(
-                "{*}SARImage/{*}DwellTimes/{*}Polynomials/{*}DwellId"
-            )
-            with self.need("CODId refers to an extant polynomial"):
-                assert (
-                    self.crsdroot.find(
-                        f'{{*}}Dwell/{{*}}CODTime[{{*}}Identifier="{cod_id}"]'
-                    )
-                    is not None
-                )
-            with self.need("DwellId refers to an extant polynomial"):
-                assert (
-                    self.crsdroot.find(
-                        f'{{*}}Dwell/{{*}}DwellTime[{{*}}Identifier="{dwell_id}"]'
-                    )
-                    is not None
-                )
-        with self.precondition():
-            assert (
-                channel_param_elem.find("{*}SARImage/{*}DwellTimes/{*}Array")
-                is not None
-            )
-            dta_id = channel_param_elem.findtext(
-                "{*}SARImage/{*}DwellTimes/{*}Array/{*}DTAId"
-            )
-            with self.need("DTAId refers to an extant dwell array"):
-                assert (
-                    self.crsdroot.find(
-                        f'{{*}}SupportArray/{{*}}DwellTimeArray[{{*}}Identifier="{dta_id}"]'
-                    )
-                    is not None
-                )
 
     @per_channel
     def check_rcvstart(self, channel_id, channel_param_elem):
@@ -1247,7 +1112,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             sample_frequency = float(channel_param_elem.findtext("{*}Fs"))
             ns = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}Identifier="{channel_id}"]/{{*}}NumSamples'
+                    f'{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId="{channel_id}"]/{{*}}NumSamples'
                 )
             )
             rcv_duration = ns / sample_frequency
@@ -1309,7 +1174,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             tx_id = channel_param_elem.findtext("{*}SARImage/{*}TxId")
             num_pulses = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}Identifier="{tx_id}"]/{{*}}NumPulses'
+                    f'{{*}}Data/{{*}}Transmit/{{*}}TxSequence[{{*}}TxId="{tx_id}"]/{{*}}NumPulses'
                 )
             )
             with self.need("TxPulseIndex is either -1 or a valid index"):
@@ -1352,7 +1217,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 assert np.all(pvp["DFIC0"][pvp["FICRate"] == 0] == 0)
             ns = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}Identifier="{channel_id}"]/{{*}}NumSamples'
+                    f'{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId="{channel_id}"]/{{*}}NumSamples'
                 )
             )
             fs = float(channel_param_elem.findtext("{*}Fs"))
@@ -1380,7 +1245,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             xss = float(dta_node.findtext("{*}XSS"))
             yss = float(dta_node.findtext("{*}YSS"))
             dta_data_node = self.crsdroot.find(
-                f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{dta_id}"]'
+                f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{dta_id}"]'
             )
             num_rows = int(dta_data_node.findtext("{*}NumRows"))
             num_cols = int(dta_data_node.findtext("{*}NumCols"))
@@ -1397,31 +1262,22 @@ class CrsdConsistency(con.ConsistencyChecker):
                     (x0 + xss * (num_rows - 0.5), y0 + yss * (num_cols - 0.5)) >= x2y2
                 )
 
-    def check_codtime_ids(self):
-        """CODTime polynomial Identifiers are unique and properly counted"""
+    def check_numcodtimes(self):
+        """CODTime polynomials are properly counted"""
         with self.precondition():
-            dwell_node = self.crsdroot.find("{*}Dwell")
-            assert dwell_node is not None
-            num_cod_times = int(dwell_node.findtext("{*}NumCODTimes"))
-            cod_ids = [x.text for x in dwell_node.findall("{*}CODTime/{*}Identifier")]
-            with self.need("NumCODTimes is correct"):
-                assert len(cod_ids) == num_cod_times
-            with self.need("Identifiers are unique"):
-                assert len(set(cod_ids)) == len(cod_ids)
+            assert self.crsdroot.find("{*}DwellPolynomials") is not None
+            self._check_num(
+                "{*}DwellPolynomials/{*}NumCODTimes", "{*}DwellPolynomials/{*}CODTime"
+            )
 
-    def check_dwelltime_ids(self):
-        """DwellTime polynomial Identifiers are unique and properly counted"""
+    def check_numdwelltimes(self):
+        """DwellTime polynomials are properly counted"""
         with self.precondition():
-            dwell_node = self.crsdroot.find("{*}Dwell")
-            assert dwell_node is not None
-            num_dwell_times = int(dwell_node.findtext("{*}NumDwellTimes"))
-            dwell_ids = [
-                x.text for x in dwell_node.findall("{*}DwellTime/{*}Identifier")
-            ]
-            with self.need("NumDwellTimes is correct"):
-                assert len(dwell_ids) == num_dwell_times
-            with self.need("Identifiers are unique"):
-                assert len(set(dwell_ids)) == len(dwell_ids)
+            assert self.crsdroot.find("{*}DwellPolynomials") is not None
+            self._check_num(
+                "{*}DwellPolynomials/{*}NumDwellTimes",
+                "{*}DwellPolynomials/{*}DwellTime",
+            )
 
     def check_scene_iarp(self):
         """IARP is consistent and near Earth's surface"""
@@ -1559,10 +1415,6 @@ class CrsdConsistency(con.ConsistencyChecker):
                         "{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}NumSegments"
                     )
                 ) == len(segment_nodes)
-            with self.need("Segment Identifiers are unique"):
-                assert len(
-                    set([seg.find("{*}Identifier").text for seg in segment_nodes])
-                ) == len(segment_nodes)
 
             first_line = int(
                 self.crsdroot.findtext(
@@ -1618,36 +1470,18 @@ class CrsdConsistency(con.ConsistencyChecker):
                 with self.need(f"{identifier}: Polygon is clockwise"):
                     assert not shg_polygon.exterior.is_ccw
 
-    def check_support_array_ids(self):
-        """SupportArray IDs are consistent"""
-        num_support_arrays = int(
-            self.crsdroot.findtext("{*}Data/{*}Support/{*}NumSupportArrays")
+    def check_numsupportarrays(self):
+        """SupportArrays are properly counted"""
+        self._check_num(
+            "{*}Data/{*}Support/{*}NumSupportArrays",
+            "{*}Data/{*}Support/{*}SupportArray",
         )
-        data_support_array_ids = [
-            x.text
-            for x in self.crsdroot.findall(
-                "{*}Data/{*}Support/{*}SupportArray/{*}Identifier"
-            )
-        ]
-        support_array_ids = [
-            x.text for x in self.crsdroot.findall("{*}SupportArray//{*}Identifier")
-        ]
-        with self.need("NumSupportArrays is correct"):
-            assert num_support_arrays == len(support_array_ids)
-        with self.need("Support array identifiers are unique in Data branch"):
-            assert len(data_support_array_ids) == len(set(data_support_array_ids))
-        with self.need("Support array identifiers are unique in SupportArray branch"):
-            assert len(support_array_ids) == len(set(support_array_ids))
-        with self.need("Support array IDs in Data match SupportArray"):
-            assert set(data_support_array_ids) == set(support_array_ids)
 
     def check_support_array_bytes_per_element(self):
         """Support array bytes per element matches the element type"""
         support_array_ids = [
             x.text
-            for x in self.crsdroot.findall(
-                "{*}Data/{*}Support/{*}SupportArray/{*}Identifier"
-            )
+            for x in self.crsdroot.findall("{*}Data/{*}Support/{*}SupportArray/{*}SAId")
         ]
         for support_array_id in support_array_ids:
             element_format = self.crsdroot.findtext(
@@ -1656,39 +1490,20 @@ class CrsdConsistency(con.ConsistencyChecker):
             dtype = skcrsd.binary_format_string_to_dtype(element_format)
             bytes_per_element = int(
                 self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{support_array_id}"]/{{*}}BytesPerElement'
+                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{support_array_id}"]/{{*}}BytesPerElement'
                 )
             )
             with self.need(f"{support_array_id} BytesPerElement matches ElementFormat"):
                 assert bytes_per_element == dtype.itemsize
 
-    def check_transmit_sequence_ids(self):
-        """Transmit sequence IDs are consistent"""
+    def check_numtxsequences(self):
+        """Transmit sequences are properly counted"""
         with self.precondition():
             assert self.crsdroot.find("{*}Data/{*}Transmit") is not None
-            num_sequence = int(
-                self.crsdroot.findtext("{*}Data/{*}Transmit/{*}NumTxSequences")
+            self._check_num(
+                "{*}Data/{*}Transmit/{*}NumTxSequences",
+                "{*}Data/{*}Transmit/{*}TxSequence",
             )
-            data_sequence_ids = [
-                x.text
-                for x in self.crsdroot.findall(
-                    "{*}Data/{*}Transmit/{*}TxSequence/{*}Identifier"
-                )
-            ]
-            sequence_ids = [
-                x.text
-                for x in self.crsdroot.findall(
-                    "{*}TxSequence/{*}Parameters/{*}Identifier"
-                )
-            ]
-            with self.need("NumTxSequences is correct"):
-                assert num_sequence == len(data_sequence_ids)
-            with self.need("TxSequence identifiers are unique in Data branch"):
-                assert len(data_sequence_ids) == len(set(data_sequence_ids))
-            with self.need("TxSequence identifiers are unique in TxSequence branch"):
-                assert len(sequence_ids) == len(set(sequence_ids))
-            with self.need("TxSequence IDs in Data match TxSequence branch"):
-                assert set(data_sequence_ids) == set(sequence_ids)
 
     def check_numbytesppp(self):
         """NumBytesPPP matches PPP data structure"""
@@ -1727,31 +1542,13 @@ class CrsdConsistency(con.ConsistencyChecker):
             with self.need("XMIndex is not an AddedPPP name"):
                 assert "XMIndex" not in added_names
 
-    def check_channel_ids(self):
-        """Channel IDs are consistent"""
+    def check_numcrsdchannels(self):
+        """Channels are properly counted"""
         with self.precondition():
             assert self.crsdroot.find("{*}Data/{*}Receive") is not None
-            num_channel = int(
-                self.crsdroot.findtext("{*}Data/{*}Receive/{*}NumCRSDChannels")
+            self._check_num(
+                "{*}Data/{*}Receive/{*}NumCRSDChannels", "{*}Data/{*}Receive/{*}Channel"
             )
-            data_channel_ids = [
-                x.text
-                for x in self.crsdroot.findall(
-                    "{*}Data/{*}Receive/{*}Channel/{*}Identifier"
-                )
-            ]
-            channel_ids = [
-                x.text
-                for x in self.crsdroot.findall("{*}Channel/{*}Parameters/{*}Identifier")
-            ]
-            with self.need("NumCRSDChannels is correct"):
-                assert num_channel == len(channel_ids)
-            with self.need("Channel identifiers are unique in Data branch"):
-                assert len(data_channel_ids) == len(set(data_channel_ids))
-            with self.need("Channel identifiers are unique in Channel branch"):
-                assert len(channel_ids) == len(set(channel_ids))
-            with self.need("Channel IDs in Data match Channel branch"):
-                assert set(channel_ids) == set(data_channel_ids)
 
     def check_numbytespvp(self):
         """NumBytesPVP matches PVP data structure"""
@@ -1797,7 +1594,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             nodata_value = sa_element.findtext("{*}NODATA")
             num_bytes = int(
                 self.crsdroot.findtext(
-                    f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{identifier}']/{{*}}BytesPerElement"
+                    f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']/{{*}}BytesPerElement"
                 )
             )
             with self.need(f"SupportArray: {identifier} NODATA is the right size"):
@@ -1811,7 +1608,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         for fx_id in fx_ids:
             with self.need(f"FxResponseArray '{fx_id.text}' has at least 3 columns"):
                 num_cols = self.crsdroot.findtext(
-                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier="{fx_id.text}"]/{{*}}NumCols'
+                    f'{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId="{fx_id.text}"]/{{*}}NumCols'
                 )
                 assert int(num_cols) >= 3
 
@@ -1832,55 +1629,17 @@ class CrsdConsistency(con.ConsistencyChecker):
             with self.need(f"XMArray '{xm_id}' OSR > 1.1"):
                 assert 1.1 * max_xm_bw <= 1 / ts_xma
 
-    def check_antenna_ids(self):
-        """The correct number of unique each antenna Identifier"""
-        for short, name in [
-            ("ACF", "AntCoordFrame"),
-            ("APC", "AntPhaseCenter"),
-            ("AntPat", "AntPattern"),
-        ]:
-            num = int(self.crsdroot.findtext(f"{{*}}Antenna/{{*}}Num{short}s"))
-            ids = [
-                x.text
-                for x in self.crsdroot.findall(
-                    f"{{*}}Antenna/{{*}}{name}/{{*}}Identifier"
-                )
-            ]
-            with self.need(f"Num{short}s matches number of {name}"):
-                assert num == len(ids)
-            with self.need(f"{name} Identifiers are unique"):
-                assert len(set(ids)) == len(ids)
+    def check_numacfs(self):
+        """ACFs are properly counted"""
+        self._check_num("{*}Antenna/{*}NumACFs", "{*}Antenna/{*}AntCoordFrame")
 
-        for apc_node in self.crsdroot.findall("{*}Antenna/{*}AntPhaseCenter"):
-            identifier = apc_node.findtext("{*}Identifier")
-            acf_id = apc_node.findtext("{*}ACFId")
-            with self.need(f"APC {identifier} references extant AntCoordFrame"):
-                assert (
-                    self.crsdroot.find(
-                        f"{{*}}Antenna/{{*}}AntCoordFrame[{{*}}Identifier='{acf_id}']"
-                    )
-                    is not None
-                )
+    def check_numapcs(self):
+        """APCs are properly counted"""
+        self._check_num("{*}Antenna/{*}NumAPCs", "{*}Antenna/{*}AntPhaseCenter")
 
-    def check_antenna_pattern_gp_ids(self):
-        """Antenna GPIds refer to extant support arrays"""
-        for gp_type in ["Array", "Element"]:
-            gp_ids = [
-                x.text
-                for x in self.crsdroot.findall(
-                    "{{*}}Antenna/{{*}}AntPattern/{{*}}{gp_type}GPId"
-                )
-            ]
-            for gp_id in gp_ids:
-                with self.need(
-                    f"{gp_type}GPId {gp_id} refers to an extant antenna support array"
-                ):
-                    assert (
-                        self.crsdroot.find(
-                            f"{{*}}SupportArray/{{*}}AntGainPhase[{{*}}Identifier='{gp_id}']"
-                        )
-                        is not None
-                    )
+    def check_numapats(self):
+        """APATs are properly counted"""
+        self._check_num("{*}Antenna/{*}NumAPATs", "{*}Antenna/{*}AntPattern")
 
     def check_ant_pol_ref(self):
         """AntPolRef is mathematically sound"""
@@ -1893,7 +1652,7 @@ class CrsdConsistency(con.ConsistencyChecker):
 
     def check_ant_gain_phase(self):
         """Pattern Gain and Phase are zero at 0, 0"""
-        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
             identifier = gp_array.findtext("{*}Identifier")
             x0 = float(gp_array.findtext("{*}X0"))
             y0 = float(gp_array.findtext("{*}Y0"))
@@ -1902,7 +1661,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             xind_00 = -x0 / xss
             yind_00 = -y0 / yss
             data_node = self.crsdroot.find(
-                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{identifier}']"
+                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
             )
             num_rows = int(data_node.findtext("{*}NumRows"))
             num_cols = int(data_node.findtext("{*}NumCols"))
@@ -1929,14 +1688,14 @@ class CrsdConsistency(con.ConsistencyChecker):
 
     def check_ant_gp_extent(self):
         """Antenna GainPhase array does not go outside [-1, 1]"""
-        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
             identifier = gp_array.findtext("{*}Identifier")
             x0 = float(gp_array.findtext("{*}X0"))
             y0 = float(gp_array.findtext("{*}Y0"))
             xss = float(gp_array.findtext("{*}XSS"))
             yss = float(gp_array.findtext("{*}YSS"))
             data_node = self.crsdroot.find(
-                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{identifier}']"
+                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
             )
             num_rows = int(data_node.findtext("{*}NumRows"))
             num_cols = int(data_node.findtext("{*}NumCols"))
@@ -1948,10 +1707,10 @@ class CrsdConsistency(con.ConsistencyChecker):
 
     def check_ant_gp_size(self):
         """Antenna GainPhase array is at least 2x2 in size"""
-        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
             identifier = gp_array.findtext("{*}Identifier")
             data_node = self.crsdroot.find(
-                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}Identifier='{identifier}']"
+                f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
             )
             num_rows = int(data_node.findtext("{*}NumRows"))
             num_cols = int(data_node.findtext("{*}NumCols"))
@@ -1961,7 +1720,7 @@ class CrsdConsistency(con.ConsistencyChecker):
 
     def check_ant_gp_nan(self):
         """Antenna GainPhase array contains no NaN outside of NODATA"""
-        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}AntGainPhase"):
+        for gp_array in self.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
             identifier = gp_array.findtext("{*}Identifier")
             with self.precondition():
                 support_array = self._read_support_array(identifier)
@@ -2068,7 +1827,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             xml_offset = int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"])
             with open(self.filename, "rb") as fd:
                 header_and_pad = fd.read(xml_offset)
-            end_of_header = header_and_pad.find(skcrsd.CRSD_SECTION_TERMINATOR)
+            end_of_header = header_and_pad.find(skcrsd.SECTION_TERMINATOR)
             with self.need("section terminator exists before XML block"):
                 assert end_of_header > 0
             with self.need("pad between header and XML is zeros"):
@@ -2091,7 +1850,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             with open(self.filename, "rb") as fd:
                 fd.seek(xml_offset + xml_size)
                 with self.need("section terminator at end of XML block"):
-                    assert fd.read(2) == skcrsd.CRSD_SECTION_TERMINATOR
+                    assert fd.read(2) == skcrsd.SECTION_TERMINATOR
 
     def check_pad_before_binary_blocks(self):
         """Pad before binary blocks is null bytes"""
@@ -2125,7 +1884,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         for support_array_node in self.crsdroot.findall(
             "{*}Data/{*}Support/{*}SupportArray"
         ):
-            array_id = support_array_node.findtext("{*}Identifier")
+            array_id = support_array_node.findtext("{*}SAId")
 
             support_array_offset_size[array_id] = (
                 int(support_array_node.findtext("{*}ArrayByteOffset")),
@@ -2268,10 +2027,10 @@ class CrsdConsistency(con.ConsistencyChecker):
             with self.need("XML passes schema"):
                 assert schema.validate(self.crsdroot), schema.error_log
 
-    # TODO check ref point vs reference channel or txsequence node
     def check_refgeom_point(self):
+        """ReferenceGeometry/RefPoint matches RefPoint of reference sequence/channel"""
         if self.crsd_type == "CRSDtx":
-            seq_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+            seq_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
             seq_param_node = self.crsdroot.find(
                 f"{{*}}TxSequence/{{*}}Parameters[{{*}}Identifier='{seq_id}']"
             )
@@ -2362,10 +2121,10 @@ class CrsdConsistency(con.ConsistencyChecker):
                     "{*}SARImage/{*}DwellTimes/{*}Polynomials/{*}DwellId"
                 )
                 cod_poly = self.xmlhelp.load(
-                    f"{{*}}Dwell/{{*}}CODTime[{{*}}Identifier='{cod_id}']/{{*}}CODTimePoly"
+                    f"{{*}}DwellPolynomials/{{*}}CODTime[{{*}}Identifier='{cod_id}']/{{*}}CODTimePoly"
                 )
                 dwell_poly = self.xmlhelp.load(
-                    f"{{*}}Dwell/{{*}}DwellTime[{{*}}Identifier='{dwell_id}']/{{*}}DwellTimePoly"
+                    f"{{*}}DwellPolynomials/{{*}}DwellTime[{{*}}Identifier='{dwell_id}']/{{*}}DwellTimePoly"
                 )
                 t_cod_rpt = npp.polyval2d(*ref_pt_iac, cod_poly)
                 t_dwell_rpt = npp.polyval2d(*ref_pt_iac, dwell_poly)
@@ -2419,7 +2178,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert self.crsd_type != "CRSDrcv"
             xml_node = self.crsdroot.find("{*}ReferenceGeometry/{*}TxParameters")
-            seq_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxID")
+            seq_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
             if self.crsd_type == "CRSDsar":
                 ref_chan = self.crsdroot.findtext("{*}Channel/{*}RefChId")
                 chan_param_node = self.crsdroot.find(

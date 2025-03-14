@@ -9,7 +9,7 @@ DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def test_roundtrip(tmp_path, caplog):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.0.2024-12-30.xml")
+    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0-draft.2025-02-25.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
@@ -55,7 +55,7 @@ def test_roundtrip(tmp_path, caplog):
 
     support_arrays = {}
     for data_sa_elem in basis_etree.findall("./{*}Data/{*}Support/{*}SupportArray"):
-        sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
+        sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}SAId"))
         nrows = xmlhelp.load_elem(data_sa_elem.find("./{*}NumRows"))
         ncols = xmlhelp.load_elem(data_sa_elem.find("./{*}NumCols"))
         format_str = basis_etree.findtext(
@@ -64,31 +64,31 @@ def test_roundtrip(tmp_path, caplog):
         dt = skcrsd.binary_format_string_to_dtype(format_str)
         support_arrays[sa_id] = _random_array((nrows, ncols), dt)
 
-    crsd_plan = skcrsd.CrsdPlan(
-        file_header=skcrsd.CrsdFileHeaderFields(
-            classification="UNCLASSIFIED",
-            release_info="UNRESTRICTED",
+    crsd_metadata = skcrsd.Metadata(
+        file_header_part=skcrsd.FileHeaderPart(
             additional_kvps={"k1": "v1", "k2": "v2"},
         ),
-        crsd_xmltree=basis_etree,
+        xmltree=basis_etree,
     )
     out_crsd = tmp_path / "out.crsd"
     with open(out_crsd, "wb") as f:
-        with skcrsd.CrsdWriter(f, crsd_plan) as writer:
+        with skcrsd.Writer(f, crsd_metadata) as writer:
             writer.write_signal(channel_ids[0], basis_signal)
             writer.write_pvp(channel_ids[0], pvps)
             for k, v in support_arrays.items():
                 writer.write_support_array(k, v)
             writer.write_ppp(sequence_ids[0], ppps)
 
-    with open(out_crsd, "rb") as f, skcrsd.CrsdReader(f) as reader:
+    with open(out_crsd, "rb") as f, skcrsd.Reader(f) as reader:
         read_sig, read_pvp = reader.read_channel(channel_ids[0])
         read_support_arrays = {}
-        for sa_id in reader.crsd_xmltree.findall("./{*}SupportArray/*/{*}Identifier"):
+        for sa_id in reader.metadata.xmltree.findall(
+            "./{*}SupportArray/*/{*}Identifier"
+        ):
             read_support_arrays[sa_id.text] = reader.read_support_array(sa_id.text)
         read_ppp = reader.read_ppps(sequence_ids[0])
 
-    assert crsd_plan.file_header == reader.file_header
+    assert crsd_metadata.file_header_part == reader.metadata.file_header_part
     assert np.array_equal(basis_signal, read_sig)
     assert np.array_equal(pvps, read_pvp)
     assert np.array_equal(ppps, read_ppp)
@@ -98,6 +98,6 @@ def test_roundtrip(tmp_path, caplog):
         for f in support_arrays
     )
     assert lxml.etree.tostring(
-        reader.crsd_xmltree, method="c14n"
+        reader.metadata.xmltree, method="c14n"
     ) == lxml.etree.tostring(basis_etree, method="c14n")
     assert not caplog.text

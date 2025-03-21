@@ -27,6 +27,8 @@ Data Structure & File Format
    NitfReader
    NitfMetadata
    NitfWriter
+   SizingImhdr
+   image_segment_sizing_calculations
 
 XML Metadata
 ============

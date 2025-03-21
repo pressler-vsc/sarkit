@@ -825,7 +825,7 @@ class NitfWriter:
             index of SIDD Product image to write
         array : ndarray
             2D array of pixels
-        start : tuple of ints, optional
+        start : tuple of (int, int), optional
             The start index (first_row, first_col) of `array` in the SIDD image.
             If not given, `array` must be the full SIDD image.
         """

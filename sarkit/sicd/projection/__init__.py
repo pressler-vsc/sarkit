@@ -4,25 +4,38 @@ SICD Projection (:mod:`sarkit.sicd.projection`)
 ===============================================
 
 Objects and methods that implement the exploitation processing
-described in SICD Volume 3 Image Projections Description Document.
+described in SICD Volume 3 Image Projections Description Document (IPDD).
 
 Data Classes
 ============
 
 To simplify interfaces, some collections of metadata parameters are encapsulated in
-dataclasses with attributes named as similar as feasible to the IPDD. Each class
-contains a superset of the available parameters. A given instance may only specify a
-relevant subset, e.g. for when Collect_Type = MONOSTATIC vs BISTATIC.
+dataclasses with attributes named as similar as feasible to the IPDD.
 
 .. autosummary::
    :toctree: generated/
 
    AdjustableParameterOffsets
    MetadataParams
-   CoaPosVels
-   ProjectionSets
+   CoaPosVelsMono
+   CoaPosVelsBi
+   ProjectionSetsMono
+   ProjectionSetsBi
    ScenePointRRdotParams
    ScenePointGpXyParams
+
+Type Aliases
+------------
+
+.. py:type:: CoaPosVelsLike
+   :canonical: CoaPosVelsMono | CoaPosVelsBi
+
+   Represent either a monostatic or bistatic ensemble of COA positions and velocities
+
+.. py:type:: ProjectionSetsLike
+   :canonical: ProjectionSetsMono | ProjectionSetsBi
+
+   Represent either a monostatic or bistatic ensemble of COA projection sets
 
 Image Plane Parameters
 ======================
@@ -115,14 +128,28 @@ from ._calc import (
 )
 from ._params import (
     AdjustableParameterOffsets,
-    CoaPosVels,
+    CoaPosVelsBi,
+    CoaPosVelsLike,
+    CoaPosVelsMono,
     MetadataParams,
-    ProjectionSets,
+    ProjectionSetsBi,
+    ProjectionSetsLike,
+    ProjectionSetsMono,
     ScenePointGpXyParams,
     ScenePointRRdotParams,
 )
 
 __all__ = [
+    "AdjustableParameterOffsets",
+    "CoaPosVelsBi",
+    "CoaPosVelsLike",
+    "CoaPosVelsMono",
+    "MetadataParams",
+    "ProjectionSetsBi",
+    "ProjectionSetsLike",
+    "ProjectionSetsMono",
+    "ScenePointGpXyParams",
+    "ScenePointRRdotParams",
     "compute_and_apply_offsets",
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
@@ -138,13 +165,4 @@ __all__ = [
     "r_rdot_to_ground_plane_bi",
     "r_rdot_to_ground_plane_mono",
     "scene_to_image",
-]
-
-__all__ += [
-    "AdjustableParameterOffsets",
-    "CoaPosVels",
-    "MetadataParams",
-    "ProjectionSets",
-    "ScenePointGpXyParams",
-    "ScenePointRRdotParams",
 ]

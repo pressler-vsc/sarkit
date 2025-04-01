@@ -1,3 +1,4 @@
+import copy
 import dataclasses
 import pathlib
 
@@ -35,9 +36,9 @@ def mono_and_bi_proj_metadata(request):
     return sicdproj.MetadataParams.from_xml(etree)
 
 
-@pytest.fixture
-def image_grid_locations():
-    return np.random.default_rng(12345).uniform(size=(3, 4, 5, 2))
+@pytest.fixture(params=[(3, 4, 5, 2), (2,), (1, 2), (2, 2)])
+def image_grid_locations(request):
+    return np.random.default_rng(12345).uniform(size=request.param)
 
 
 def test_metadata_params():
@@ -181,12 +182,10 @@ def test_compute_pt_r_rdot_parameters_mono(example_proj_metadata):
 
     pt_r_rdot_params = sicdproj.compute_pt_r_rdot_parameters(
         example_proj_metadata.LOOK,
-        sicdproj.CoaPosVels(
-            Xmt_COA=example_proj_metadata.ARP_SCP_COA,
-            VXmt_COA=example_proj_metadata.VARP_SCP_COA,
-            Rcv_COA=example_proj_metadata.ARP_SCP_COA,
-            VRcv_COA=example_proj_metadata.VARP_SCP_COA,
-        ),
+        example_proj_metadata.ARP_SCP_COA,
+        example_proj_metadata.VARP_SCP_COA,
+        example_proj_metadata.ARP_SCP_COA,
+        example_proj_metadata.VARP_SCP_COA,
         example_proj_metadata.SCP,
     )
     r_scp, rdot_scp = sicdproj.compute_scp_coa_r_rdot(example_proj_metadata)
@@ -211,8 +210,10 @@ def test_r_rdot_to_ground_plane(example_proj_metadata):
     gpp_tgt_bi, delta_gp, success = sicdproj.r_rdot_to_ground_plane_bi(
         example_proj_metadata.LOOK,
         example_proj_metadata.SCP,
-        sicdproj.ProjectionSets(
+        sicdproj.ProjectionSetsBi(
             t_COA=proj_sets_mono.t_COA,
+            tx_COA=proj_sets_mono.t_COA,
+            tr_COA=proj_sets_mono.t_COA,
             Xmt_COA=proj_sets_mono.ARP_COA,
             VXmt_COA=proj_sets_mono.VARP_COA,
             Rcv_COA=proj_sets_mono.ARP_COA,
@@ -243,7 +244,6 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     spp_tgt, _, success = sicdproj.r_rdot_to_constant_hae_surface(
         proj_metadata.LOOK,
         proj_metadata.SCP,
-        proj_metadata.Collect_Type,
         proj_sets,
         hae0,
     )
@@ -252,16 +252,16 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     assert spp_llh[..., 2] == pytest.approx(hae0, abs=1e-6)
 
     bad_index = (1, 2, 3)
+    bad_proj_sets = copy.deepcopy(proj_sets)
     if proj_metadata.is_monostatic():
-        proj_sets.R_COA[bad_index] *= 1e6
+        bad_proj_sets.R_COA[bad_index] *= 1e6
     else:
-        proj_sets.R_Avg_COA[bad_index] *= 1e6
+        bad_proj_sets.R_Avg_COA[bad_index] *= 1e6
 
     spp_tgt_w_bad, _, success = sicdproj.r_rdot_to_constant_hae_surface(
         proj_metadata.LOOK,
         proj_metadata.SCP,
-        proj_metadata.Collect_Type,
-        proj_sets,
+        bad_proj_sets,
         hae0,
     )
     assert not success
@@ -269,23 +269,39 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     assert np.array_equal(bad_index, mismatched_index)
 
 
+def _projection_sets_smoketest(mdata, gridlocs):
+    proj_set = sicdproj.compute_projection_sets(mdata, gridlocs)
+    if mdata.is_monostatic():
+        assert np.all([proj_set.R_COA, proj_set.Rdot_COA])
+        gpp_tgt = sicdproj.r_rdot_to_ground_plane_mono(
+            mdata.LOOK,
+            proj_set,
+            mdata.SCP,
+            sicdproj.compute_scp_coa_slant_plane_normal(mdata),
+        )
+    else:
+        assert np.all([proj_set.R_Avg_COA, proj_set.Rdot_Avg_COA])
+        gpp_tgt, _, _ = sicdproj.r_rdot_to_ground_plane_bi(
+            mdata.LOOK,
+            mdata.SCP,
+            proj_set,
+            mdata.SCP,
+            sicdproj.compute_scp_coa_slant_plane_normal(mdata),
+        )
+
+    assert gpp_tgt.shape == gridlocs.shape[:-1] + (3,)
+
+    spp_tgt, _, _ = sicdproj.r_rdot_to_constant_hae_surface(
+        mdata.LOOK, mdata.SCP, proj_set, mdata.SCP_HAE
+    )
+    assert spp_tgt.shape == gridlocs.shape[:-1] + (3,)
+
+
 def test_r_rdot_from_rgazim_rgazcomp(example_proj_metadata, image_grid_locations):
     example_proj_metadata.IFA = "RGAZCOMP"
     example_proj_metadata.Grid_Type = "RGAZIM"
     example_proj_metadata.AzSF = 2.0
-    computed_pos_vel = sicdproj.compute_coa_pos_vel(
-        example_proj_metadata, example_proj_metadata.t_SCP_COA
-    )
-    r_tgt_coa, rdot_tgt_coa = sicdproj.compute_coa_r_rdot(
-        example_proj_metadata,
-        image_grid_locations,
-        example_proj_metadata.t_SCP_COA,
-        computed_pos_vel,
-    )
-
-    assert r_tgt_coa.shape[-1] == 1
-    assert rdot_tgt_coa.shape[-1] == 1
-    assert np.all([r_tgt_coa, rdot_tgt_coa])
+    _projection_sets_smoketest(example_proj_metadata, image_grid_locations)
 
 
 def test_r_rdot_from_rgzero(example_proj_metadata, image_grid_locations):
@@ -294,54 +310,17 @@ def test_r_rdot_from_rgzero(example_proj_metadata, image_grid_locations):
     example_proj_metadata.cT_CA = np.array([1.0, 0.0001])
     example_proj_metadata.cDRSF = np.array([[1.0, 0.0001], [1.0, 0.0001]])
     example_proj_metadata.R_CA_SCP = 10000
-
-    computed_pos_vel = sicdproj.compute_coa_pos_vel(
-        example_proj_metadata, example_proj_metadata.t_SCP_COA
-    )
-    r_tgt_coa, rdot_tgt_coa = sicdproj.compute_coa_r_rdot(
-        example_proj_metadata,
-        image_grid_locations,
-        example_proj_metadata.t_SCP_COA,
-        computed_pos_vel,
-    )
-
-    assert r_tgt_coa.shape[-1] == 1
-    assert rdot_tgt_coa.shape[-1] == 1
-    assert np.all([r_tgt_coa, rdot_tgt_coa])
+    _projection_sets_smoketest(example_proj_metadata, image_grid_locations)
 
 
 def test_r_rdot_from_xrgycr(mono_and_bi_proj_metadata, image_grid_locations):
     mono_and_bi_proj_metadata.Grid_Type = "XRGYCR"
-    computed_pos_vel = sicdproj.compute_coa_pos_vel(
-        mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
-    )
-    r_tgt_coa, rdot_tgt_coa = sicdproj.compute_coa_r_rdot(
-        mono_and_bi_proj_metadata,
-        image_grid_locations,
-        mono_and_bi_proj_metadata.t_SCP_COA,
-        computed_pos_vel,
-    )
-
-    assert r_tgt_coa.shape[-1] == 1
-    assert rdot_tgt_coa.shape[-1] == 1
-    assert np.all([r_tgt_coa, rdot_tgt_coa])
+    _projection_sets_smoketest(mono_and_bi_proj_metadata, image_grid_locations)
 
 
 def test_r_rdot_from_xctyat(mono_and_bi_proj_metadata, image_grid_locations):
     mono_and_bi_proj_metadata.Grid_Type = "XCTYAT"
-    computed_pos_vel = sicdproj.compute_coa_pos_vel(
-        mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
-    )
-    r_tgt_coa, rdot_tgt_coa = sicdproj.compute_coa_r_rdot(
-        mono_and_bi_proj_metadata,
-        image_grid_locations,
-        mono_and_bi_proj_metadata.t_SCP_COA,
-        computed_pos_vel,
-    )
-
-    assert r_tgt_coa.shape[-1] == 1
-    assert rdot_tgt_coa.shape[-1] == 1
-    assert np.all([r_tgt_coa, rdot_tgt_coa])
+    _projection_sets_smoketest(mono_and_bi_proj_metadata, image_grid_locations)
 
 
 def test_r_rdot_from_plane(mono_and_bi_proj_metadata, image_grid_locations):
@@ -350,19 +329,7 @@ def test_r_rdot_from_plane(mono_and_bi_proj_metadata, image_grid_locations):
     mono_and_bi_proj_metadata.cT_CA = np.array([1.0, 0.0001])
     mono_and_bi_proj_metadata.cDRSF = np.array([[1.0, 0.0001], [1.0, 0.0001]])
     mono_and_bi_proj_metadata.R_CA_SCP = 10000
-    computed_pos_vel = sicdproj.compute_coa_pos_vel(
-        mono_and_bi_proj_metadata, mono_and_bi_proj_metadata.t_SCP_COA
-    )
-    r_tgt_coa, rdot_tgt_coa = sicdproj.compute_coa_r_rdot(
-        mono_and_bi_proj_metadata,
-        image_grid_locations,
-        mono_and_bi_proj_metadata.t_SCP_COA,
-        computed_pos_vel,
-    )
-
-    assert r_tgt_coa.shape[-1] == 1
-    assert rdot_tgt_coa.shape[-1] == 1
-    assert np.all([r_tgt_coa, rdot_tgt_coa])
+    _projection_sets_smoketest(mono_and_bi_proj_metadata, image_grid_locations)
 
 
 @pytest.fixture(

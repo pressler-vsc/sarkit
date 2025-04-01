@@ -2,13 +2,17 @@
 
 import dataclasses
 import functools
-from typing import Optional, Self
+from typing import Optional, Self, TypeAlias
 
 import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
 
 import sarkit.sicd._xml as ss_xml
+
+# TODO: encouraged to migrate to type statements instead of TypeAlias in python 3.12
+CoaPosVelsLike: TypeAlias = "CoaPosVelsMono | CoaPosVelsBi"
+ProjectionSetsLike: TypeAlias = "ProjectionSetsMono | ProjectionSetsBi"
 
 
 def _get_rcv_poly(xmlhelp):
@@ -113,6 +117,10 @@ class MetadataParams:
             return False
         raise ValueError(f"{Collect_Type=} must be MONOSTATIC or BISTATIC")
 
+    def is_bistatic(self) -> bool:
+        """Returns True if BISTATIC, False if MONOSTATIC. Otherwise raises exception."""
+        return not self.is_monostatic()
+
     @classmethod
     def from_xml(cls, sicd_xmltree: lxml.etree.ElementTree) -> Self:
         """Extract relevant metadata parameters from SICD XML as described in SICD IPDD.
@@ -198,53 +206,105 @@ class MetadataParams:
 
 
 @dataclasses.dataclass(kw_only=True)
-class CoaPosVels:
-    """
-    Ensemble of Center Of Aperture sensor positions and velocities.
+class CoaPosVelsMono:
+    """Ensemble of monostatic Center Of Aperture sensor positions and velocities.
 
-    The parameters that specify the COA positions and velocities are dependent on the
-    Collect Type of the image collection.
+    Constructor arguments are array_like and broadcast into the attributes.
 
-    MONOSTATIC
-        ARP_COA, VARP_COA
-
-    BISTATIC
-        GRP_COA, tx_COA, tr_COA, Xmt_COA, VXmt_COA, Rcv_COA, VRcv_COA
-
+    Attributes
+    ----------
+    ARP_COA, VARP_COA : (..., 3) ndarray
+        Aperture reference point positions and velocities with ECEF X, Y, Z components (m) in last dimension
     """
 
     # To help link the code to the SICD Image Projections Description Document, the variable names
     # used here are intended to closely match the names used in the document.  As a result they
     # may not adhere to the PEP8 convention used elsewhere in the code.
 
-    # Monostatic
-    ARP_COA: Optional[np.ndarray] = None
-    VARP_COA: Optional[np.ndarray] = None
-    # Bistatic
-    GRP_COA: Optional[np.ndarray] = None
-    tx_COA: Optional[np.ndarray] = None  # noqa N802
-    tr_COA: Optional[np.ndarray] = None  # noqa N802
-    Xmt_COA: Optional[np.ndarray] = None
-    VXmt_COA: Optional[np.ndarray] = None
-    Rcv_COA: Optional[np.ndarray] = None
-    VRcv_COA: Optional[np.ndarray] = None
+    ARP_COA: np.ndarray
+    VARP_COA: np.ndarray
+
+    def __post_init__(self):
+        self.ARP_COA, self.VARP_COA = np.broadcast_arrays(
+            np.asarray(self.ARP_COA), np.asarray(self.VARP_COA)
+        )
 
 
 @dataclasses.dataclass(kw_only=True)
-class ProjectionSets:
+class CoaPosVelsBi:
+    """Ensemble of bistatic Center Of Aperture sensor positions and velocities.
+
+    Constructor arguments are array_like and broadcast into the attributes after an implicit, right-most dimension is
+    added to `tx_COA` and `tr_COA`.
+    The implicit dimension is subsequently removed.
+
+    Attributes
+    ----------
+    GRP_COA : (..., 3) ndarray
+        Ground reference points with ECEF X, Y, Z components (m) in last dimension
+    tx_COA, tr_COA : (...) ndarray
+        Transmit and receive times in seconds relative to collect start for computing bistatic geometry
+    Xmt_COA, Rcv_COA : (..., 3) ndarray
+        Transmit and receive APC positions with ECEF X, Y, Z components (m) in last dimension
+    VXmt_COA, VRcv_COA : (..., 3) ndarray
+        Transmit and receive APC velocities with ECEF X, Y, Z components (m/s) in last dimension
     """
-    Ensemble of Center of Aperture projection sets.
+
+    # To help link the code to the SICD Image Projections Description Document, the variable names
+    # used here are intended to closely match the names used in the document.  As a result they
+    # may not adhere to the PEP8 convention used elsewhere in the code.
+
+    GRP_COA: np.ndarray
+    tx_COA: np.ndarray  # noqa N802
+    tr_COA: np.ndarray  # noqa N802
+    Xmt_COA: np.ndarray
+    VXmt_COA: np.ndarray
+    Rcv_COA: np.ndarray
+    VRcv_COA: np.ndarray
+
+    def __post_init__(self):
+        (
+            self.GRP_COA,
+            self.tx_COA,
+            self.tr_COA,
+            self.Xmt_COA,
+            self.VXmt_COA,
+            self.Rcv_COA,
+            self.VRcv_COA,
+        ) = np.broadcast_arrays(
+            np.asarray(self.GRP_COA),
+            np.asarray(self.tx_COA)[..., np.newaxis],
+            np.asarray(self.tr_COA)[..., np.newaxis],
+            np.asarray(self.Xmt_COA),
+            np.asarray(self.VXmt_COA),
+            np.asarray(self.Rcv_COA),
+            np.asarray(self.VRcv_COA),
+        )
+        self.tx_COA = self.tx_COA[..., 0]
+        self.tr_COA = self.tr_COA[..., 0]
+
+
+@dataclasses.dataclass(kw_only=True)
+class ProjectionSetsMono:
+    """Ensemble of monostatic Center of Aperture projection sets.
 
     For a selected image grid location, the COA projection set contains the parameters
-    needed for computing precise image-to-scene projection. The parameters contained in
-    the COA projection set are dependent upon the Collect Type.
+    needed for computing precise image-to-scene projection.
 
-    MONOSTATIC
-        t_COA, ARP_COA, VARP_COA, R_COA, Rdot_COA
+    Constructor arguments are array_like and broadcast into the attributes after an implicit, right-most dimension is
+    added to `t_COA`, `R_COA` and `Rdot_COA`.
+    The implicit dimension is subsequently removed
 
-    BISTATIC
-        t_COA, tx_COA, tr_COA, Xmt_COA, VXmt_COA, Rcv_COA, VRcv_COA, R_Avg_COA, Rdot_Avg_COA
-
+    Attributes
+    ----------
+    t_COA : (...) ndarray
+        Center of aperture times in seconds relative to collect start
+    ARP_COA : (..., 3) ndarray
+        Aperture reference point positions with ECEF X, Y, Z components (m) in last dimension
+    VARP_COA : (..., 3) ndarray
+        Aperture reference point velocities with ECEF X, Y, Z components (m/s) in last dimension
+    R_COA, Rdot_COA : (...) ndarray
+        Ranges (m) and range rates (m/s) relative to the ARP COA positions and velocities
     """
 
     # To help link the code to the SICD Image Projections Description Document, the variable names
@@ -252,20 +312,96 @@ class ProjectionSets:
     # may not adhere to the PEP8 convention used elsewhere in the code.
 
     t_COA: np.ndarray  # noqa N802
-    # Monostatic
-    ARP_COA: Optional[np.ndarray] = None
-    VARP_COA: Optional[np.ndarray] = None
-    R_COA: Optional[np.ndarray] = None
-    Rdot_COA: Optional[np.ndarray] = None
-    # Bistatic
-    tx_COA: Optional[np.ndarray] = None  # noqa N802
-    tr_COA: Optional[np.ndarray] = None  # noqa N802
-    Xmt_COA: Optional[np.ndarray] = None
-    VXmt_COA: Optional[np.ndarray] = None
-    Rcv_COA: Optional[np.ndarray] = None
-    VRcv_COA: Optional[np.ndarray] = None
-    R_Avg_COA: Optional[np.ndarray] = None
-    Rdot_Avg_COA: Optional[np.ndarray] = None
+    ARP_COA: np.ndarray
+    VARP_COA: np.ndarray
+    R_COA: np.ndarray
+    Rdot_COA: np.ndarray
+
+    def __post_init__(self):
+        (
+            self.t_COA,
+            self.ARP_COA,
+            self.VARP_COA,
+            self.R_COA,
+            self.Rdot_COA,
+        ) = np.broadcast_arrays(
+            np.asarray(self.t_COA)[..., np.newaxis],
+            np.asarray(self.ARP_COA),
+            np.asarray(self.VARP_COA),
+            np.asarray(self.R_COA)[..., np.newaxis],
+            np.asarray(self.Rdot_COA)[..., np.newaxis],
+        )
+        self.t_COA = self.t_COA[..., 0]
+        self.R_COA = self.R_COA[..., 0]
+        self.Rdot_COA = self.Rdot_COA[..., 0]
+
+
+@dataclasses.dataclass(kw_only=True)
+class ProjectionSetsBi:
+    """Ensemble of bistatic Center of Aperture projection sets.
+
+    For a selected image grid location, the COA projection set contains the parameters
+    needed for computing precise image-to-scene projection.
+
+    Constructor arguments are array_like and broadcast into the attributes after an implicit, right-most dimension is
+    added to `t_COA`, `tx_COA`, `tr_COA`, `R_Avg_COA` and `Rdot_Avg_COA`.
+    The implicit dimension is subsequently removed
+
+    Attributes
+    ----------
+    t_COA : (...) ndarray
+        Center of aperture times in seconds relative to collect start
+    tx_COA, tr_COA : (...) ndarray
+        Transmit and receive times in seconds relative to collect start for computing bistatic geometry
+    Xmt_COA, Rcv_COA : (..., 3) ndarray
+        Transmit and receive APC positions with ECEF X, Y, Z components (m) in last dimension
+    VXmt_COA, VRcv_COA : (..., 3) ndarray
+        Transmit and receive APC velocities with ECEF X, Y, Z components (m/s) in last dimension
+    R_Avg_COA, Rdot_Avg_COA : (...) ndarray
+        Range (m) and range rate (m/s) averages relative to the APC COA positions and velocities
+    """
+
+    # To help link the code to the SICD Image Projections Description Document, the variable names
+    # used here are intended to closely match the names used in the document.  As a result they
+    # may not adhere to the PEP8 convention used elsewhere in the code.
+
+    t_COA: np.ndarray  # noqa N802
+    tx_COA: np.ndarray  # noqa N802
+    tr_COA: np.ndarray  # noqa N802
+    Xmt_COA: np.ndarray
+    VXmt_COA: np.ndarray
+    Rcv_COA: np.ndarray
+    VRcv_COA: np.ndarray
+    R_Avg_COA: np.ndarray
+    Rdot_Avg_COA: np.ndarray
+
+    def __post_init__(self):
+        (
+            self.t_COA,
+            self.tx_COA,
+            self.tr_COA,
+            self.Xmt_COA,
+            self.VXmt_COA,
+            self.Rcv_COA,
+            self.VRcv_COA,
+            self.R_Avg_COA,
+            self.Rdot_Avg_COA,
+        ) = np.broadcast_arrays(
+            np.asarray(self.t_COA)[..., np.newaxis],
+            np.asarray(self.tx_COA)[..., np.newaxis],
+            np.asarray(self.tr_COA)[..., np.newaxis],
+            np.asarray(self.Xmt_COA),
+            np.asarray(self.VXmt_COA),
+            np.asarray(self.Rcv_COA),
+            np.asarray(self.VRcv_COA),
+            np.asarray(self.R_Avg_COA)[..., np.newaxis],
+            np.asarray(self.Rdot_Avg_COA)[..., np.newaxis],
+        )
+        self.t_COA = self.t_COA[..., 0]
+        self.tx_COA = self.tx_COA[..., 0]
+        self.tr_COA = self.tr_COA[..., 0]
+        self.R_Avg_COA = self.R_Avg_COA[..., 0]
+        self.Rdot_Avg_COA = self.Rdot_Avg_COA[..., 0]
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -273,18 +409,22 @@ class ScenePointRRdotParams:
     """
     Ensemble of range and range rate parameters for a collection of scene points (PT).
 
+    Constructor arguments are array_like and broadcast into the attributes after an implicit, right-most dimension is
+    added to `R_Avg_PT` and `Rdot_Avg_PT`.
+    The implicit dimension is subsequently removed
+
     Attributes
     ----------
-    R_Avg_PT : ndarray
-        Average range
-    Rdot_Avg_PT : ndarray
-        Average range rate
-    bP_PT : ndarray
-        Bistatic pointing vector
-    bPDot_PT : ndarray
+    R_Avg_PT : (...) ndarray
+        Average range (m)
+    Rdot_Avg_PT : (...) ndarray
+        Average range rate (m/s)
+    bP_PT : (..., 3) ndarray
+        Bistatic pointing vector with ECEF X, Y, Z components (m) in last dimension
+    bPDot_PT : (..., 3) ndarray
         Derivative w.r.t. time of bistatic pointing vector
-    uSPN_PT
-        Bistatic slant plant unit normal
+    uSPN_PT: (..., 3) ndarray
+        Bistatic slant plant unit normal with ECEF X, Y, Z components (m) in last dimension
     """
 
     # To help link the code to the SICD Image Projections Description Document, the variable names
@@ -296,6 +436,23 @@ class ScenePointRRdotParams:
     bP_PT: np.ndarray  # noqa N802
     bPDot_PT: np.ndarray  # noqa N802
     uSPN_PT: np.ndarray  # noqa N802
+
+    def __post_init__(self):
+        (
+            self.R_Avg_PT,
+            self.Rdot_Avg_PT,
+            self.bP_PT,
+            self.bPDot_PT,
+            self.uSPN_PT,
+        ) = np.broadcast_arrays(
+            np.asarray(self.R_Avg_PT)[..., np.newaxis],
+            np.asarray(self.Rdot_Avg_PT)[..., np.newaxis],
+            np.asarray(self.bP_PT),
+            np.asarray(self.bPDot_PT),
+            np.asarray(self.uSPN_PT),
+        )
+        self.R_Avg_PT = self.R_Avg_PT[..., 0]
+        self.Rdot_Avg_PT = self.Rdot_Avg_PT[..., 0]
 
 
 @dataclasses.dataclass(kw_only=True)

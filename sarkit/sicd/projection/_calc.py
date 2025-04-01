@@ -126,7 +126,7 @@ def compute_coa_time(
 def compute_coa_pos_vel(
     proj_metadata: params.MetadataParams,
     t_coa: npt.ArrayLike,
-) -> params.CoaPosVels:
+) -> params.CoaPosVelsLike:
     """Compute Center of Aperture positions and velocities at specified COA times.
 
     The parameters that specify the positions and velocities are dependent on
@@ -147,13 +147,12 @@ def compute_coa_pos_vel(
 
     Returns
     -------
-    CoaPosVels
-        Ensemble of COA sensor positions and velocities with applicable parameters set.
-
+    CoaPosVelsLike
+        Ensemble of COA sensor positions and velocities
     """
     t_coa = np.asarray(t_coa)
     if proj_metadata.is_monostatic():
-        return params.CoaPosVels(
+        return params.CoaPosVelsMono(
             ARP_COA=_xyzpolyval(t_coa, proj_metadata.ARP_Poly),
             VARP_COA=_xyzpolyval(t_coa, npp.polyder(proj_metadata.ARP_Poly)),
         )
@@ -182,7 +181,7 @@ def compute_coa_pos_vel(
     rcv_coa = _xyzpolyval(tr_coa, proj_metadata.Rcv_Poly)
     vrcv_coa = _xyzpolyval(tr_coa, npp.polyder(proj_metadata.Rcv_Poly))
 
-    return params.CoaPosVels(
+    return params.CoaPosVelsBi(
         GRP_COA=grp_coa,
         tx_COA=tx_coa,
         tr_COA=tr_coa,
@@ -283,7 +282,7 @@ def compute_coa_r_rdot(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
     t_coa: npt.ArrayLike,
-    coa_pos_vels: params.CoaPosVels,
+    coa_pos_vels: params.CoaPosVelsLike,
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Compute COA range and range-rate contours given other projection set components.
 
@@ -297,42 +296,45 @@ def compute_coa_r_rdot(
         N-D array of image coordinates with xrow/ycol in meters in the last dimension.
     t_coa : array_like
         Center of aperture times in seconds relative to collect start.
-    coa_pos_vels : CoaPosVels
+    coa_pos_vels : CoaPosVelsLike
         Ensemble of COA sensor positions and velocities
 
     Returns
     -------
-    r, rdot : (..., 1) ndarray
+    r, rdot : (...) ndarray
         N-D array containing the ranges and range rates relative to the COA positions
         and velocities.
         For a monostatic image, ``r`` and ``rdot`` are relative to the ARP.
         For a bistatic image, ``r`` and ``rdot`` are averages relative to the COA APCs.
 
     """
-    r_rdot_func = None
     if proj_metadata.Grid_Type == "RGAZIM":
         if proj_metadata.IFA == "PFA":
-            r_rdot_func = r_rdot_from_rgazim_pfa
+            return r_rdot_from_rgazim_pfa(
+                proj_metadata, image_grid_locations, t_coa, coa_pos_vels
+            )
         if proj_metadata.IFA == "RGAZCOMP":
-            r_rdot_func = r_rdot_from_rgazim_rgazcomp
-    else:
-        r_rdot_func = {
-            "RGZERO": r_rdot_from_rgzero,
-            "XRGYCR": r_rdot_from_xrgycr,
-            "XCTYAT": r_rdot_from_xctyat,
-            "PLANE": r_rdot_from_plane,
-        }.get(proj_metadata.Grid_Type)
-    if not r_rdot_func:
-        raise ValueError("Insufficient metadata to perform projection")
-
-    return r_rdot_func(proj_metadata, image_grid_locations, t_coa, coa_pos_vels)
+            if not isinstance(coa_pos_vels, params.CoaPosVelsMono):
+                raise ValueError("coa_pos_vels must be monostatic for RGAZCOMP")
+            return r_rdot_from_rgazim_rgazcomp(
+                proj_metadata, image_grid_locations, coa_pos_vels
+            )
+    if proj_metadata.Grid_Type == "RGZERO":
+        return r_rdot_from_rgzero(proj_metadata, image_grid_locations, t_coa)
+    if proj_metadata.Grid_Type == "XRGYCR":
+        return r_rdot_from_xrgycr(proj_metadata, image_grid_locations, coa_pos_vels)
+    if proj_metadata.Grid_Type == "XCTYAT":
+        return r_rdot_from_xctyat(proj_metadata, image_grid_locations, coa_pos_vels)
+    if proj_metadata.Grid_Type == "PLANE":
+        return r_rdot_from_plane(proj_metadata, image_grid_locations, coa_pos_vels)
+    raise ValueError("Insufficient metadata to perform projection")
 
 
 def r_rdot_from_rgazim_pfa(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
     t_coa: npt.ArrayLike,
-    coa_pos_vels: params.CoaPosVels,
+    coa_pos_vels: params.CoaPosVelsLike,
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Image Grid To R/Rdot: Grid_Type = RGAZIM & IFA = PFA."""
 
@@ -341,16 +343,27 @@ def r_rdot_from_rgazim_pfa(
     az_tgts = tgts[..., 1]
     t_coa = np.asarray(t_coa)
 
-    if proj_metadata.is_monostatic():
+    if proj_metadata.is_monostatic() and isinstance(
+        coa_pos_vels, params.CoaPosVelsMono
+    ):
         r_scp_vector = coa_pos_vels.ARP_COA - proj_metadata.SCP
-        r_scp = np.linalg.norm(r_scp_vector, axis=-1, keepdims=True)
-        rdot_scp = (coa_pos_vels.VARP_COA * r_scp_vector).sum(-1, keepdims=True) / r_scp
-    else:
+        r_scp = np.linalg.norm(r_scp_vector, axis=-1)
+        rdot_scp = (coa_pos_vels.VARP_COA * r_scp_vector).sum(-1) / r_scp
+    elif proj_metadata.is_bistatic() and isinstance(coa_pos_vels, params.CoaPosVelsBi):
         pt_r_rdot_params = compute_pt_r_rdot_parameters(
-            proj_metadata.LOOK, coa_pos_vels, proj_metadata.SCP
+            proj_metadata.LOOK,
+            coa_pos_vels.Xmt_COA,
+            coa_pos_vels.VXmt_COA,
+            coa_pos_vels.Rcv_COA,
+            coa_pos_vels.VRcv_COA,
+            proj_metadata.SCP,
         )
         r_scp = pt_r_rdot_params.R_Avg_PT
         rdot_scp = pt_r_rdot_params.Rdot_Avg_PT
+    else:
+        raise RuntimeError(
+            f"{type(coa_pos_vels)=} inconsistent with {proj_metadata.Collect_Type=}"
+        )
 
     # Compute polar angle and its derivative with respect to time
     assert proj_metadata.cPA is not None
@@ -373,21 +386,19 @@ def r_rdot_from_rgazim_pfa(
     delta_rdot = (dksf_dtheta * dphi_dka + ksf * dphi_dkc) * dtheta_dt
 
     # Compute the range and range rate relative to the COA positions and velocities.
-    r = r_scp + delta_r[..., np.newaxis]
-    rdot = rdot_scp + delta_rdot[..., np.newaxis]
+    r = r_scp + delta_r
+    rdot = rdot_scp + delta_rdot
     return r, rdot
 
 
 def r_rdot_from_rgazim_rgazcomp(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
-    t_coa: npt.ArrayLike,
-    coa_pos_vels: params.CoaPosVels,
+    coa_pos_vels: params.CoaPosVelsMono,
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Image Grid To R/Rdot: Grid_Type = RGAZIM & IFA = RGAZCOMP."""
 
     assert proj_metadata.is_monostatic()
-    assert coa_pos_vels.VARP_COA is not None
 
     tgts = np.asarray(image_grid_locations)
     rg_tgts = tgts[..., 0]
@@ -395,18 +406,16 @@ def r_rdot_from_rgazim_rgazcomp(
 
     # Compute the range and range rate to the SCP at COA
     r_scp_vector = coa_pos_vels.ARP_COA - proj_metadata.SCP
-    r_scp = np.linalg.norm(r_scp_vector, axis=-1, keepdims=True)
-    rdot_scp = (coa_pos_vels.VARP_COA * r_scp_vector).sum(-1, keepdims=True) / r_scp
+    r_scp = np.linalg.norm(r_scp_vector, axis=-1)
+    rdot_scp = (coa_pos_vels.VARP_COA * r_scp_vector).sum(-1) / r_scp
 
     # Compute the increment in cosine of the DCA at COA of the target and the increment in range rate
     delta_cos_dca = proj_metadata.AzSF * az_tgts
-    delta_rdot = (
-        -np.linalg.norm(coa_pos_vels.VARP_COA, axis=-1, keepdims=True) * delta_cos_dca
-    )
+    delta_rdot = -np.linalg.norm(coa_pos_vels.VARP_COA, axis=-1) * delta_cos_dca
 
     # Compute the range and range rate to the target at COA
-    r_tgt_coa = (r_scp + rg_tgts)[..., np.newaxis]
-    rdot_tgt_coa = rdot_scp + delta_rdot[..., np.newaxis]
+    r_tgt_coa = r_scp + rg_tgts
+    rdot_tgt_coa = rdot_scp + delta_rdot
     return r_tgt_coa, rdot_tgt_coa
 
 
@@ -414,7 +423,6 @@ def r_rdot_from_rgzero(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
     t_coa: npt.ArrayLike,
-    coa_pos_vels: params.CoaPosVels,
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Image Grid To R/Rdot: Grid_Type = RGZERO."""
 
@@ -431,7 +439,7 @@ def r_rdot_from_rgzero(
 
     # Compute the ARP velocity at t_ca and compute the magnitude of the vector
     varp_ca = _xyzpolyval(t_ca, npp.polyder(proj_metadata.ARP_Poly))
-    varp_ca_mag = np.linalg.norm(varp_ca, axis=-1, keepdims=True)
+    varp_ca_mag = np.linalg.norm(varp_ca, axis=-1)
 
     # Compute the Doppler Rate Scale Factor for image grid (rg_tgts, az_tgts)
     assert proj_metadata.cDRSF is not None
@@ -441,50 +449,39 @@ def r_rdot_from_rgzero(
     delta_t_coa = t_coa - t_ca
 
     # Compute the range and range rate relative to the ARP at COA
-    r_tgt_coa = np.sqrt(
-        r_ca[..., np.newaxis] ** 2
-        + drsf[..., np.newaxis] * varp_ca_mag**2 * delta_t_coa[..., np.newaxis] ** 2
-    )
-    rdot_tgt_coa = (
-        drsf[..., np.newaxis]
-        / r_tgt_coa
-        * varp_ca_mag**2
-        * delta_t_coa[..., np.newaxis]
-    )
+    r_tgt_coa = np.sqrt(r_ca**2 + drsf * varp_ca_mag**2 * delta_t_coa**2)
+    rdot_tgt_coa = drsf / r_tgt_coa * varp_ca_mag**2 * delta_t_coa
     return r_tgt_coa, rdot_tgt_coa
 
 
 def r_rdot_from_xrgycr(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
-    t_coa: npt.ArrayLike,
-    coa_pos_vels: params.CoaPosVels,
+    coa_pos_vels: params.CoaPosVelsLike,
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Image Grid To R/Rdot: Grid_Type = XRGYCR.
 
     XRGYCR is a special case of a uniformly sampled image plane.
     """
-    return r_rdot_from_plane(proj_metadata, image_grid_locations, t_coa, coa_pos_vels)
+    return r_rdot_from_plane(proj_metadata, image_grid_locations, coa_pos_vels)
 
 
 def r_rdot_from_xctyat(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
-    t_coa: npt.ArrayLike,
-    coa_pos_vels: params.CoaPosVels,
+    coa_pos_vels: params.CoaPosVelsLike,
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Image Grid To R/Rdot: Grid_Type = XCTYAT.
 
     XCTYAT is a special case of a uniformly sampled image plane.
     """
-    return r_rdot_from_plane(proj_metadata, image_grid_locations, t_coa, coa_pos_vels)
+    return r_rdot_from_plane(proj_metadata, image_grid_locations, coa_pos_vels)
 
 
 def r_rdot_from_plane(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
-    t_coa: npt.ArrayLike,
-    coa_pos_vels: params.CoaPosVels,
+    coa_pos_vels: params.CoaPosVelsLike,
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Image Grid To R/Rdot: Grid_Type = PLANE."""
 
@@ -500,27 +497,35 @@ def r_rdot_from_plane(
     )
 
     # Compute the range and range rate to the image plane point IP_TGT relative to the COA positions and velocities
-    if proj_metadata.is_monostatic():
-        r_tgt_coa = np.linalg.norm(
-            coa_pos_vels.ARP_COA - ip_tgt, axis=-1, keepdims=True
-        )
-        u_pt = (coa_pos_vels.ARP_COA - ip_tgt) / r_tgt_coa
-        rdot_tgt_coa = (coa_pos_vels.VARP_COA * u_pt).sum(-1, keepdims=True)
+    if proj_metadata.is_monostatic() and isinstance(
+        coa_pos_vels, params.CoaPosVelsMono
+    ):
+        r_tgt_coa = np.linalg.norm(coa_pos_vels.ARP_COA - ip_tgt, axis=-1)
+        u_pt = (coa_pos_vels.ARP_COA - ip_tgt) / r_tgt_coa[..., np.newaxis]
+        rdot_tgt_coa = (coa_pos_vels.VARP_COA * u_pt).sum(-1)
 
         return r_tgt_coa, rdot_tgt_coa
-    else:
+    if proj_metadata.is_bistatic() and isinstance(coa_pos_vels, params.CoaPosVelsBi):
         pt_r_rdot_params = compute_pt_r_rdot_parameters(
-            proj_metadata.LOOK, coa_pos_vels, ip_tgt
+            proj_metadata.LOOK,
+            coa_pos_vels.Xmt_COA,
+            coa_pos_vels.VXmt_COA,
+            coa_pos_vels.Rcv_COA,
+            coa_pos_vels.VRcv_COA,
+            ip_tgt,
         )
 
         return pt_r_rdot_params.R_Avg_PT, pt_r_rdot_params.Rdot_Avg_PT
+    raise RuntimeError(
+        f"{type(coa_pos_vels)=} inconsistent with {proj_metadata.Collect_Type}"
+    )
 
 
 def compute_and_apply_offsets(
     proj_metadata: params.MetadataParams,
-    init_proj_set: params.ProjectionSets,
+    init_proj_set: params.ProjectionSetsLike,
     apo_input_set: params.AdjustableParameterOffsets,
-) -> params.ProjectionSets:
+) -> params.ProjectionSetsLike:
     """Compute adjusted Center of Aperture projection set.
 
     The APO input set is used to compute a set of offsets that are applied to each COA projection
@@ -538,7 +543,7 @@ def compute_and_apply_offsets(
     ----------
     proj_metadata : MetadataParams
         Metadata parameters relevant to projection.
-    init_proj_set : ProjectionSets
+    init_proj_set : ProjectionSetsLike
         Initial projection set.
     apo_input_set : AdjustableParameterOffsets
         Input APO set, used to compute the offsets to be added to the initial
@@ -546,17 +551,17 @@ def compute_and_apply_offsets(
 
     Returns
     -------
-    ProjectionSets
+    ProjectionSetsLike
         Ensemble of adjusted Center of Aperture projection sets.
 
     """
     if proj_metadata.is_monostatic():
         assert apo_input_set.delta_ARP_SCP_COA is not None
         assert apo_input_set.delta_VARP is not None
-        assert init_proj_set.ARP_COA is not None
-        assert init_proj_set.VARP_COA is not None
-        assert init_proj_set.R_COA is not None
-        assert init_proj_set.Rdot_COA is not None
+        if not isinstance(init_proj_set, params.ProjectionSetsMono):
+            raise TypeError(
+                f"{type(init_proj_set)=} not instance of ProjectionSetsMono"
+            )
 
         # The input APOs are used to compute the following offsets to be added to the initial COA projection set
         # to form the adjusted COA projection set.
@@ -570,7 +575,7 @@ def compute_and_apply_offsets(
             * (apo_input_set.delta_tr_SCP_COA - apo_input_set.delta_tx_SCP_COA)
         )
 
-        return params.ProjectionSets(
+        return params.ProjectionSetsMono(
             t_COA=init_proj_set.t_COA,
             ARP_COA=init_proj_set.ARP_COA + delta_ARP_COA,
             VARP_COA=init_proj_set.VARP_COA + apo_input_set.delta_VARP,
@@ -584,12 +589,8 @@ def compute_and_apply_offsets(
     assert apo_input_set.delta_Rcv_SCP_COA is not None
     assert apo_input_set.delta_VRcv is not None
     assert apo_input_set.f_Clk_R_SF is not None
-    assert init_proj_set.tx_COA is not None
-    assert init_proj_set.tr_COA is not None
-    assert init_proj_set.VXmt_COA is not None
-    assert init_proj_set.VRcv_COA is not None
-    assert init_proj_set.R_Avg_COA is not None
-    assert init_proj_set.Rdot_Avg_COA is not None
+    if not isinstance(init_proj_set, params.ProjectionSetsBi):
+        raise TypeError(f"{type(init_proj_set)=} not instance of ProjectionSetsBi")
 
     # For the transmit sensor, the transmit time offset and the clock frequency scale factor are
     # used to compute a transmit time offset
@@ -626,7 +627,7 @@ def compute_and_apply_offsets(
         _constants.speed_of_light / 2 * (T_Clk_R_SF - T_Clk_X_SF)
     )
 
-    return params.ProjectionSets(
+    return params.ProjectionSetsBi(
         t_COA=init_proj_set.t_COA,
         tx_COA=init_proj_set.tx_COA + delta_tx_COA,
         tr_COA=init_proj_set.tr_COA + delta_tr_COA,
@@ -642,7 +643,7 @@ def compute_and_apply_offsets(
 def compute_projection_sets(
     proj_metadata: params.MetadataParams,
     image_grid_locations: npt.ArrayLike,
-) -> params.ProjectionSets:
+) -> params.ProjectionSetsLike:
     """Compute Center of Aperture projection sets at specified image grid locations.
 
     For a selected image grid location, the COA projection set contains the parameters
@@ -664,7 +665,7 @@ def compute_projection_sets(
 
     Returns
     -------
-    ProjectionSets
+    ProjectionSetsLike
         Ensemble of Center of Aperture projection sets.
 
     """
@@ -674,7 +675,8 @@ def compute_projection_sets(
         proj_metadata, image_grid_locations, t_coa, coa_pos_vels
     )
     if proj_metadata.is_monostatic():
-        return params.ProjectionSets(
+        assert isinstance(coa_pos_vels, params.CoaPosVelsMono)
+        return params.ProjectionSetsMono(
             t_COA=t_coa,
             ARP_COA=coa_pos_vels.ARP_COA,
             VARP_COA=coa_pos_vels.VARP_COA,
@@ -682,7 +684,8 @@ def compute_projection_sets(
             Rdot_COA=rdot,
         )
 
-    return params.ProjectionSets(
+    assert isinstance(coa_pos_vels, params.CoaPosVelsBi)
+    return params.ProjectionSetsBi(
         t_COA=t_coa,
         tx_COA=coa_pos_vels.tx_COA,
         tr_COA=coa_pos_vels.tr_COA,
@@ -702,7 +705,7 @@ def _check_look(look):
 
 def r_rdot_to_ground_plane_mono(
     look: int,
-    projection_sets: params.ProjectionSets,
+    projection_sets: params.ProjectionSetsMono,
     gref: npt.ArrayLike,
     ugpn: npt.ArrayLike,
 ) -> npt.NDArray:
@@ -712,7 +715,7 @@ def r_rdot_to_ground_plane_mono(
     ----------
     look : {+1, -1}
         +1 if SideOfTrack = L, -1 if SideOfTrack = R
-    projection_sets : ProjectionSets
+    projection_sets : ProjectionSetsMono
         Ensemble of Center of Aperture projection sets to project.
     gref : (3,) array_like
         Ground plane reference point with ECEF (WGS 84 cartesian) X, Y, Z components in meters.
@@ -729,19 +732,15 @@ def r_rdot_to_ground_plane_mono(
     """
 
     _check_look(look)
-    assert projection_sets.ARP_COA is not None
-    assert projection_sets.VARP_COA is not None
-    assert projection_sets.R_COA is not None
-    assert projection_sets.Rdot_COA is not None
 
     # Assign unit vector in +Z direction
     gref = np.asarray(gref)
     uz = np.asarray(ugpn)
 
     # Compute ARP distance from the plane and ARP ground plane nadir (AGPN)
-    arpz = ((projection_sets.ARP_COA - gref) * uz).sum(axis=-1, keepdims=True)
+    arpz = np.asarray(((projection_sets.ARP_COA - gref) * uz).sum(axis=-1))
     arpz[np.abs(arpz) > projection_sets.R_COA] = np.nan  # No Solution
-    agpn = projection_sets.ARP_COA - arpz * uz
+    agpn = projection_sets.ARP_COA - arpz[..., np.newaxis] * uz
 
     # Compute ground plane distance from ARP nadir to circle of constant range and sine/cosine graze
     g = np.sqrt(projection_sets.R_COA**2 - arpz**2)
@@ -749,29 +748,31 @@ def r_rdot_to_ground_plane_mono(
     sin_graz = arpz / projection_sets.R_COA
 
     # Compute velocity components in x and y
-    vz = (projection_sets.VARP_COA * uz).sum(axis=-1, keepdims=True)
-    vx = np.sqrt((projection_sets.VARP_COA**2).sum(axis=-1, keepdims=True) - vz**2)
+    vz = (projection_sets.VARP_COA * uz).sum(axis=-1)
+    vx = np.asarray(np.sqrt((projection_sets.VARP_COA**2).sum(axis=-1) - vz**2))
     vx[vx == 0] = np.nan  # No Solution
 
     # Orient +X direction in ground plane such that Vx > 0. Compute uX and uY
-    ux = (projection_sets.VARP_COA - vz * uz) / vx
+    ux = (projection_sets.VARP_COA - vz[..., np.newaxis] * uz) / vx[..., np.newaxis]
     uy = np.cross(uz, ux, axis=-1)
 
     # Compute the cosine of azimuth angle to ground plane points
-    cos_az = (-projection_sets.Rdot_COA + vz * sin_graz) / (vx * cos_graz)
+    cos_az = np.asarray((-projection_sets.Rdot_COA + vz * sin_graz) / (vx * cos_graz))
     cos_az[(cos_az < -1.0) | (cos_az > 1.0)] = np.nan  # No Solution
 
     # Compute the sine of the azimuth angle
     sin_az = look * np.sqrt(1 - cos_az**2)
 
     # Compute the ground plane points
-    return agpn + g * cos_az * ux + g * sin_az * uy
+    return (
+        agpn + (g * cos_az)[..., np.newaxis] * ux + (g * sin_az)[..., np.newaxis] * uy
+    )
 
 
 def r_rdot_to_ground_plane_bi(
     look: int,
     scp: npt.ArrayLike,
-    projection_sets: params.ProjectionSets,
+    projection_sets: params.ProjectionSetsBi,
     gref: npt.ArrayLike,
     ugpn: npt.ArrayLike,
     *,
@@ -786,7 +787,7 @@ def r_rdot_to_ground_plane_bi(
         +1 if SideOfTrack = L, -1 if SideOfTrack = R
     scp : (3,) array_like
         SCP position in ECEF coordinates (m).
-    projection_sets : ProjectionSets
+    projection_sets : ProjectionSetsBi
         Ensemble of Center of Aperture projection sets to project.
     gref : (3,) array_like
         Ground plane reference point with ECEF (WGS 84 cartesian) X, Y, Z components in meters.
@@ -812,12 +813,6 @@ def r_rdot_to_ground_plane_bi(
 
     """
     _check_look(look)
-    assert projection_sets.Xmt_COA is not None
-    assert projection_sets.VXmt_COA is not None
-    assert projection_sets.Rcv_COA is not None
-    assert projection_sets.VRcv_COA is not None
-    assert projection_sets.R_Avg_COA is not None
-    assert projection_sets.Rdot_Avg_COA is not None
 
     scp = np.asarray(scp)
     gref = np.asarray(gref)
@@ -852,12 +847,10 @@ def r_rdot_to_ground_plane_bi(
     for _ in range(maxiter):
         pt_r_rdot_params = compute_pt_r_rdot_parameters(
             look,
-            params.CoaPosVels(
-                Xmt_COA=xmt[above_threshold, :],
-                VXmt_COA=vxmt[above_threshold, :],
-                Rcv_COA=rcv[above_threshold, :],
-                VRcv_COA=vrcv[above_threshold, :],
-            ),
+            xmt[above_threshold, :],
+            vxmt[above_threshold, :],
+            rcv[above_threshold, :],
+            vrcv[above_threshold, :],
             g[above_threshold, :],
         )
 
@@ -877,7 +870,7 @@ def r_rdot_to_ground_plane_bi(
 
         delta_gxgy = (
             gp_xy_params.M_GPXY_RRdot
-            @ np.concatenate((delta_r_avg, delta_rdot_avg), axis=-1)[..., np.newaxis]
+            @ np.stack((delta_r_avg, delta_rdot_avg), axis=-1)[..., np.newaxis]
         )
         delta_gp[above_threshold] = np.linalg.norm(delta_gxgy, axis=-2).squeeze(axis=-1)
 
@@ -896,7 +889,10 @@ def r_rdot_to_ground_plane_bi(
 
 def compute_pt_r_rdot_parameters(
     look: int,
-    coa_pos_vels: params.CoaPosVels,
+    xmt_coa: npt.ArrayLike,
+    vxmt_coa: npt.ArrayLike,
+    rcv_coa: npt.ArrayLike,
+    vrcv_coa: npt.ArrayLike,
     scene_points: npt.ArrayLike,
 ) -> params.ScenePointRRdotParams:
     """Compute range and range rate parameters at specified scene point positions.
@@ -905,11 +901,16 @@ def compute_pt_r_rdot_parameters(
     ----------
     look : {+1, -1}
         +1 if SideOfTrack = L, -1 if SideOfTrack = R
-    coa_pos_vels : CoaPosVels
-        Ensemble of COA sensor positions and velocities.
+    xmt_coa : (..., 3) ndarray
+        Transmit APC positions with ECEF X, Y, Z components (m) in last dimension
+    vxmt_coa : (..., 3) ndarray
+        Transmit APC velocities with ECEF X, Y, Z components (m/s) in last dimension
+    rcv_coa : (..., 3) ndarray
+        Receive APC positions with ECEF X, Y, Z components (m) in last dimension
+    vrcv_coa : (..., 3) ndarray
+        Receive APC velocities with ECEF X, Y, Z components (m/s) in last dimension
     scene_points : (..., 3) array_like
-        Array of scene points with ECEF (WGS 84 cartesian) X, Y, Z components in meters in the
-        last dimension.
+        Array of scene points with ECEF X, Y, Z components (m) in last dimension
 
     Returns
     -------
@@ -917,19 +918,27 @@ def compute_pt_r_rdot_parameters(
         Ensemble of range and range rate parameters for the specified scene points
     """
     _check_look(look)
+    xmt_coa = np.asarray(xmt_coa)
+    vxmt_coa = np.asarray(vxmt_coa)
+    rcv_coa = np.asarray(rcv_coa)
+    vrcv_coa = np.asarray(vrcv_coa)
     pt = np.asarray(scene_points)
 
     # Compute parameters for transmit APC relative to scene points
-    r_xmt_pt = np.linalg.norm(coa_pos_vels.Xmt_COA - pt, axis=-1, keepdims=True)
-    u_xmt_pt = (coa_pos_vels.Xmt_COA - pt) / r_xmt_pt
-    rdot_xmt_pt = (coa_pos_vels.VXmt_COA * u_xmt_pt).sum(axis=-1, keepdims=True)
-    u_xmtdot_pt = (coa_pos_vels.VXmt_COA - rdot_xmt_pt * u_xmt_pt) / r_xmt_pt
+    r_xmt_pt = np.linalg.norm(xmt_coa - pt, axis=-1)
+    u_xmt_pt = (xmt_coa - pt) / r_xmt_pt[..., np.newaxis]
+    rdot_xmt_pt = (vxmt_coa * u_xmt_pt).sum(axis=-1)
+    u_xmtdot_pt = (vxmt_coa - rdot_xmt_pt[..., np.newaxis] * u_xmt_pt) / r_xmt_pt[
+        ..., np.newaxis
+    ]
 
     # Compute parameters for receive APC relative to scene points
-    r_rcv_pt = np.linalg.norm(coa_pos_vels.Rcv_COA - pt, axis=-1, keepdims=True)
-    u_rcv_pt = (coa_pos_vels.Rcv_COA - pt) / r_rcv_pt
-    rdot_rcv_pt = (coa_pos_vels.VRcv_COA * u_rcv_pt).sum(axis=-1, keepdims=True)
-    u_rcvdot_pt = (coa_pos_vels.VRcv_COA - rdot_rcv_pt * u_rcv_pt) / r_rcv_pt
+    r_rcv_pt = np.linalg.norm(rcv_coa - pt, axis=-1)
+    u_rcv_pt = (rcv_coa - pt) / r_rcv_pt[..., np.newaxis]
+    rdot_rcv_pt = (vrcv_coa * u_rcv_pt).sum(axis=-1)
+    u_rcvdot_pt = (vrcv_coa - rdot_rcv_pt[..., np.newaxis] * u_rcv_pt) / r_rcv_pt[
+        ..., np.newaxis
+    ]
 
     # Compute average range and average range rate
     r_avg_pt = (r_xmt_pt + r_rcv_pt) / 2.0
@@ -1106,6 +1115,7 @@ def scene_to_image(
 
         # Compute precise projection to ground plane.
         if proj_metadata.is_monostatic():
+            assert isinstance(projection_sets, params.ProjectionSetsMono)
             p[above_threshold] = r_rdot_to_ground_plane_mono(
                 proj_metadata.LOOK,
                 projection_sets,
@@ -1116,6 +1126,7 @@ def scene_to_image(
                 p[above_threshold]
             ).all(axis=-1)
         else:
+            assert isinstance(projection_sets, params.ProjectionSetsBi)
             p[above_threshold], _, r_rdot_to_ground_success[above_threshold] = (
                 r_rdot_to_ground_plane_bi(
                     proj_metadata.LOOK,
@@ -1146,8 +1157,7 @@ def scene_to_image(
 def r_rdot_to_constant_hae_surface(
     look: int,
     scp: npt.ArrayLike,
-    collect_type: str,
-    projection_sets: params.ProjectionSets,
+    projection_sets: params.ProjectionSetsLike,
     hae0: npt.ArrayLike,
     *,
     delta_hae_max: float = 1.0,
@@ -1163,9 +1173,7 @@ def r_rdot_to_constant_hae_surface(
         +1 if SideOfTrack = L, -1 if SideOfTrack = R
     scp : (3,) array_like
         SCP position in ECEF coordinates (m).
-    collect_type : {"MONOSTATIC", "BISTATIC"}
-        Parameter that specifies type of collection for the image.
-    projection_sets : ProjectionSets
+    projection_sets : ProjectionSetsLike
         Ensemble of Center of Aperture projection sets to project.
     hae0 : array_like
         Surface height above the WGS-84 reference ellipsoid for projection points in meters.
@@ -1195,9 +1203,6 @@ def r_rdot_to_constant_hae_surface(
     scp = np.asarray(scp)
 
     _check_look(look)
-    if collect_type.upper() not in {"MONOSTATIC", "BISTATIC"}:
-        raise ValueError(f"Unrecognized {collect_type=}")
-    is_mono = collect_type.upper() == "MONOSTATIC"
 
     def _calc_up(lat_deg, lon_deg):
         return np.stack(
@@ -1214,17 +1219,11 @@ def r_rdot_to_constant_hae_surface(
     u_gpn1 = _calc_up(scp_lat, scp_lon)
     gref1 = scp + (hae0 - scp_hae)[..., np.newaxis] * u_gpn1
 
-    if is_mono:
-        assert projection_sets.ARP_COA is not None
-        assert projection_sets.VARP_COA is not None
+    if isinstance(projection_sets, params.ProjectionSetsMono):
         gref, u_gpn, arp, varp = np.broadcast_arrays(
             gref1, u_gpn1, projection_sets.ARP_COA, projection_sets.VARP_COA
         )
     else:
-        assert projection_sets.Xmt_COA is not None
-        assert projection_sets.VXmt_COA is not None
-        assert projection_sets.Rcv_COA is not None
-        assert projection_sets.VRcv_COA is not None
         gref, u_gpn, xmt, vxmt, rcv, vrcv = np.broadcast_arrays(
             gref1,
             u_gpn1,
@@ -1233,6 +1232,7 @@ def r_rdot_to_constant_hae_surface(
             projection_sets.Rcv_COA,
             projection_sets.VRcv_COA,
         )
+
     hae0 = np.broadcast_to(hae0, gref.shape[:-1])
     gref = np.array(gref)  # make writable
     u_gpn = np.array(u_gpn)  # make writable
@@ -1244,12 +1244,10 @@ def r_rdot_to_constant_hae_surface(
     r_rdot_to_plane_success = np.full(gref.shape[:-1], False)
     for _ in range(nlim):
         # Compute precise projection to ground plane.
-        if is_mono:
-            assert projection_sets.R_COA is not None
-            assert projection_sets.Rdot_COA is not None
+        if isinstance(projection_sets, params.ProjectionSetsMono):
             gpp[above_threshold, :] = r_rdot_to_ground_plane_mono(
                 look,
-                params.ProjectionSets(
+                params.ProjectionSetsMono(
                     t_COA=projection_sets.t_COA[above_threshold],
                     ARP_COA=arp[above_threshold, :],
                     VARP_COA=varp[above_threshold, :],
@@ -1263,14 +1261,14 @@ def r_rdot_to_constant_hae_surface(
                 gpp[above_threshold, :]
             ).all(axis=-1)
         else:
-            assert projection_sets.R_Avg_COA is not None
-            assert projection_sets.Rdot_Avg_COA is not None
             gpp[above_threshold, :], _, r_rdot_to_plane_success[above_threshold] = (
                 r_rdot_to_ground_plane_bi(
                     look,
                     scp,
-                    params.ProjectionSets(
+                    params.ProjectionSetsBi(
                         t_COA=projection_sets.t_COA[above_threshold],
+                        tx_COA=projection_sets.t_COA[above_threshold],  # unused
+                        tr_COA=projection_sets.t_COA[above_threshold],  # unused
                         Xmt_COA=xmt[above_threshold, :],
                         VXmt_COA=vxmt[above_threshold, :],
                         Rcv_COA=rcv[above_threshold, :],
@@ -1301,23 +1299,21 @@ def r_rdot_to_constant_hae_surface(
             break
         gref[above_threshold, :] = (
             gpp[above_threshold, :]
-            - delta_hae[above_threshold] * u_up[above_threshold, :]
+            - delta_hae[above_threshold][..., np.newaxis] * u_up[above_threshold, :]
         )
         u_gpn[above_threshold, :] = u_up[above_threshold, :]
 
     # Compute slant plane normal tangent to R/Rdot contour at GPP.
-    if is_mono:
+    if isinstance(projection_sets, params.ProjectionSetsMono):
         spn = look * np.cross(varp, gpp - arp)
         u_spn = spn / np.linalg.norm(spn, axis=-1, keepdims=True)
     else:
         gpp_r_rdot_params = compute_pt_r_rdot_parameters(
             look,
-            params.CoaPosVels(
-                Xmt_COA=projection_sets.Xmt_COA,
-                VXmt_COA=projection_sets.VXmt_COA,
-                Rcv_COA=projection_sets.Rcv_COA,
-                VRcv_COA=projection_sets.VRcv_COA,
-            ),
+            projection_sets.Xmt_COA,
+            projection_sets.VXmt_COA,
+            projection_sets.Rcv_COA,
+            projection_sets.VRcv_COA,
             gpp,
         )
         u_spn = gpp_r_rdot_params.uSPN_PT

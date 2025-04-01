@@ -6,7 +6,9 @@ import argparse
 import functools
 import logging
 import os
+import pathlib
 import re
+from typing import Any, Optional
 
 import numpy as np
 import numpy.polynomial.polynomial as npp
@@ -69,44 +71,54 @@ def per_sequence(method):
 class CrsdConsistency(con.ConsistencyChecker):
     """Check CRSD file structure and metadata for internal consistency
 
+    `CrsdConsistency` objects should be instantiated using `from_file` or `from_parts`.
+
     Parameters
     ----------
-    crsdroot : lxml.etree.Element or lxml.etree.ElementTree
-        CRSD XML metadata
-    filename : str, optional
-        Path to CRSD file
-    kvp_list : dict[str, str], optional
-        CRSD key-value pairs list
-    ppps : dict[str, np.ndarray], optional
-        numpy structured array of PPPs
-    pvps : dict[str, np.ndarray], optional
-        numpy structured array of PVPs
+    crsd_xml : lxml.etree.Element or lxml.etree.ElementTree
+        CRSD XML
+    file_type_header : str, optional
+        File type header from the first line of the file
+    kvp_list : dict of {str : str}, optional
+        Key-Value pair list of header fields
+    ppps : dict of {str : ndarray}, optional
+        Per-Pulse-Parameters keyed by transmit sequence identifier
+    pvps : dict of {str : ndarray}, optional
+        Per-Vector-Parameters keyed by channel identifier
+    schema_override : `path-like object`, optional
+        Path to XML Schema (Bypass auto selection of schema)
+    file : `file object`, optional
+        CRSD file; when specified, portions of the file not specified in other parameters may be read
     """
 
     def __init__(
         self,
-        crsdroot,
-        filename=None,
+        crsd_xml,
+        *,
+        file_type_header=None,
         kvp_list=None,
         ppps=None,
         pvps=None,
+        schema_override=None,
+        file=None,
     ):
         super().__init__()
-        self.crsdroot = etree.fromstring(
-            etree.tostring(crsdroot)
-        )  # handle element or tree -> element
-        self.filename = filename
+        # handle element or tree -> element
+        try:
+            self.crsdroot = crsd_xml.getroot()
+        except AttributeError:
+            self.crsdroot = crsd_xml.getroottree().getroot()
         self.xmlhelp = skcrsd.XmlHelper(self.crsdroot.getroottree())
+
+        self.file_type_header = file_type_header
         self.kvp_list = kvp_list
         self.ppps = ppps
         self.pvps = pvps
-
-        self.version = self._version_lookup()
         self.crsd_type = etree.QName(self.crsdroot).localname
-        if self.version is None:
-            raise ValueError("Unable to determine CRSD version from XML namespace")
-        urn = {v["version"]: k for k, v in skcrsd.VERSION_INFO.items()}[self.version]
-        self.schema = skcrsd.VERSION_INFO[urn]["schema"]
+        ns = etree.QName(self.crsdroot).namespace
+        self.schema = schema_override or skcrsd.VERSION_INFO.get(ns, {}).get("schema")
+
+        self.file = file
 
         sequence_ids = [
             x.text
@@ -148,69 +160,198 @@ class CrsdConsistency(con.ConsistencyChecker):
 
     @staticmethod
     def from_file(
-        filename: str,
+        file,
+        schema: Optional[str] = None,
+        thorough: bool = False,
     ) -> "CrsdConsistency":
         """Create a CrsdConsistency object from a file
 
         Parameters
         ----------
-        filename : str
-            Path to CRSD file or CRSD XML file
+        file : `file object`
+            CRSD or CRSD XML file to check
+        schema : str, optional
+            Path to CRSD XML Schema. If None, tries to find a version-specific schema
+        thorough : bool, optional
+            Run checks that may seek/read through large portions of the file.
+            file must stay open to run checks. Ignored if file is CRSD XML.
 
         Returns
         -------
         CrsdConsistency
+            The initialized consistency checker object
+
+        See Also
+        --------
+        from_parts
+
+        Examples
+        --------
+        Use `from_file` to check an XML file:
+
+        .. doctest::
+
+            >>> import sarkit.verification as skver
+
+            >>> with open("data/example-crsd-1.0-draft.2025-02-25.xml", "r") as f:
+            ...     con = skver.CrsdConsistency.from_file(f)
+            >>> con.check()
+            >>> bool(con.passes())
+            True
+            >>> bool(con.failures())
+            False
+
+        Use `from_file` to check a CRSD file, with and without thorough checks:
+
+        .. testsetup::
+
+            import pathlib
+            import tempfile
+
+            import sarkit.crsd as skcrsd
+            import lxml.etree
+            meta = skcrsd.Metadata(
+                xmltree=lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml"),
+            )
+            tmpdir = tempfile.TemporaryDirectory()
+            tmppath = pathlib.Path(tmpdir.name)
+            file = pathlib.Path(tmpdir.name) / "example.crsd"
+            with file.open("wb") as f, skcrsd.Writer(f, meta) as w:
+                f.seek(
+                    w._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
+                    + w._file_header_kvp["SIGNAL_BLOCK_SIZE"]
+                    - 1
+                )
+                f.write(b"0")
+
+        .. testcleanup::
+
+            tmpdir.cleanup()
+
+        .. doctest::
+
+            >>> with file.open("rb") as f:
+            ...     con_thorough = skver.CrsdConsistency.from_file(f, thorough=True)
+            ...     con = skver.CrsdConsistency.from_file(f)
+            ...     con_thorough.check()  # thorough checks require open file
+            >>> con.check()  # without thorough, open file only used for construction
+            >>> print(len(con.skips()) > len(con_thorough.skips()))
+            True
         """
-        with open(filename, "rb") as infile:
-            try:
-                crsdroot = etree.parse(infile)
-                kvp_list = None
-                pvps = None
-                ppps = None
-            except etree.XMLSyntaxError:
-                infile.seek(0, os.SEEK_SET)
-                reader = skcrsd.Reader(infile)
-                crsdroot = reader.metadata.xmltree
-                infile.seek(0, os.SEEK_SET)
-                _, kvp_list = skcrsd.read_file_header(infile)
-                pvps = {}
-                for channel_node in crsdroot.findall("./{*}Data/{*}Receive/{*}Channel"):
-                    channel_id = channel_node.findtext("./{*}ChId")
-                    pvps[channel_id] = reader.read_pvps(channel_id)
-                ppps = {}
-                for sequence_node in crsdroot.findall(
-                    "./{*}Data/{*}Transmit/{*}TxSequence"
-                ):
-                    sequence_id = sequence_node.findtext("./{*}TxId")
-                    ppps[sequence_id] = reader.read_ppps(sequence_id)
+        kwargs: dict[str, Any] = {"schema_override": schema}
+        try:
+            crsd_xmltree = etree.parse(file)
+            kvp_list = None
+            pvps = None
+            ppps = None
+        except etree.XMLSyntaxError:
+            file.seek(0, os.SEEK_SET)
+            reader = skcrsd.Reader(file)
+            crsd_xmltree = reader.metadata.xmltree
+            file.seek(0, os.SEEK_SET)
+            file_type_header, kvp_list = skcrsd.read_file_header(file)
+            pvps = {}
+            for channel_node in crsd_xmltree.findall("./{*}Data/{*}Receive/{*}Channel"):
+                channel_id = channel_node.findtext("./{*}ChId")
+                pvps[channel_id] = reader.read_pvps(channel_id)
+            ppps = {}
+            for sequence_node in crsd_xmltree.findall(
+                "./{*}Data/{*}Transmit/{*}TxSequence"
+            ):
+                sequence_id = sequence_node.findtext("./{*}TxId")
+                ppps[sequence_id] = reader.read_ppps(sequence_id)
+            kwargs.update(
+                {
+                    "file_type_header": file_type_header,
+                    "kvp_list": kvp_list,
+                    "ppps": ppps,
+                    "pvps": pvps,
+                }
+            )
+            if thorough:
+                kwargs["file"] = file
 
         return CrsdConsistency(
-            crsdroot,
-            filename=filename,
+            crsd_xmltree,
+            **kwargs,
+        )
+
+    @staticmethod
+    def from_parts(
+        crsd_xml: "etree.Element | etree.ElementTree",
+        file_type_header: Optional[str] = None,
+        kvp_list: Optional[dict[str, str]] = None,
+        ppps: Optional[dict[str, np.ndarray]] = None,
+        pvps: Optional[dict[str, np.ndarray]] = None,
+        schema: Optional[str] = None,
+    ) -> "CrsdConsistency":
+        """Create a CrsdConsistency object from assorted parts
+
+        Parameters
+        ----------
+        crsd_xml : lxml.etree.Element or lxml.etree.ElementTree
+            CRSD XML
+        file_type_header : str, optional
+            File type header from the first line of the file
+        kvp_list : dict of {str : str}, optional
+            Key-Value pair list of header fields
+        ppps : dict of {str : ndarray}, optional
+            Per-Pulse-Parameters keyed by transmit sequence identifier
+        pvps : dict of {str : ndarray], optional
+            Per-Vector-Parameters keyed by channel identifier
+        schema : str, optional
+            Path to XML Schema. If None, tries to find a version-specific schema
+
+        Returns
+        -------
+        CrsdConsistency
+            The initialized consistency checker object
+
+        See Also
+        --------
+        from_file
+
+        Examples
+        --------
+        Use `from_parts` to check a parsed XML element tree:
+
+        .. doctest::
+
+            >>> import lxml.etree
+            >>> import sarkit.verification as skver
+            >>> crsd_xmltree = lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
+            >>> con = skver.CrsdConsistency.from_parts(crsd_xmltree)
+            >>> con.check()
+            >>> bool(con.passes())
+            True
+            >>> bool(con.failures())
+            False
+
+        Use `from_parts` to check a parsed XML element tree and an invalid file type header:
+
+        .. doctest::
+
+            >>> con = skver.CrsdConsistency.from_parts(crsd_xmltree, file_type_header="CRSDsar/INVALID\\n")
+            >>> con.check()
+            >>> bool(con.failures())
+            True
+        """
+        return CrsdConsistency(
+            crsd_xml=crsd_xml,
+            file_type_header=file_type_header,
             kvp_list=kvp_list,
             ppps=ppps,
             pvps=pvps,
+            schema_override=schema,
         )
-
-    def _version_lookup(self):
-        """Returns the version string associated with the XML instance or None if a match is not found."""
-        this_ns = etree.QName(self.crsdroot).namespace
-        if this_ns is None:
-            return None
-        for schema_info in skcrsd.VERSION_INFO.values():
-            schema_path = schema_info.get("schema")
-            if schema_path is not None and this_ns == etree.parse(
-                schema_path
-            ).getroot().get("targetNamespace"):
-                return schema_info["version"]
 
     def _read_support_array(self, sa_id):
         """
         Reads a support array
         """
-        assert self.filename is not None
-        assert self.kvp_list is not None
-        with open(self.filename, "rb") as fd, skcrsd.Reader(fd) as reader:
+        assert self.file is not None
+        self.file.seek(0)
+        with skcrsd.Reader(self.file) as reader:
             return reader.read_support_array(sa_id)
 
     def _get_channel_pvps(self, channel_id):
@@ -238,24 +379,15 @@ class CrsdConsistency(con.ConsistencyChecker):
             assert num == num_of_elem
 
     def check_file_type_header(self):
-        """Version in File Type Header matches the version in the XML."""
+        """File type header is consistent with the XML."""
         with self.precondition():
-            assert self.version is not None
-            assert self.filename is not None
-            with open(self.filename, "rb") as fd:
-                first_line = fd.readline().decode()
-            assert first_line.startswith("CRSD")
-            assert first_line.endswith("\n")
-            assert "/" in first_line
-            file_crsd_type, file_type_header_version = first_line[:-1].split("/")
-            with self.need(
-                "version in File Type Header matches the version in the XML"
-            ):
-                assert self.version == file_type_header_version
-            with self.need(
-                "CRSD type in File Type Header matches the XML root node name"
-            ):
-                assert file_crsd_type == self.crsd_type
+            assert self.file_type_header is not None
+            version = skcrsd.VERSION_INFO.get(
+                etree.QName(self.crsdroot).namespace, {}
+            ).get("version")
+            assert version is not None
+            with self.need("File type header is consistent with the XML"):
+                assert self.file_type_header == f"{self.crsd_type}/{version}\n"
 
     def check_header_kvp_list(self):
         """Asserts that the required keys are in the header KVP list."""
@@ -1822,11 +1954,11 @@ class CrsdConsistency(con.ConsistencyChecker):
     def check_post_header_section_terminator_and_pad(self):
         """Section terminator ends the header"""
         with self.precondition():
-            assert self.filename is not None
+            assert self.file is not None
             assert self.kvp_list is not None
             xml_offset = int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"])
-            with open(self.filename, "rb") as fd:
-                header_and_pad = fd.read(xml_offset)
+            self.file.seek(0)
+            header_and_pad = self.file.read(xml_offset)
             end_of_header = header_and_pad.find(skcrsd.SECTION_TERMINATOR)
             with self.need("section terminator exists before XML block"):
                 assert end_of_header > 0
@@ -1843,19 +1975,18 @@ class CrsdConsistency(con.ConsistencyChecker):
     def check_post_xml_section_terminator(self):
         """Section terminator is after the XML"""
         with self.precondition():
-            assert self.filename is not None
+            assert self.file is not None
             assert self.kvp_list is not None
             xml_offset = int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"])
             xml_size = int(self.kvp_list["XML_BLOCK_SIZE"])
-            with open(self.filename, "rb") as fd:
-                fd.seek(xml_offset + xml_size)
-                with self.need("section terminator at end of XML block"):
-                    assert fd.read(2) == skcrsd.SECTION_TERMINATOR
+            self.file.seek(xml_offset + xml_size)
+            with self.need("section terminator at end of XML block"):
+                assert self.file.read(2) == skcrsd.SECTION_TERMINATOR
 
     def check_pad_before_binary_blocks(self):
         """Pad before binary blocks is null bytes"""
         with self.precondition():
-            assert self.filename is not None
+            assert self.file is not None
             assert self.kvp_list is not None
             xml_offset = int(self.kvp_list["XML_BLOCK_BYTE_OFFSET"])
             xml_size = int(self.kvp_list["XML_BLOCK_SIZE"])
@@ -1867,16 +1998,15 @@ class CrsdConsistency(con.ConsistencyChecker):
                     block_offset = int(self.kvp_list[f"{block}_BLOCK_BYTE_OFFSET"])
                     block_size = int(self.kvp_list[f"{block}_BLOCK_SIZE"])
                     block_end = block_offset + block_size
-                    with open(self.filename, "rb") as fd:
-                        fd.seek(previous_block_end)
-                        pad_bytes = fd.read(block_offset - previous_block_end)
-                        pad_bytes_array = np.frombuffer(pad_bytes, dtype=np.uint8)
-                        with self.need(
-                            f"pad bytes between {previous_block} and {block} are all zero"
-                        ):
-                            assert np.count_nonzero(pad_bytes_array) == 0
-                        previous_block = block
-                        previous_block_end = block_end
+                    self.file.seek(previous_block_end)
+                    pad_bytes = self.file.read(block_offset - previous_block_end)
+                    pad_bytes_array = np.frombuffer(pad_bytes, dtype=np.uint8)
+                    with self.need(
+                        f"pad bytes between {previous_block} and {block} are all zero"
+                    ):
+                        assert np.count_nonzero(pad_bytes_array) == 0
+                    previous_block = block
+                    previous_block_end = block_end
 
     def check_support_block_size_and_packing(self):
         """Support block is correctly sized and packed"""
@@ -2007,10 +2137,11 @@ class CrsdConsistency(con.ConsistencyChecker):
         """Last block is at the end of the file."""
         with self.precondition():
             assert self.kvp_list is not None
-            assert self.filename is not None
+            assert self.file is not None
             for block in reversed(BINARY_BLOCK_ORDER):
                 if f"{block}_BLOCK_BYTE_OFFSET" in self.kvp_list:
-                    file_size = os.stat(self.filename).st_size
+                    self.file.seek(0, os.SEEK_END)
+                    file_size = self.file.tell()
                     block_offset = int(self.kvp_list[f"{block}_BLOCK_BYTE_OFFSET"])
                     block_size = int(self.kvp_list[f"{block}_BLOCK_SIZE"])
                     with self.need(f"{block}_BLOCK is at the end of the file"):
@@ -2276,18 +2407,35 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a CRSD and display inconsistencies"
     )
-    parser.add_argument("file_name", help="CRSD or CRSD XML to check")
+    parser.add_argument(
+        "file_name", type=pathlib.Path, help="CRSD or CRSD XML to check"
+    )
+    parser.add_argument(
+        "--schema",
+        type=pathlib.Path,
+        help="Use a supplied schema file (attempts version-specific schema if omitted)",
+    )
+    parser.add_argument(
+        "--thorough",
+        action="store_true",
+        help=(
+            "Run checks that may seek/read through large portions of the file. "
+            "Ignored when file_name is XML"
+        ),
+    )
     CrsdConsistency.add_cli_args(parser)
     return parser
 
 
 def main(args=None):
     config = _parser().parse_args(args)
-
-    crsd_con = CrsdConsistency.from_file(
-        filename=config.file_name,
-    )
-    return crsd_con.run_cli(config)
+    with config.file_name.open("rb") as f:
+        crsd_con = CrsdConsistency.from_file(
+            file=f,
+            schema=config.schema,
+            thorough=config.thorough,
+        )
+        return crsd_con.run_cli(config)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -65,6 +65,7 @@ def image_to_ground_plane(
         else method
     )
     if method == "monostatic":
+        assert isinstance(projection_sets, params.ProjectionSetsMono)
         gpp_tgt = calc.r_rdot_to_ground_plane_mono(
             proj_metadata.LOOK, projection_sets, gref, ugpn
         )
@@ -73,10 +74,11 @@ def image_to_ground_plane(
         success = np.isfinite(gpp_tgt).all()
         return gpp_tgt, delta_gp, success
     if method == "bistatic":
-        bistat_projection_sets = projection_sets
-        if proj_metadata.is_monostatic():
-            bistat_projection_sets = params.ProjectionSets(
+        if isinstance(projection_sets, params.ProjectionSetsMono):
+            projection_sets = params.ProjectionSetsBi(
                 t_COA=projection_sets.t_COA,
+                tr_COA=projection_sets.t_COA,
+                tx_COA=projection_sets.t_COA,
                 Xmt_COA=projection_sets.ARP_COA,
                 VXmt_COA=projection_sets.VARP_COA,
                 Rcv_COA=projection_sets.ARP_COA,
@@ -87,7 +89,7 @@ def image_to_ground_plane(
         gpp_tgt, delta_gp, success = calc.r_rdot_to_ground_plane_bi(
             proj_metadata.LOOK,
             proj_metadata.SCP,
-            bistat_projection_sets,
+            projection_sets,
             gref,
             ugpn,
             delta_gp_gpp=bistat_delta_gp_gpp,
@@ -211,7 +213,6 @@ def image_to_constant_hae_surface(
     return calc.r_rdot_to_constant_hae_surface(
         proj_metadata.LOOK,
         proj_metadata.SCP,
-        proj_metadata.Collect_Type,
         projection_sets,
         hae0,
         delta_hae_max=delta_hae_max,

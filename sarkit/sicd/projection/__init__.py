@@ -107,6 +107,14 @@ Precise R/Rdot to Constant HAE Surface Projection
    :toctree: generated/
 
    r_rdot_to_constant_hae_surface
+
+Precise R/Rdot to DEM Surface Projection
+========================================
+
+.. autosummary::
+   :toctree: generated/
+
+   r_rdot_to_dem_surface
 """
 
 from ._calc import (
@@ -122,6 +130,7 @@ from ._calc import (
     image_grid_to_image_plane_point,
     image_plane_point_to_image_grid,
     r_rdot_to_constant_hae_surface,
+    r_rdot_to_dem_surface,
     r_rdot_to_ground_plane_bi,
     r_rdot_to_ground_plane_mono,
     scene_to_image,
@@ -162,6 +171,7 @@ __all__ = [
     "image_grid_to_image_plane_point",
     "image_plane_point_to_image_grid",
     "r_rdot_to_constant_hae_surface",
+    "r_rdot_to_dem_surface",
     "r_rdot_to_ground_plane_bi",
     "r_rdot_to_ground_plane_mono",
     "scene_to_image",

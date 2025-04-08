@@ -1365,7 +1365,7 @@ def r_rdot_to_dem_surface(
         A function that returns an ndarray of DEM offset heights from an ndarray of positions with ECEF
         (WGS 84 cartesian) X, Y, Z components in meters in the last dimension
 
-        .. Note:: Prior to SICD v1.5, this function was decomposed into two steps:
+        .. Note:: SICD v1.4.0 volume 3 decomposes this into two steps:
 
            #. Convert ECF To DEM Coords
            #. Get Surface Height HD
@@ -1445,8 +1445,8 @@ def r_rdot_to_dem_surface(
         npts = (cos_ca_a - cos_ca_b) // delta_cos_ca + 2
 
         # Compute the set of points along R/Rdot contour
-        n_minus_1 = np.arange(npts)
-        cos_ca = cos_ca_b + n_minus_1 * delta_cos_ca
+        n_minus_1s = np.arange(npts)
+        cos_ca = cos_ca_b + n_minus_1s * delta_cos_ca
         sin_ca = look * np.sqrt(1 - cos_ca**2)
         pn = ctr + r_rrc * (
             cos_ca[..., np.newaxis] * u_rrx + sin_ca[..., np.newaxis] * u_rry
@@ -1461,18 +1461,28 @@ def r_rdot_to_dem_surface(
     aobn[np.abs(delta_hdn) <= delta_hd_lim] = 0
 
     s = []
-    for (p, next_p), (aob, next_aob), (delta_hd, next_delta_hd) in zip(
-        itertools.pairwise(pn),
-        itertools.pairwise(aobn),
-        itertools.pairwise(delta_hdn),
-        strict=True,
+    for n_minus_1, ((p, _), (aob, next_aob), (delta_hd, next_delta_hd)) in enumerate(
+        zip(
+            itertools.pairwise(pn),
+            itertools.pairwise(aobn),
+            itertools.pairwise(delta_hdn),
+            strict=True,
+        )
     ):
         if aob == 0:
             s.append(p)
             break
         if (aob * next_aob) == -1:
-            # this linear interpolation is new in v1.5
             frac = delta_hd / (delta_hd - next_delta_hd)
-            s.append(p * (1 - frac) + next_p * frac)
+            cos_ca_s = cos_ca_b + (n_minus_1 + frac) * delta_cos_ca
+            sin_ca_s = look * np.sqrt(1 - cos_ca_s**2)
+            s.append(
+                ctr
+                + r_rrc
+                * (
+                    cos_ca_s[..., np.newaxis] * u_rrx
+                    + sin_ca_s[..., np.newaxis] * u_rry
+                )
+            )
 
     return np.asarray(s)

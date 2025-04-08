@@ -175,9 +175,8 @@ def example_crsdsar_file(tmp_path_factory):
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
     assert not main([str(tmp_crsd), "-v"])
-    f = tmp_crsd.open("rb")
-    yield f
-    f.close()
+    with tmp_crsd.open("rb") as f:
+        yield f
 
 
 def _replace_error(crsd_etree, sensor_type):
@@ -235,9 +234,8 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
     with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
         cw.write_ppp(sequence_id, ppps)
     assert not main([str(tmp_crsd), "-vvv"])
-    f = tmp_crsd.open("rb")
-    yield f
-    f.close()
+    with tmp_crsd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="session")
@@ -303,9 +301,8 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
         cw.write_pvp(channel_id, new_pvps)
         cw.write_signal(channel_id, signal)
     assert not main([str(tmp_crsd), "-vvv"])
-    f = tmp_crsd.open("rb")
-    yield f
-    f.close()
+    with tmp_crsd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="session", params=("sar", "tx", "rcv"))

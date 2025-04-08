@@ -85,7 +85,7 @@ class CphdConsistency(con.ConsistencyChecker):
     pvps : dict of {str : ndarray}, optional
         CPHD Per-Vector-Parameters keyed by channel identifier
     schema_override : `path-like object`, optional
-        Path to CPHD XML Schema (Bypass auto selection of CPHD schema)
+        Path to XML Schema. If None, tries to find a version-specific schema
     file : `file object`, optional
         CPHD file; when specified, portions of the file not specified in other parameters may be read
     """
@@ -153,7 +153,7 @@ class CphdConsistency(con.ConsistencyChecker):
         file : `file object`
             CPHD or CPHD XML file to check
         schema : str, optional
-            Path to CPHD XML Schema. If None, tries to find a version-specific schema
+            Path to XML Schema. If None, tries to find a version-specific schema
         thorough : bool, optional
             Run checks that may seek/read through large portions of the file.
             file must stay open to run checks. Ignored if file is CPHD XML.
@@ -173,17 +173,12 @@ class CphdConsistency(con.ConsistencyChecker):
 
         .. testsetup::
 
-            import pathlib
-            import tempfile
-
             import sarkit.cphd as skcphd
             import lxml.etree
             meta = skcphd.Metadata(
                 xmltree=lxml.etree.parse("data/example-cphd-1.0.1.xml"),
             )
-            tmpdir = tempfile.TemporaryDirectory()
-            tmppath = pathlib.Path(tmpdir.name)
-            file = pathlib.Path(tmpdir.name) / "example.cphd"
+            file = tmppath / "example.cphd"
             with file.open("wb") as f, skcphd.Writer(f, meta) as w:
                 f.seek(
                     w._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
@@ -191,10 +186,6 @@ class CphdConsistency(con.ConsistencyChecker):
                     - 1
                 )
                 f.write(b"0")
-
-        .. testcleanup::
-
-            tmpdir.cleanup()
 
         .. doctest::
 
@@ -269,7 +260,7 @@ class CphdConsistency(con.ConsistencyChecker):
         pvps : dict of {str : ndarray], optional
             CPHD Per-Vector-Parameters keyed by channel identifier
         schema : str, optional
-            Path to CPHD XML Schema. If None, tries to find a version-specific schema
+            Path to XML Schema. If None, tries to find a version-specific schema
 
         Returns
         -------

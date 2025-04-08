@@ -97,9 +97,8 @@ def example_cphd_file(tmp_path_factory):
         cw.write_pvp("1", pvps)
         cw.write_signal("1", signal)
     assert not main([str(tmp_cphd), "--thorough"])
-    f = tmp_cphd.open("rb")
-    yield f
-    f.close()
+    with tmp_cphd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="session")
@@ -122,9 +121,8 @@ def example_compressed_cphd(example_cphd_file, tmp_path_factory):
         w.write_pvp("1", pvps)
         w.write_signal("1", np.frombuffer(compressed_data, np.uint8))
     assert not main([str(tmp_cphd), "--thorough"])
-    f = tmp_cphd.open("rb")
-    yield f
-    f.close()
+    with tmp_cphd.open("rb") as f:
+        yield f
 
 
 def remove_nodes(*nodes):
@@ -139,7 +137,7 @@ def good_xml():
 
 @pytest.fixture
 def cphd_con(good_xml):
-    return CphdConsistency(good_xml)
+    return CphdConsistency.from_parts(good_xml)
 
 
 @pytest.fixture

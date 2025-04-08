@@ -30,7 +30,8 @@ def example_sicd_file(tmp_path_factory):
     with open(tmp_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
         pass  # don't currently care about the pixels
     assert not main([str(tmp_sicd)])
-    yield tmp_sicd
+    with tmp_sicd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="module")
@@ -40,7 +41,7 @@ def good_xml():
 
 @pytest.fixture
 def sicd_con(good_xml):
-    return SicdConsistency(good_xml)
+    return SicdConsistency.from_parts(copy.deepcopy(good_xml))
 
 
 @pytest.fixture
@@ -83,29 +84,16 @@ def test_smoketest(xml_file):
 
 def test_main_schema_override():
     good_schema = sksicd.VERSION_INFO["urn:SICD:1.2.1"]["schema"]
-    with pytest.raises(
-        RuntimeError, match="--version must be specified if using --schema"
-    ):
-        main([str(good_sicd_xml_path), "--schema", str(good_schema)])
-
     assert not main(
-        [str(good_sicd_xml_path), "--schema", str(good_schema), "--version", "1.2.1"]
+        [str(good_sicd_xml_path), "--schema", str(good_schema)]
     )  # pass with actual schema
     assert main(
         [
             str(good_sicd_xml_path),
             "--schema",
             str(good_sicd_xml_path),
-            "--version",
-            "1.2.1",
         ]
     )  # fails with not schema
-    assert not main(
-        [str(good_sicd_xml_path), "--version", "1.2.1"]
-    )  # pass with valid version
-    assert main(
-        [str(good_sicd_xml_path), "--version", "1.3.0"]
-    )  # fail with invalid version
 
 
 def _change_node(node, path, updated_val):

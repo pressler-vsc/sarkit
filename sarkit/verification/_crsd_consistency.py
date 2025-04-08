@@ -86,7 +86,7 @@ class CrsdConsistency(con.ConsistencyChecker):
     pvps : dict of {str : ndarray}, optional
         Per-Vector-Parameters keyed by channel identifier
     schema_override : `path-like object`, optional
-        Path to XML Schema (Bypass auto selection of schema)
+        Path to XML Schema. If None, tries to find a version-specific schema
     file : `file object`, optional
         CRSD file; when specified, portions of the file not specified in other parameters may be read
     """
@@ -171,7 +171,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         file : `file object`
             CRSD or CRSD XML file to check
         schema : str, optional
-            Path to CRSD XML Schema. If None, tries to find a version-specific schema
+            Path to XML Schema. If None, tries to find a version-specific schema
         thorough : bool, optional
             Run checks that may seek/read through large portions of the file.
             file must stay open to run checks. Ignored if file is CRSD XML.
@@ -205,17 +205,12 @@ class CrsdConsistency(con.ConsistencyChecker):
 
         .. testsetup::
 
-            import pathlib
-            import tempfile
-
             import sarkit.crsd as skcrsd
             import lxml.etree
             meta = skcrsd.Metadata(
                 xmltree=lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml"),
             )
-            tmpdir = tempfile.TemporaryDirectory()
-            tmppath = pathlib.Path(tmpdir.name)
-            file = pathlib.Path(tmpdir.name) / "example.crsd"
+            file = tmppath / "example.crsd"
             with file.open("wb") as f, skcrsd.Writer(f, meta) as w:
                 f.seek(
                     w._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
@@ -223,10 +218,6 @@ class CrsdConsistency(con.ConsistencyChecker):
                     - 1
                 )
                 f.write(b"0")
-
-        .. testcleanup::
-
-            tmpdir.cleanup()
 
         .. doctest::
 

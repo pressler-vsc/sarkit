@@ -9,7 +9,7 @@ import functools
 import logging
 import os
 import pathlib
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import numpy.linalg as npl
@@ -169,47 +169,40 @@ def per_grid_dim(method):
 class SicdConsistency(con.ConsistencyChecker):
     """Check SICD file structure and metadata for internal consistency
 
+    `SicdConsistency` objects should be instantiated using `from_file` or `from_parts`.
+
     Parameters
     ----------
-    sicdroot : lxml.etree.Element or lxml.etree.ElementTree
-        SICD XML metadata
-    schema_override : str, optional
-        Path to SICD XML Schema (Bypass auto selection of SICD schema)
-    version_override : str, optional
-        Bypass auto detection of SICD version.  Required if schema_override is specified.  eg: "1.1.0"
-    ntf : ``Nitf``, optional
-        Header information from a NITF file
+    sicd_xml : lxml.etree.Element or lxml.etree.ElementTree
+        SICD XML
+    schema_override : `path-like object`, optional
+        Path to XML Schema. If None, tries to find a version-specific schema
+    file : `file object`, optional
+        SICD NITF file; when specified, NITF headers are extracted during object instantiation
     """
 
     def __init__(
         self,
-        sicdroot,
+        sicd_xml,
+        *,
         schema_override=None,
-        version_override=None,
-        ntf=None,
+        file=None,
     ):
         super().__init__()
-
-        self.sicdroot = etree.fromstring(
-            etree.tostring(sicdroot)
-        )  # handle element or tree -> element
+        # handle element or tree -> element
+        try:
+            self.sicdroot = sicd_xml.getroot()
+        except AttributeError:
+            self.sicdroot = sicd_xml.getroottree().getroot()
         self.xmlhelp = sksicd.XmlHelper(self.sicdroot.getroottree())
-
-        if schema_override:
-            if version_override is None:
-                raise ValueError("Version must be specified when overriding schema")
-            self.version = version_override
-            self.schema = schema_override
+        if file is not None:
+            file.seek(0, os.SEEK_SET)
+            self.ntf = Nitf().load(file)
         else:
-            self.version = version_override or self._version_lookup()
-            if self.version is None:
-                raise ValueError("Unable to determine SICD version from XML namespace")
-            urn = {v["version"]: k for k, v in sksicd.VERSION_INFO.items()}[
-                self.version
-            ]
-            self.schema = sksicd.VERSION_INFO[urn]["schema"]
+            self.ntf = None
 
-        self.ntf = ntf
+        ns = etree.QName(self.sicdroot).namespace
+        self.schema = schema_override or sksicd.VERSION_INFO.get(ns, {}).get("schema")
 
         # process decorated methods to generate additional tests
         # reverse the enumerated list so that we don't disturb indices on later iterations as we insert into the list
@@ -227,41 +220,133 @@ class SicdConsistency(con.ConsistencyChecker):
 
     @staticmethod
     def from_file(
-        filename: str,
+        file,
         schema: Optional[str] = None,
-        version: Optional[str] = None,
     ) -> "SicdConsistency":
         """Create a SicdConsistency object from a file
 
         Parameters
         ----------
-        filename : str
-            Path to SICD file or SICD XML file
+        file : `file object`
+            SICD NITF or SICD XML file to check
         schema : str, optional
-            Path to SICD XML Schema (Bypass auto selection of SICD schema)
-        version : str, optional
-            Bypass auto detection of SICD version.  Required if schema_override is specified.  eg: "1.1.0"
+            Path to XML Schema. If None, tries to find a version-specific schema
 
         Returns
         -------
         SicdConsistency
+            The initialized consistency checker object
+
+        See Also
+        --------
+        from_parts
+
+        Examples
+        --------
+        Use `from_file` to check an XML file:
+
+        .. doctest::
+
+            >>> import sarkit.verification as skver
+
+            >>> with open("data/example-sicd-1.4.0.xml", "r") as f:
+            ...     con = skver.SicdConsistency.from_file(f)
+            >>> con.check()
+            >>> bool(con.passes())
+            True
+            >>> bool(con.failures())
+            False
+
+        Use `from_file` to check a SICD NITF file:
+
+        .. testsetup::
+
+            import lxml.etree
+            import numpy as np
+
+            import sarkit.sicd as sksicd
+
+            file = tmppath / "example.sicd"
+            sec = {"security": {"clas": "U"}}
+            example_sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml")
+            sicd_meta = sksicd.NitfMetadata(
+                xmltree=example_sicd_xmltree,
+                file_header_part={"ostaid": "nowhere"} | sec,
+                im_subheader_part={"isorce": "this sensor"} | sec,
+                de_subheader_part=sec,
+            )
+            with open(file, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
+                pass  # don't currently care about the pixels
+
+        .. doctest::
+
+            >>> with file.open("rb") as f:
+            ...     con = skver.SicdConsistency.from_file(f)
+            >>> con.check()  # open file only used for construction
+            >>> bool(con.passes())
+            True
+            >>> bool(con.failures())
+            False
         """
-        with open(filename, "rb") as infile:
-            try:
-                sicdroot = etree.parse(infile)
-                ntf = None
-            except etree.XMLSyntaxError:
-                infile.seek(0, os.SEEK_SET)
-                ntf = Nitf().load(infile)
-                des_offset, des_length = _get_desdata_location(ntf)
-                infile.seek(des_offset, os.SEEK_SET)
-                sicdroot = etree.fromstring(infile.read(des_length))
+        kwargs: dict[str, Any] = {"schema_override": schema}
+        try:
+            sicdroot = etree.parse(file)
+            ntf = None
+        except etree.XMLSyntaxError:
+            file.seek(0, os.SEEK_SET)
+            ntf = Nitf().load(file)
+            des_offset, des_length = _get_desdata_location(ntf)
+            file.seek(des_offset, os.SEEK_SET)
+            sicdroot = etree.fromstring(file.read(des_length))
+            kwargs["file"] = file
 
         return SicdConsistency(
             sicdroot,
+            **kwargs,
+        )
+
+    @staticmethod
+    def from_parts(
+        sicd_xml: "etree.Element | etree.ElementTree",
+        schema: Optional[str] = None,
+    ) -> "SicdConsistency":
+        """Create a SicdConsistency object from assorted parts
+
+        Parameters
+        ----------
+        sicd_xml : lxml.etree.Element or lxml.etree.ElementTree
+            SICD XML
+        schema : `path-like object`, optional
+            Path to XML Schema. If None, tries to find a version-specific schema
+
+        Returns
+        -------
+        SicdConsistency
+            The initialized consistency checker object
+
+        See Also
+        --------
+        from_file
+
+        Examples
+        --------
+        Use `from_parts` to check a parsed XML element tree:
+
+        .. doctest::
+
+            >>> import lxml.etree
+            >>> import sarkit.verification as skver
+            >>> sicd_xmltree = lxml.etree.parse("data/example-sicd-1.4.0.xml")
+            >>> con = skver.SicdConsistency.from_parts(sicd_xmltree)
+            >>> con.check()
+            >>> bool(con.passes())
+            True
+            >>> bool(con.failures())
+            False
+        """
+        return SicdConsistency(
+            sicd_xml,
             schema_override=schema,
-            version_override=version,
-            ntf=ntf,
         )
 
     def _assert_poly_1d(self, poly, poly_label):
@@ -292,19 +377,6 @@ class SicdConsistency(con.ConsistencyChecker):
         """Helper method for checking XYZ polynomial nodes are consistent."""
         for dim in ["X", "Y", "Z"]:
             self._assert_poly_1d(poly.find(f"./{{*}}{dim}"), f"{poly_label}/{{*}}{dim}")
-
-    def _version_lookup(self):
-        """Returns the version string associated with the XML instance or None if a match is not found."""
-        this_ns = etree.QName(self.sicdroot).namespace
-        if this_ns is None:
-            return None
-        for schema_info in sksicd.VERSION_INFO.values():
-            schema_path = schema_info.get("schema")
-            if schema_path is not None and this_ns == etree.parse(
-                schema_path
-            ).getroot().get("targetNamespace"):
-                return schema_info["version"]
-        return None
 
     def check_against_schema(self) -> None:
         """Checks against schema."""
@@ -1891,19 +1963,13 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a SICD and display inconsistencies"
     )
-    parser.add_argument("file_name", help="SICD or SICD XML to check")
+    parser.add_argument(
+        "file_name", type=pathlib.Path, help="SICD or SICD XML to check"
+    )
     parser.add_argument(
         "--schema",
         type=pathlib.Path,
         help="Use a supplied schema file (attempts version-specific schema if omitted)",
-    )
-    parser.add_argument(
-        "--version",
-        type=str,
-        help=(
-            "Perfom checks for a specific version of SICD. "
-            "Attempts auto-detection if omitted. Required if using --schema"
-        ),
     )
     SicdConsistency.add_cli_args(parser)
     return parser
@@ -1911,13 +1977,12 @@ def _parser():
 
 def main(args=None):
     config = _parser().parse_args(args)
-
-    if config.schema is not None and config.version is None:
-        raise RuntimeError("--version must be specified if using --schema")
-
-    sicd_con = SicdConsistency.from_file(
-        filename=config.file_name, schema=config.schema, version=config.version
-    )
+    with config.file_name.open("rb") as f:
+        sicd_con = SicdConsistency.from_file(
+            file=f,
+            schema=config.schema,
+        )
+    # file doesn't need to stay open once object is instantiated
     return sicd_con.run_cli(config)
 
 

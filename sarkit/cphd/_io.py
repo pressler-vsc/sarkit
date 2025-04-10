@@ -283,11 +283,11 @@ def read_file_header(file):
     Returns
     -------
     file_type_header : str
-        File type from the first line of the file
-    kvp_list : dict[str, str]
-        Key-Value list of header fields
+        File type header from the first line of the file
+    kvp_list : dict of {str : str}
+        Key-Value pair list of header fields
     """
-    file_type_header = file.readline().decode().strip("\n")
+    file_type_header = file.readline().decode()
 
     kvp_list = {}
     while (line := file.readline()) != SECTION_TERMINATOR:

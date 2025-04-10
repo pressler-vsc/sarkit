@@ -67,6 +67,7 @@ In the `sarkit.sicd` namespace, there are convenience functions that operate on 
 
     image_to_ground_plane
     image_to_constant_hae_surface
+    image_to_dem_surface
     scene_to_image
 
 Constants
@@ -206,6 +207,7 @@ from ._xml import (
 )
 from .projection._derived import (
     image_to_constant_hae_surface,
+    image_to_dem_surface,
     image_to_ground_plane,
     scene_to_image,
 )
@@ -243,6 +245,7 @@ __all__ = [
     "compute_scp_coa",
     "image_segment_sizing_calculations",
     "image_to_constant_hae_surface",
+    "image_to_dem_surface",
     "image_to_ground_plane",
     "scene_to_image",
 ]

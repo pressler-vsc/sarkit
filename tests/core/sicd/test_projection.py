@@ -1,5 +1,6 @@
 import copy
 import dataclasses
+import functools
 import pathlib
 
 import lxml.builder
@@ -267,6 +268,90 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     assert not success
     mismatched_index = np.argwhere((spp_tgt != spp_tgt_w_bad).any(axis=-1)).squeeze()
     assert np.array_equal(bad_index, mismatched_index)
+
+
+@pytest.mark.parametrize(
+    "mdata_name",
+    (
+        "example_proj_metadata",
+        pytest.param(
+            "example_proj_metadata_bi",
+            marks=pytest.mark.xfail(raises=NotImplementedError),
+        ),
+    ),
+)
+def test_r_rdot_to_dem_surface(mdata_name, request):
+    proj_metadata = request.getfixturevalue(mdata_name)
+
+    # SCP projection set intersects "DEM" that is a constant HAE=SCP_HAE surface at... SCP
+    proj_set = sicdproj.compute_projection_sets(proj_metadata, [0, 0])
+    s = sicdproj.r_rdot_to_dem_surface(
+        proj_metadata.LOOK,
+        proj_metadata.SCP,
+        proj_set,
+        ecef2dem_func=lambda x: sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
+        - proj_metadata.SCP_HAE,
+        hae_min=proj_metadata.SCP_HAE - 10.0,
+        hae_max=proj_metadata.SCP_HAE + 10.0,
+        delta_dist_dem=1.0,
+    )
+    assert np.allclose(s, proj_metadata.SCP, atol=0.01)
+
+    # Make some faux "DEMs" that are sinusoids atop an HAE to test multiple-intersections case
+    n_rrc = 24
+    proj_sets = sicdproj.compute_projection_sets(proj_metadata, np.zeros((n_rrc, 2)))
+    rrc, _, _ = sicdproj.r_rdot_to_constant_hae_surface(
+        proj_metadata.LOOK,
+        proj_metadata.SCP,
+        proj_sets,
+        proj_metadata.SCP_HAE + np.linspace(-10, 10, n_rrc),
+    )
+    rrc_lat, _, rrc_hae = sarkit.wgs84.cartesian_to_geodetic(rrc).T
+    # np.interp inputs must be increasing
+    ((min_lat, hae0), (max_lat, hae1)) = sorted(
+        [(rrc_lat[0], rrc_hae[0]), (rrc_lat[-1], rrc_hae[-1])], key=lambda x: x[0]
+    )
+
+    def get_ripply_dem(freq=4.0):
+        fake_lat_dem = functools.partial(
+            np.interp,
+            xp=np.linspace(min_lat, max_lat, num=1 << 10),
+            fp=np.linspace(hae0, hae1, num=1 << 10)
+            + np.sin(2 * np.pi * freq * np.linspace(0, 1, 1 << 10)),
+        )
+
+        def ecef2dem_func(ecef):
+            llh = sarkit.wgs84.cartesian_to_geodetic(ecef)
+            return llh[..., -1] - fake_lat_dem(llh[..., 0])
+
+        return ecef2dem_func
+
+    dem_funcs = {
+        "some_ripples": get_ripply_dem(4.0),
+        "more_ripples": get_ripply_dem(8.0),
+        "too_low": lambda x: get_ripply_dem(0)(x) - 1000.0,
+    }
+    results = {}
+    for label, func in dem_funcs.items():
+        results[label] = sicdproj.r_rdot_to_dem_surface(
+            proj_metadata.LOOK,
+            proj_metadata.SCP,
+            proj_set,
+            ecef2dem_func=func,
+            hae_min=proj_metadata.SCP_HAE - 20.0,
+            hae_max=proj_metadata.SCP_HAE + 20.0,
+            delta_dist_dem=1.0,
+        )
+        if label == "too_low":
+            assert results[label].size == 0
+        else:
+            expected_r = (
+                proj_set.R_COA if proj_metadata.is_monostatic() else proj_set.R_Avg_COA
+            )
+            assert np.linalg.norm(
+                proj_metadata.ARP_SCP_COA - results[label], axis=-1
+            ) == pytest.approx(float(expected_r))
+    assert len(results["more_ripples"]) > len(results["some_ripples"])
 
 
 def _projection_sets_smoketest(mdata, gridlocs):

@@ -1,5 +1,8 @@
 """Calculations from SICD Volume 3 Image Projections Description Document"""
 
+import itertools
+from collections.abc import Callable
+
 import numpy as np
 import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
@@ -1333,3 +1336,153 @@ def r_rdot_to_constant_hae_surface(
     spp_tgt = sarkit.wgs84.geodetic_to_cartesian(spp_llh)
 
     return spp_tgt, delta_hae, success
+
+
+def r_rdot_to_dem_surface(
+    look: int,
+    scp: npt.ArrayLike,
+    projection_set: params.ProjectionSetsLike,
+    ecef2dem_func: Callable[[np.ndarray], np.ndarray],
+    hae_min: float,
+    hae_max: float,
+    delta_dist_dem: float,
+    *,
+    delta_dist_rrc: float = 10.0,
+    delta_hd_lim: float = 0.001,
+    **kwargs,
+) -> npt.NDArray:
+    """Project along a contour of constant range and range rate to a surface described by a Digital Elevation Model.
+
+    Parameters
+    ----------
+    look : {+1, -1}
+        +1 if SideOfTrack = L, -1 if SideOfTrack = R
+    scp : (3,) array_like
+        SCP position in ECEF coordinates (m)
+    projection_set : ProjectionSetsLike
+        Center of Aperture projection set for a single point
+    ecef2dem_func : callable
+        A function that returns an ndarray of DEM offset heights from an ndarray of positions with ECEF
+        (WGS 84 cartesian) X, Y, Z components in meters in the last dimension
+
+        .. Note:: SICD v1.4.0 volume 3 decomposes this into two steps:
+
+           #. Convert ECF To DEM Coords
+           #. Get Surface Height HD
+
+    hae_min, hae_max : float
+        WGS-84 HAE values (m) that bound DEM surface points
+    delta_dist_dem : float
+        Max horizontal distance between surface points (m) for which the surface is well approximated by a straight line
+    delta_dist_rrc : float, optional
+        Max distance between adjacent points along R/Rdot contour (m)
+    delta_hd_lim : float, optional
+        Height difference threshold for determining if a point on the R/Rdot contour is on DEM surface (m)
+
+    Returns
+    -------
+    s : ndarray
+        Set of point(s) where the R/Rdot contour intersects the DEM surface with ECEF (WGS 84 cartesian) X, Y, Z
+        components in meters in the last dimension. Ordered by increasing WGS-84 HAE.
+
+    Other Parameters
+    ----------------
+    **kwargs
+        Keyword-only arguments for intermediate `r_rdot_to_constant_hae_surface` calls
+    """
+    if (
+        getattr(
+            projection_set, "ARP_COA", getattr(projection_set, "Xmt_COA", np.empty(()))
+        ).size
+        != 3
+    ):
+        raise ValueError("DEM projection only supported for scalar projection sets")
+
+    if isinstance(projection_set, params.ProjectionSetsMono):
+        # Compute center point, ctr, and the radius of R/Rdot contour
+        vmag = np.linalg.norm(projection_set.VARP_COA)
+        u_vel = projection_set.VARP_COA / vmag
+        cos_dca = -projection_set.Rdot_COA / vmag
+        sin_dca = np.sqrt(1 - cos_dca**2)
+        ctr = projection_set.ARP_COA + projection_set.R_COA * cos_dca * u_vel
+        r_rrc = projection_set.R_COA * sin_dca
+
+        # Compute unit vectors to be used to compute points located on R/Rdot contour
+        dec_arp = np.linalg.norm(projection_set.ARP_COA)
+        u_up = projection_set.ARP_COA / dec_arp
+        rry = np.cross(u_up, u_vel)
+        u_rry = rry / np.linalg.norm(rry)
+        u_rrx = np.cross(u_rry, u_vel)
+
+        # Compute projection along R/Rdot contour to surface of constant HAE at hae_max, "a"
+        a, _, success = r_rdot_to_constant_hae_surface(
+            look, scp, projection_set, hae_max, **kwargs
+        )
+        if not success:
+            return np.array([])
+
+        # Also compute the cosine and sine of the contour angle to point "a"
+        cos_ca_a = np.dot(a - ctr, u_rrx) / r_rrc
+        # sin_ca_a is unused
+
+        # Compute projection along R/Rdot contour to surface of constant HAE at hae_min, "b"
+        b, _, success = r_rdot_to_constant_hae_surface(
+            look, scp, projection_set, hae_min, **kwargs
+        )
+        if not success:
+            return np.array([])
+
+        # Also compute the cosine and sine of the contour angle to point "b"
+        cos_ca_b = np.dot(b - ctr, u_rrx) / r_rrc
+        sin_ca_b = look * np.sqrt(1 - cos_ca_b**2)
+
+        # Compute contour angle step size
+        delta_cos_rrc = delta_dist_rrc * np.abs(sin_ca_b) / r_rrc
+        delta_cos_dem = delta_dist_dem * np.abs(sin_ca_b) / r_rrc / cos_ca_b
+        delta_cos_ca = -min(delta_cos_rrc, delta_cos_dem)
+
+        # Determine number of points along R/Rdot contour to be computed
+        npts = (cos_ca_a - cos_ca_b) // delta_cos_ca + 2
+
+        # Compute the set of points along R/Rdot contour
+        n_minus_1s = np.arange(npts)
+        cos_ca = cos_ca_b + n_minus_1s * delta_cos_ca
+        sin_ca = look * np.sqrt(1 - cos_ca**2)
+        pn = ctr + r_rrc * (
+            cos_ca[..., np.newaxis] * u_rrx + sin_ca[..., np.newaxis] * u_rry
+        )
+    else:
+        raise NotImplementedError("Bistatic is not implemented yet")
+
+    # Compute DEM surface points
+    delta_hdn = ecef2dem_func(pn)
+    aobn = np.full(delta_hdn.shape, -1)
+    aobn[delta_hdn > delta_hd_lim] = 1
+    aobn[np.abs(delta_hdn) <= delta_hd_lim] = 0
+
+    s = []
+    for n_minus_1, ((p, _), (aob, next_aob), (delta_hd, next_delta_hd)) in enumerate(
+        zip(
+            itertools.pairwise(pn),
+            itertools.pairwise(aobn),
+            itertools.pairwise(delta_hdn),
+            strict=True,
+        )
+    ):
+        if aob == 0:
+            s.append(p)
+            break
+        if (aob * next_aob) == -1:
+            frac = delta_hd / (delta_hd - next_delta_hd)
+            cos_ca_s = cos_ca_b + (n_minus_1 + frac) * delta_cos_ca
+            sin_ca_s = look * np.sqrt(1 - cos_ca_s**2)
+            s.append(
+                ctr
+                + r_rrc
+                * (
+                    cos_ca_s[..., np.newaxis] * u_rrx
+                    + sin_ca_s[..., np.newaxis] * u_rry
+                )
+            )
+
+    return np.asarray(s)

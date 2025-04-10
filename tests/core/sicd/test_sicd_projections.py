@@ -132,3 +132,44 @@ def test_image_to_constant_hae_surface(sicd_xml):
     assert np.isfinite(delta_hae_max).all()
     assert success
     assert im_coords == pytest.approx(re_im_coords, abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    "sicd_xml",
+    (
+        DATAPATH / "example-sicd-1.3.0.xml",  # monostatic
+        pytest.param(
+            DATAPATH / "example-sicd-1.4.0.xml",
+            marks=pytest.mark.xfail(raises=NotImplementedError),
+        ),  # bistatic
+    ),
+)
+def test_image_to_dem_surface(sicd_xml):
+    sicd_xmltree = lxml.etree.parse(sicd_xml)
+    xmlhelp = sksicd.XmlHelper(sicd_xmltree)
+    scp_hae = xmlhelp.load("{*}GeoData/{*}SCP/{*}LLH/{*}HAE")
+
+    # Project to constant HAE surface around SCP - assumes validity close to SCP
+    im_coords = np.random.default_rng(12345).uniform(low=-24.0, high=24.0, size=(32, 2))
+    surf_coords, _, success = sksicd.image_to_constant_hae_surface(
+        sicd_xmltree,
+        im_coords,
+        scp_hae,
+    )
+    assert success
+
+    def hae_dem_func(ecf):
+        return sarkit.wgs84.cartesian_to_geodetic(ecf)[..., -1] - scp_hae
+
+    for im_coord, surf_coord in zip(im_coords, surf_coords):
+        hae_dem_coord = sksicd.image_to_dem_surface(
+            sicd_xmltree,
+            im_coord,
+            ecef2dem_func=hae_dem_func,
+            hae_min=scp_hae - 10.0,
+            hae_max=scp_hae + 10.0,
+            delta_dist_dem=1.0,
+        )
+        # assert only one intersection since DEM is an HAE surface
+        assert hae_dem_coord.size == surf_coord.size
+        assert np.allclose(hae_dem_coord, surf_coord)

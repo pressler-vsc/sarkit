@@ -175,7 +175,8 @@ def example_crsdsar_file(tmp_path_factory):
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
     assert not main([str(tmp_crsd), "-v"])
-    yield tmp_crsd
+    with tmp_crsd.open("rb") as f:
+        yield f
 
 
 def _replace_error(crsd_etree, sensor_type):
@@ -201,7 +202,8 @@ def _replace_error(crsd_etree, sensor_type):
 
 @pytest.fixture(scope="session")
 def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
-    with open(example_crsdsar_file, "rb") as f, skcrsd.Reader(f) as cr:
+    example_crsdsar_file.seek(0)
+    with skcrsd.Reader(example_crsdsar_file) as cr:
         crsd_etree = cr.metadata.xmltree
         sequence_id = crsd_etree.findtext("{*}TxSequence/{*}Parameters/{*}Identifier")
         ppps = cr.read_ppps(sequence_id)
@@ -232,12 +234,14 @@ def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
     with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
         cw.write_ppp(sequence_id, ppps)
     assert not main([str(tmp_crsd), "-vvv"])
-    yield tmp_crsd
+    with tmp_crsd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="session")
 def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
-    with open(example_crsdsar_file, "rb") as f, skcrsd.Reader(f) as cr:
+    example_crsdsar_file.seek(0)
+    with skcrsd.Reader(example_crsdsar_file) as cr:
         crsd_etree = cr.metadata.xmltree
         channel_id = crsd_etree.findtext("{*}Channel/{*}Parameters/{*}Identifier")
         pvps = cr.read_pvps(channel_id)
@@ -297,7 +301,8 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
         cw.write_pvp(channel_id, new_pvps)
         cw.write_signal(channel_id, signal)
     assert not main([str(tmp_crsd), "-vvv"])
-    yield tmp_crsd
+    with tmp_crsd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="session", params=("sar", "tx", "rcv"))
@@ -318,7 +323,7 @@ def good_xml_root(good_xml):
 
 @pytest.fixture
 def crsd_con(example_crsd_file):
-    return CrsdConsistency.from_file(example_crsd_file)
+    return CrsdConsistency.from_file(example_crsd_file, thorough=True)
 
 
 def copy_xml(elem):
@@ -351,15 +356,39 @@ def test_main_with_ignore(good_xml_root, tmp_path):
     assert not main([slightly_bad_xml, "--ignore", "check_against_schema"])
 
 
+def test_main_schema_args(crsd_con):
+    good_schema = crsd_con.schema
+
+    assert not main(
+        [
+            str(good_crsd_xml_path),
+            "--schema",
+            str(good_schema),
+        ]
+    )  # pass with actual schema
+
+    assert main(
+        [
+            str(good_crsd_xml_path),
+            "--schema",
+            str(good_crsd_xml_path),
+        ]
+    )  # fails with bogus schema
+
+
+def test_thorough(example_crsd_file):
+    con = CrsdConsistency.from_file(example_crsd_file, thorough=True)
+    con.check()
+    num_skips_thorough = len(con.skips(include_partial=True))
+
+    con = CrsdConsistency.from_file(example_crsd_file)
+    con.check()
+    num_skips_default = len(con.skips(include_partial=True))
+    assert num_skips_thorough < num_skips_default
+
+
 def test_header_filetype(crsd_con):
-    crsd_con.crsd_type = "CRSDnope"
-
-    crsd_con.check("check_file_type_header")
-    assert crsd_con.failures()
-
-
-def test_header_filetype_version(crsd_con):
-    crsd_con.version = "FAKE"
+    crsd_con.file_type_header += "MAKEBAD"
 
     crsd_con.check("check_file_type_header")
     assert crsd_con.failures()

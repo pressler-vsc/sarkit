@@ -1,6 +1,5 @@
 import copy
 import itertools
-import os
 import pathlib
 import re
 
@@ -97,13 +96,15 @@ def example_cphd_file(tmp_path_factory):
     with open(tmp_cphd, "wb") as f, skcphd.Writer(f, cphd_plan) as cw:
         cw.write_pvp("1", pvps)
         cw.write_signal("1", signal)
-    assert not main([str(tmp_cphd), "--signal-data"])
-    yield tmp_cphd
+    assert not main([str(tmp_cphd), "--thorough"])
+    with tmp_cphd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="session")
-def example_compressed_cphd(example_cphd_file):
-    with example_cphd_file.open("rb") as f, skcphd.Reader(f) as r:
+def example_compressed_cphd(example_cphd_file, tmp_path_factory):
+    example_cphd_file.seek(0)
+    with skcphd.Reader(example_cphd_file) as r:
         pvps = r.read_pvps("1")
 
     new_meta = r.metadata
@@ -115,12 +116,13 @@ def example_compressed_cphd(example_cphd_file):
     compressed_data = b"ultra-compressed"
     data_chan_elem.append(em.CompressedSignalSize(str(len(compressed_data))))
 
-    tmp_cphd = example_cphd_file.with_suffix(".compressed.cphd")
+    tmp_cphd = tmp_path_factory.mktemp("data") / "faux-compressed.cphd"
     with tmp_cphd.open("wb") as f, skcphd.Writer(f, new_meta) as w:
         w.write_pvp("1", pvps)
         w.write_signal("1", np.frombuffer(compressed_data, np.uint8))
-    assert not main([str(tmp_cphd), "--signal-data"])
-    yield tmp_cphd
+    assert not main([str(tmp_cphd), "--thorough"])
+    with tmp_cphd.open("rb") as f:
+        yield f
 
 
 def remove_nodes(*nodes):
@@ -135,7 +137,7 @@ def good_xml():
 
 @pytest.fixture
 def cphd_con(good_xml):
-    return CphdConsistency(good_xml)
+    return CphdConsistency.from_parts(good_xml)
 
 
 @pytest.fixture
@@ -145,7 +147,7 @@ def good_xml_root(good_xml):
 
 @pytest.fixture
 def cphd_con_from_file(example_cphd_file):
-    return CphdConsistency.from_file(example_cphd_file)
+    return CphdConsistency.from_file(example_cphd_file, thorough=True)
 
 
 @pytest.fixture
@@ -165,7 +167,7 @@ def copy_xml(elem):
 )
 def test_from_file_cphd(fixture_name, request):
     file = request.getfixturevalue(fixture_name)
-    cphdcon = CphdConsistency.from_file(file, check_signal_data=True)
+    cphdcon = CphdConsistency.from_file(file, thorough=True)
     cphdcon.check()
     assert not cphdcon.failures()
 
@@ -192,26 +194,20 @@ def test_smoketest(xml_file):
 
 def test_main_with_ignore(good_xml_root, tmp_path):
     good_xml_root.find("./{*}Global/{*}SGN").text += "1"
-    slightly_bad_xml = os.path.join(tmp_path, "slightly_bad.xml")
+    slightly_bad_xml = tmp_path / "slightly_bad.xml"
     etree.ElementTree(good_xml_root).write(str(slightly_bad_xml))
-    assert main([slightly_bad_xml])
-    assert not main([slightly_bad_xml, "--ignore", "check_against_schema"])
+    assert main([str(slightly_bad_xml)])
+    assert not main([str(slightly_bad_xml), "--ignore", "check_against_schema"])
 
 
 def test_main_schema_args(cphd_con):
     good_schema = cphd_con.schema
-    with pytest.raises(
-        RuntimeError, match="--version must be specified if using --schema"
-    ):
-        main([str(good_cphd_xml_path), "--schema", str(good_schema)])
 
     assert not main(
         [
             str(good_cphd_xml_path),
             "--schema",
             str(good_schema),
-            "--version",
-            "1.0.1",
         ]
     )  # pass with actual schema
 
@@ -220,21 +216,19 @@ def test_main_schema_args(cphd_con):
             str(good_cphd_xml_path),
             "--schema",
             str(good_cphd_xml_path),
-            "--version",
-            "1.0.1",
         ]
     )  # fails with bogus schema
 
 
-@pytest.mark.parametrize("check_signal_data", (True, False))
-def test_with_signal_data_check(check_signal_data, example_cphd_file):
-    cphd_con = CphdConsistency.from_file(
-        example_cphd_file, check_signal_data=check_signal_data
-    )
+def test_thorough(example_cphd_file):
+    cphd_con = CphdConsistency.from_file(example_cphd_file, thorough=True)
+    cphd_con.check()
+    num_skips_thorough = len(cphd_con.skips(include_partial=True))
 
-    cphd_con.check("check_channel_signal_data", allow_prefix=True)
-    assert not cphd_con.failures()
-    assert bool(cphd_con.skips(include_partial=True)) == (not check_signal_data)
+    cphd_con = CphdConsistency.from_file(example_cphd_file)
+    cphd_con.check()
+    num_skips_default = len(cphd_con.skips(include_partial=True))
+    assert num_skips_thorough < num_skips_default
 
 
 def test_xml_schema_error(good_xml_root):
@@ -890,7 +884,7 @@ def test_signal_pvp(cphd_con_from_file):
 
 def test_header_filetype(cphd_con_from_file):
     cphd_con = cphd_con_from_file
-    cphd_con.version = "FAKE"
+    cphd_con.file_type_header = "FAKE"
 
     cphd_con.check("check_file_type_header")
     assert cphd_con.failures()

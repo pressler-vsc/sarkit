@@ -19,17 +19,29 @@ Python Interface
    CrsdConsistency
    SicdConsistency
 
-In general, users will create a Consistency instance with ``from_file``, e.g.
+Consistency objects should be instantiated using ``from_parts`` when data components are available in memory or
+``from_file`` when data has already been serialized into a standard format.
 
 .. doctest::
 
    >>> import sarkit.verification as skver
-   >>> sicdcon = skver.SicdConsistency.from_file("data/example-sicd-1.4.0.xml")
-   >>> sicdcon.check()
-   >>> bool(sicdcon.failures())
-   False
-   >>> bool(sicdcon.passes())
+
+   >>> with open("data/example-cphd-1.0.1.xml", "r") as f:
+   ...     con = skver.CphdConsistency.from_file(f)
+   >>> con.check()
+   >>> bool(con.passes())
    True
+   >>> bool(con.failures())
+   False
+
+   >>> import lxml.etree
+   >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+   >>> con = skver.CphdConsistency.from_parts(cphd_xmltree)
+   >>> con.check()
+   >>> bool(con.passes())
+   True
+   >>> bool(con.failures())
+   False
 
 Command-Line Interface
 ----------------------

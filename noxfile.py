@@ -44,7 +44,9 @@ def format(session):
 
 @nox.session
 def lint(session):
-    session.run_install("pdm", "sync", "--prod", "-G", "dev-lint", external=True)
+    session.run_install(
+        "pdm", "sync", "--prod", "-G", "dev-lint", "-G", "all", external=True
+    )
     session.run("ruff", "check")
     session.run(
         "ruff",

@@ -501,3 +501,16 @@ def test_apo(proj_metadata_with_error):
         )
         assert adjust_proj_set.R_Avg_COA != proj_set.R_Avg_COA
         assert adjust_proj_set.Rdot_Avg_COA != proj_set.Rdot_Avg_COA
+
+
+def test_sensitivity_matrices(example_proj_metadata):
+    mats = sicdproj.compute_sensitivity_matrices(example_proj_metadata)
+
+    # sensitivity when image plane is already slant should be nearly -identity due to relative orientation of slant and
+    # image plane vectors
+    assert np.allclose(mats.M_SPXY_IL, -np.eye(2), atol=1e-3)
+
+    assert np.allclose(mats.M_SPXY_GPXY @ mats.M_GPXY_SPXY, np.eye(2))
+    assert np.allclose(mats.M_SPXY_IL @ mats.M_IL_SPXY, np.eye(2))
+    assert np.allclose(mats.M_GPXY_IL @ mats.M_IL_GPXY, np.eye(2))
+    np.allclose(mats.M_SPXY_PT @ mats.M_PT_GPXY, mats.M_SPXY_GPXY)

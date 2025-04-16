@@ -23,6 +23,7 @@ dataclasses with attributes named as similar as feasible to the IPDD.
    ProjectionSetsBi
    ScenePointRRdotParams
    ScenePointGpXyParams
+   SensitivityMatrices
 
 Type Aliases
 ------------
@@ -115,6 +116,15 @@ Precise R/Rdot to DEM Surface Projection
    :toctree: generated/
 
    r_rdot_to_dem_surface
+
+
+Projection Sensitivity Parameters
+=================================
+.. autosummary::
+   :toctree: generated/
+
+   compute_sensitivity_matrices
+
 """
 
 from ._calc import (
@@ -147,6 +157,10 @@ from ._params import (
     ScenePointGpXyParams,
     ScenePointRRdotParams,
 )
+from ._sensitivity import (
+    SensitivityMatrices,
+    compute_sensitivity_matrices,
+)
 
 __all__ = [
     "AdjustableParameterOffsets",
@@ -159,6 +173,7 @@ __all__ = [
     "ProjectionSetsMono",
     "ScenePointGpXyParams",
     "ScenePointRRdotParams",
+    "SensitivityMatrices",
     "compute_and_apply_offsets",
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
@@ -168,6 +183,7 @@ __all__ = [
     "compute_pt_r_rdot_parameters",
     "compute_scp_coa_r_rdot",
     "compute_scp_coa_slant_plane_normal",
+    "compute_sensitivity_matrices",
     "image_grid_to_image_plane_point",
     "image_plane_point_to_image_grid",
     "r_rdot_to_constant_hae_surface",
